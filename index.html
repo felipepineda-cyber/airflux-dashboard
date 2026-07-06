@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AirFlux · Monitoreo Ambiental</title>
+<link rel="preconnect" href="https://fonts.gstatic.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+  integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
+  integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
+<style>
+  :root {
+    --primary: #0065A3;
+    --primary-dark: #004d7a;
+    --primary-light: #e8f3f9;
+    --sidebar-bg: #0d1f2d;
+    --sidebar-bg2: #12293c;
+    --sidebar-text: #9fb6c6;
+    --sidebar-active: #1a3a52;
+    --ok: #16a34a;
+    --ok-bg: #ecfdf5;
+    --warn: #d97706;
+    --warn-bg: #fffbeb;
+    --err: #dc2626;
+    --err-bg: #fef2f2;
+    --bg: #f1f5f9;
+    --surface: #ffffff;
+    --border: #e2e8f0;
+    --text: #0f172a;
+    --text-2: #475569;
+    --text-3: #94a3b8;
+    --radius: 14px;
+    --shadow: 0 1px 3px rgba(15,23,42,.06), 0 4px 16px rgba(15,23,42,.06);
+    --shadow-lg: 0 8px 30px rgba(15,23,42,.12);
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14.5px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .app { display: flex; min-height: 100vh; }
+
+  /* ============ SIDEBAR ============ */
+  aside {
+    width: 264px;
+    background: linear-gradient(180deg, var(--sidebar-bg), var(--sidebar-bg2));
+    color: var(--sidebar-text);
+    display: flex; flex-direction: column;
+    position: fixed; inset: 0 auto 0 0;
+    z-index: 1100;
+    transition: transform .25s ease;
+  }
+  .brand {
+    display: flex; align-items: center; gap: .7rem;
+    padding: 1.25rem 1.3rem 1.1rem;
+    border-bottom: 1px solid rgba(255,255,255,.07);
+  }
+  .brand .logo {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: linear-gradient(135deg, #0e88d3, var(--primary));
+    display: grid; place-items: center;
+    font-size: 1.15rem;
+    box-shadow: 0 4px 12px rgba(14,136,211,.35);
+  }
+  .brand b { color: #fff; font-size: 1.05rem; letter-spacing: .3px; display: block; }
+  .brand small { font-size: .7rem; color: var(--sidebar-text); font-weight: 500; }
+
+  nav { flex: 1; padding: 1rem .75rem; overflow-y: auto; }
+  .nav-label {
+    font-size: .66rem; font-weight: 700; letter-spacing: .12em;
+    text-transform: uppercase; color: #5a7386;
+    padding: .9rem .6rem .4rem;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: .65rem;
+    width: 100%;
+    padding: .62rem .7rem;
+    border: none; background: none;
+    color: var(--sidebar-text);
+    font: inherit; font-weight: 500; font-size: .89rem;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+    text-align: left;
+  }
+  .nav-item:hover { background: rgba(255,255,255,.06); color: #dbe7ef; }
+  .nav-item.active { background: var(--sidebar-active); color: #fff; font-weight: 600; }
+  .nav-item .ico { width: 20px; text-align: center; font-size: .95rem; }
+  .nav-item .chev { margin-left: auto; font-size: .7rem; transition: transform .2s; }
+  .nav-item.open .chev { transform: rotate(90deg); }
+
+  .submenu { overflow: hidden; max-height: 0; transition: max-height .3s ease; }
+  .submenu.open { max-height: 320px; }
+  .sub-item {
+    display: flex; align-items: center; gap: .6rem;
+    width: 100%;
+    padding: .5rem .7rem .5rem 2.35rem;
+    border: none; background: none;
+    color: var(--sidebar-text);
+    font: inherit; font-size: .85rem; font-weight: 500;
+    border-radius: 9px; cursor: pointer;
+    transition: background .15s, color .15s;
+    text-align: left;
+  }
+  .sub-item:hover { background: rgba(255,255,255,.06); color: #dbe7ef; }
+  .sub-item.active { background: var(--sidebar-active); color: #fff; font-weight: 600; }
+  .sdot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); flex: none; }
+  .sdot.on { background: var(--ok); box-shadow: 0 0 6px rgba(22,163,74,.8); }
+  .sdot.warn { background: var(--warn); }
+  .sdot.off { background: var(--err); box-shadow: 0 0 6px rgba(220,38,38,.8); animation: pulso 1.6s infinite; }
+  @keyframes pulso { 50% { opacity: .45; } }
+
+  .side-foot {
+    padding: 1rem 1.3rem;
+    border-top: 1px solid rgba(255,255,255,.07);
+    font-size: .72rem; line-height: 1.5;
+  }
+
+  /* ============ MAIN ============ */
+  main { flex: 1; margin-left: 264px; display: flex; flex-direction: column; min-width: 0; }
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: .85rem 1.6rem;
+    display: flex; align-items: center; gap: 1rem;
+    position: sticky; top: 0; z-index: 900;
+  }
+  #btnMenu {
+    display: none;
+    border: 1px solid var(--border); background: #fff;
+    border-radius: 9px; padding: .45rem .6rem; cursor: pointer; font-size: 1rem;
+  }
+  .topbar h1 { font-size: 1.12rem; font-weight: 700; }
+  .topbar .sub { font-size: .75rem; color: var(--text-3); font-weight: 500; }
+  .top-right { margin-left: auto; display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+
+  .content { padding: 1.5rem 1.6rem 2.5rem; max-width: 1250px; width: 100%; }
+  .view { display: none; animation: aparecer .25s ease; }
+  .view.visible { display: block; }
+  @keyframes aparecer { from { opacity: 0; transform: translateY(6px); } }
+
+  /* ============ COMPONENTES ============ */
+  select, input[type=text], input[type=tel], input[type=number] {
+    padding: .55rem .75rem;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    font: inherit; font-size: .87rem;
+    background: #fff; color: var(--text);
+    transition: border-color .15s, box-shadow .15s;
+  }
+  select:focus, input:focus {
+    outline: none; border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(0,101,163,.14);
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: .45rem;
+    padding: .55rem 1rem;
+    border: none; border-radius: 9px;
+    background: var(--primary); color: #fff;
+    font: inherit; font-size: .87rem; font-weight: 600;
+    cursor: pointer;
+    transition: background .15s, transform .1s;
+  }
+  .btn:hover { background: var(--primary-dark); }
+  .btn:active { transform: scale(.98); }
+  .btn.ghost { background: #fff; color: var(--primary); border: 1px solid var(--border); }
+  .btn.ghost:hover { background: var(--primary-light); }
+  .btn.success { background: var(--ok); }
+  .btn.success:hover { background: #15803d; }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 1.3rem;
+    overflow: hidden;
+  }
+  .panel-head {
+    padding: 1rem 1.3rem;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: .7rem; flex-wrap: wrap;
+  }
+  .panel-head h2 { font-size: .98rem; font-weight: 700; }
+  .panel-head .hint { font-size: .76rem; color: var(--text-3); }
+  .panel-body { padding: 1.2rem 1.3rem; }
+
+  /* KPI cards */
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: .9rem; margin-bottom: 1.3rem;
+  }
+  .kpi {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.15rem;
+  }
+  .kpi .k-label { font-size: .74rem; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: .05em; }
+  .kpi .k-val { font-size: 1.65rem; font-weight: 800; margin: .2rem 0 .1rem; }
+  .kpi .k-sub { font-size: .76rem; color: var(--text-2); }
+  .kpi.k-ok .k-val { color: var(--ok); }
+  .kpi.k-err .k-val { color: var(--err); }
+
+  /* Alertas */
+  .alerta {
+    display: flex; align-items: flex-start; gap: .7rem;
+    background: var(--err-bg);
+    border: 1px solid #fecaca;
+    border-left: 5px solid var(--err);
+    border-radius: 11px;
+    padding: .85rem 1.05rem;
+    font-weight: 500; font-size: .88rem;
+    color: #7f1d1d;
+    margin-bottom: .6rem;
+  }
+  .alerta.ok { background: var(--ok-bg); border-color: #bbf7d0; border-left-color: var(--ok); color: #14532d; }
+
+  /* Estado pill */
+  .pill {
+    display: inline-flex; align-items: center; gap: .4rem;
+    padding: .28rem .7rem;
+    border-radius: 999px;
+    font-size: .74rem; font-weight: 700;
+  }
+  .pill.on { background: var(--ok-bg); color: var(--ok); }
+  .pill.warn { background: var(--warn-bg); color: var(--warn); }
+  .pill.off { background: var(--err-bg); color: var(--err); }
+
+  /* Tabla */
+  .tabla-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+  th, td { padding: .6rem .75rem; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  thead th {
+    background: #f8fafc; color: var(--text-2);
+    font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+    position: sticky; top: 0;
+  }
+  tbody tr:hover { background: #f8fbfd; }
+  tbody tr:last-child td { border-bottom: none; }
+  .fila-total { background: var(--primary-light); font-weight: 700; }
+  .disp-ok { color: var(--ok); font-weight: 700; }
+  .disp-warn { color: var(--warn); font-weight: 700; }
+  .disp-bad { color: var(--err); font-weight: 700; }
+
+  .chart { width: 100%; height: 380px; }
+  #mapa { width: 100%; height: 460px; z-index: 0; }
+  .marker-pin { border-radius: 50%; border: 3px solid #fff; width: 22px; height: 22px; box-shadow: 0 2px 6px rgba(0,0,0,.4); }
+  .popup-tabla { font-size: .8rem; border-collapse: collapse; }
+  .popup-tabla td { padding: 1px 6px; border: none; white-space: nowrap; }
+  .popup-tabla td:last-child { text-align: right; font-weight: 600; }
+
+  /* Detalle punto */
+  .det-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .9rem; }
+  .medida { text-align: center; padding: 1rem .5rem; border: 1px solid var(--border); border-radius: 11px; background: #fbfdfe; }
+  .medida .m-val { font-size: 1.5rem; font-weight: 800; color: var(--primary); }
+  .medida .m-lab { font-size: .74rem; font-weight: 600; color: var(--text-3); margin-top: .15rem; }
+
+  /* Config WhatsApp */
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+  .campo label { display: block; font-size: .8rem; font-weight: 600; color: var(--text-2); margin-bottom: .35rem; }
+  .campo input, .campo select { width: 100%; }
+  .campo .ayuda { font-size: .73rem; color: var(--text-3); margin-top: .3rem; line-height: 1.45; }
+  .switch-row { display: flex; align-items: center; gap: .7rem; padding: .6rem 0; }
+  .switch { position: relative; width: 44px; height: 24px; flex: none; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; inset: 0; cursor: pointer;
+    background: #cbd5e1; border-radius: 999px; transition: .2s;
+  }
+  .slider::before {
+    content: ""; position: absolute; left: 3px; top: 3px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #fff; transition: .2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,.25);
+  }
+  .switch input:checked + .slider { background: var(--ok); }
+  .switch input:checked + .slider::before { transform: translateX(20px); }
+  .paso { display: flex; gap: .8rem; margin-bottom: .9rem; font-size: .85rem; color: var(--text-2); line-height: 1.55; }
+  .paso .num {
+    flex: none; width: 24px; height: 24px; border-radius: 50%;
+    background: var(--primary-light); color: var(--primary);
+    display: grid; place-items: center;
+    font-size: .74rem; font-weight: 800;
+  }
+  .estado-envio { font-size: .82rem; margin-top: .8rem; font-weight: 600; }
+
+  #spinner {
+    display: none; align-items: center; gap: .5rem;
+    color: var(--primary); font-size: .8rem; font-weight: 600;
+  }
+  #spinner.on { display: inline-flex; }
+  .spin {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid var(--primary-light); border-top-color: var(--primary);
+    animation: girar .8s linear infinite;
+  }
+  @keyframes girar { to { transform: rotate(360deg); } }
+
+  .backdrop { display: none; position: fixed; inset: 0; background: rgba(15,23,42,.45); z-index: 1000; }
+
+  @media (max-width: 900px) {
+    aside { transform: translateX(-100%); }
+    aside.open { transform: translateX(0); }
+    .backdrop.on { display: block; }
+    main { margin-left: 0; }
+    #btnMenu { display: block; }
+    .content { padding: 1rem .9rem 2rem; }
+    #mapa { height: 340px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside id="sidebar">
+    <div class="brand">
+      <div class="logo">🌫️</div>
+      <div>
+        <b>AirFlux</b>
+        <small>Monitoreo Ambiental</small>
+      </div>
+    </div>
+    <nav>
+      <div class="nav-label">General</div>
+      <button class="nav-item active" data-view="resumen" onclick="irA('resumen')">
+        <span class="ico">🏠</span> Resumen
+      </button>
+
+      <div class="nav-label">Monitoreo</div>
+      <button class="nav-item" id="menuPuntos" onclick="togglePuntos()">
+        <span class="ico">📍</span> Puntos de monitoreo <span class="chev">▶</span>
+      </button>
+      <div class="submenu" id="submenuPuntos"></div>
+
+      <div class="nav-label">Análisis</div>
+      <button class="nav-item" data-view="estadisticas" onclick="irA('estadisticas')">
+        <span class="ico">📊</span> Estadísticas generales
+      </button>
+      <button class="nav-item" data-view="descargas" onclick="irA('descargas')">
+        <span class="ico">⬇️</span> Centro de descargas
+      </button>
+
+      <div class="nav-label">Sistema</div>
+      <button class="nav-item" data-view="whatsapp" onclick="irA('whatsapp')">
+        <span class="ico">💬</span> Alertas WhatsApp
+      </button>
+    </nav>
+    <div class="side-foot">
+      Auto-actualización cada 5 min<br>
+      Umbral de alerta: <b style="color:#dbe7ef">2 h sin datos</b><br>
+      Fuente: ThingSpeak · airflux
+    </div>
+  </aside>
+  <div class="backdrop" id="backdrop" onclick="cerrarSidebar()"></div>
+
+  <!-- ============ MAIN ============ -->
+  <main>
+    <div class="topbar">
+      <button id="btnMenu" onclick="abrirSidebar()">☰</button>
+      <div>
+        <h1 id="tituloVista">Resumen</h1>
+        <div class="sub" id="reloj">Cargando…</div>
+      </div>
+      <div class="top-right">
+        <span id="spinner"><span class="spin"></span> Actualizando</span>
+        <label style="font-size:.8rem;color:var(--text-2);font-weight:600">Período
+          <select id="rango" onchange="refrescar()">
+            <option value="24">24 h</option>
+            <option value="48">48 h</option>
+            <option value="168" selected>7 días</option>
+            <option value="720">30 días</option>
+          </select>
+        </label>
+        <button class="btn ghost" onclick="refrescar()">🔄 Actualizar</button>
+        <button class="btn ghost" id="btnNotif" onclick="activarNotificaciones()">🔔</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ============ VISTA: RESUMEN ============ -->
+      <div class="view visible" id="vista-resumen">
+        <div id="alertas"></div>
+        <div class="kpis" id="kpis"></div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>🗺️ Mapa de puntos de monitoreo</h2>
+            <span class="hint">Los marcadores se actualizan con cada refresco · clic para ver detalle</span>
+          </div>
+          <div id="mapa"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h2>🏙️ Comparación entre sitios</h2><span class="hint">Promedios del período seleccionado</span>
+            <div style="margin-left:auto;display:flex;gap:.4rem">
+              <button class="btn ghost" onclick="descargarPNG('chartComparacion','comparacion_sitios')">🖼️ PNG</button>
+              <button class="btn ghost" onclick="csvComparacion()">⬇️ CSV</button>
+            </div>
+          </div>
+          <div class="panel-body"><div id="chartComparacion" class="chart"></div></div>
+        </div>
+      </div>
+
+      <!-- ============ VISTA: PUNTO (detalle) ============ -->
+      <div class="view" id="vista-punto">
+        <div class="panel">
+          <div class="panel-head">
+            <h2 id="puntoNombre">—</h2>
+            <span id="puntoPill"></span>
+            <span class="hint" id="puntoUltimo"></span>
+            <div style="margin-left:auto"><button class="btn" onclick="descargarCSV('one')">⬇️ Descargar CSV</button></div>
+          </div>
+          <div class="panel-body">
+            <div class="det-grid" id="puntoMedidas"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>📈 Serie temporal</h2>
+            <button class="btn ghost" style="margin-left:auto" onclick="descargarPNG('chartSerie','serie_'+SITIOS.find(x=>x.n===puntoActual).nombre.replace(/\s/g,'_'))">🖼️ PNG</button>
+            <label style="font-size:.8rem;font-weight:600;color:var(--text-2)">Variable
+              <select id="varSerie" onchange="dibujarSerie()">
+                <option value="mp" selected>MP2,5 + MP10</option>
+                <option value="mp25">MP2,5</option>
+                <option value="mp10">MP10</option>
+                <option value="temp">Temperatura</option>
+                <option value="hum">Humedad</option>
+                <option value="pres">Presión</option>
+              </select>
+            </label>
+          </div>
+          <div class="panel-body"><div id="chartSerie" class="chart"></div></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h2>📋 Estadísticas del punto</h2><span class="hint">Período seleccionado</span>
+            <button class="btn ghost" style="margin-left:auto" onclick="csvTabla('tablaPunto','estadisticas_punto')">⬇️ CSV</button>
+          </div>
+          <div class="panel-body tabla-wrap">
+            <table id="tablaPunto">
+              <thead><tr><th>Variable</th><th>Promedio</th><th>Mínimo</th><th>Máximo</th><th>N° datos</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ VISTA: ESTADÍSTICAS GENERALES ============ -->
+      <div class="view" id="vista-estadisticas">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>📊 Resumen por punto</h2>
+            <div style="margin-left:auto;display:flex;gap:.5rem;flex-wrap:wrap">
+              <button class="btn ghost" onclick="csvTabla('tablaStats','resumen_por_punto')">⬇️ CSV de esta tabla</button>
+              <button class="btn" onclick="descargarCSV('all')">⬇️ CSV datos (todos)</button>
+            </div>
+          </div>
+          <div class="panel-body tabla-wrap">
+            <table id="tablaStats">
+              <thead>
+                <tr>
+                  <th>Sitio</th>
+                  <th>MP2,5 prom</th><th>MP2,5 mín</th><th>MP2,5 máx</th>
+                  <th>MP10 prom</th><th>MP10 mín</th><th>MP10 máx</th>
+                  <th>N° datos</th><th>Disponibilidad</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h2>🏙️ Comparación entre sitios</h2>
+            <div style="margin-left:auto;display:flex;gap:.4rem">
+              <button class="btn ghost" onclick="descargarPNG('chartComparacion2','comparacion_sitios')">🖼️ PNG</button>
+              <button class="btn ghost" onclick="csvComparacion()">⬇️ CSV</button>
+            </div>
+          </div>
+          <div class="panel-body"><div id="chartComparacion2" class="chart"></div></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h2>🟢 Disponibilidad de datos</h2><span class="hint">% de datos recibidos vs esperados</span>
+            <div style="margin-left:auto;display:flex;gap:.4rem">
+              <button class="btn ghost" onclick="descargarPNG('chartDisp','disponibilidad')">🖼️ PNG</button>
+              <button class="btn ghost" onclick="csvDisponibilidad()">⬇️ CSV</button>
+            </div>
+          </div>
+          <div class="panel-body"><div id="chartDisp" class="chart" style="height:320px"></div></div>
+        </div>
+      </div>
+
+      <!-- ============ VISTA: CENTRO DE DESCARGAS ============ -->
+      <div class="view" id="vista-descargas">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>⬇️ Centro de descargas</h2>
+            <span class="hint">Busca y filtra exactamente lo que necesitas: datos, estadísticas o gráficos, de cualquier punto y período</span>
+          </div>
+          <div class="panel-body">
+            <div class="form-grid">
+              <div class="campo">
+                <label>🔎 Punto de monitoreo</label>
+                <select id="dcSitio">
+                  <option value="all">Todos los puntos</option>
+                </select>
+              </div>
+              <div class="campo">
+                <label>Variable</label>
+                <select id="dcVariable">
+                  <option value="all">Todas las variables</option>
+                  <option value="mp25">MP2,5</option>
+                  <option value="mp10">MP10</option>
+                  <option value="temp">Temperatura</option>
+                  <option value="hum">Humedad</option>
+                  <option value="pres">Presión</option>
+                </select>
+              </div>
+              <div class="campo">
+                <label>Desde</label>
+                <input type="datetime-local" id="dcDesde">
+              </div>
+              <div class="campo">
+                <label>Hasta</label>
+                <input type="datetime-local" id="dcHasta">
+              </div>
+            </div>
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.9rem">
+              <span style="font-size:.78rem;color:var(--text-3);font-weight:600;align-self:center">Rápido:</span>
+              <button class="btn ghost" onclick="dcRapido(24)">24 h</button>
+              <button class="btn ghost" onclick="dcRapido(168)">7 días</button>
+              <button class="btn ghost" onclick="dcRapido(720)">30 días</button>
+              <button class="btn ghost" onclick="dcRapido(2160)">90 días</button>
+            </div>
+            <hr style="border:none;border-top:1px solid var(--border);margin:1.1rem 0">
+            <div class="campo" style="max-width:340px">
+              <label>Tipo de gráfico para vista previa / PNG</label>
+              <select id="dcTipoGrafico">
+                <option value="serie" selected>Serie temporal</option>
+                <option value="comparacion">Comparación entre sitios (promedios)</option>
+                <option value="estadistica">Estadística general (prom / mín / máx)</option>
+                <option value="disponibilidad">Disponibilidad de datos</option>
+              </select>
+            </div>
+            <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1rem">
+              <button class="btn" onclick="dcGenerar()">📊 Generar vista previa</button>
+              <button class="btn success" onclick="dcDescargarDatos()">⬇️ CSV de datos</button>
+              <button class="btn success" onclick="dcDescargarStats()">⬇️ CSV de estadísticas</button>
+              <button class="btn success" onclick="dcDescargarPNG()">🖼️ Descargar gráfico PNG</button>
+            </div>
+            <div class="estado-envio" id="dcEstado"></div>
+          </div>
+        </div>
+
+        <div class="panel" id="dcPanelPreview" style="display:none">
+          <div class="panel-head"><h2>👁️ Vista previa</h2><span class="hint" id="dcPreviewInfo"></span></div>
+          <div class="panel-body"><div id="chartDescarga" class="chart" style="height:420px"></div></div>
+        </div>
+      </div>
+
+      <!-- ============ VISTA: WHATSAPP ============ -->
+      <div class="view" id="vista-whatsapp">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>💬 Bot de WhatsApp — avisos de no funcionamiento</h2>
+            <span id="waEstadoPill"></span>
+          </div>
+          <div class="panel-body">
+            <div class="switch-row">
+              <label class="switch">
+                <input type="checkbox" id="waActivo" onchange="guardarWA()">
+                <span class="slider"></span>
+              </label>
+              <div>
+                <b style="font-size:.9rem">Enviar aviso por WhatsApp cuando un sensor deje de registrar datos</b>
+                <div style="font-size:.76rem;color:var(--text-3)">Se envía máximo 1 mensaje por sensor cada 24 h, mientras esta página esté abierta.</div>
+              </div>
+            </div>
+            <hr style="border:none;border-top:1px solid var(--border);margin:1rem 0">
+            <div class="form-grid">
+              <div class="campo">
+                <label>Proveedor</label>
+                <select id="waProveedor" onchange="guardarWA(); pintarAyudaWA()">
+                  <option value="callmebot" selected>CallMeBot (gratis, sin backend)</option>
+                  <option value="backend">Backend propio / Twilio / Meta (fase 2)</option>
+                </select>
+                <div class="ayuda" id="waAyudaProv"></div>
+              </div>
+              <div class="campo">
+                <label>Número de WhatsApp (con código de país)</label>
+                <input type="tel" id="waTelefono" placeholder="+56912345678" onchange="guardarWA()">
+              </div>
+              <div class="campo" id="campoApikey">
+                <label>API key de CallMeBot</label>
+                <input type="text" id="waApikey" placeholder="123456" onchange="guardarWA()">
+                <div class="ayuda">La recibes por WhatsApp al activar el bot (paso 1 de abajo).</div>
+              </div>
+              <div class="campo" id="campoBackend" style="display:none">
+                <label>URL del endpoint de tu backend</label>
+                <input type="text" id="waBackendUrl" placeholder="https://tu-servidor.cl/api/alerta" onchange="guardarWA()">
+                <div class="ayuda">Se hará POST con JSON: {sitio, id, ultimo_dato, mensaje}. Aquí conectas Twilio o la API oficial de Meta.</div>
+              </div>
+            </div>
+            <div style="margin-top:1.1rem;display:flex;gap:.6rem;flex-wrap:wrap">
+              <button class="btn success" onclick="probarWA()">📤 Enviar mensaje de prueba</button>
+              <button class="btn ghost" onclick="simularCaida()">🧪 Simular alerta de sensor caído</button>
+            </div>
+            <div class="estado-envio" id="waResultado"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h2>🛠️ Cómo activar CallMeBot (una sola vez)</h2></div>
+          <div class="panel-body">
+            <div class="paso"><span class="num">1</span><span>Agrega el número <b>+34 623 78 95 90</b> a tus contactos y envíale por WhatsApp el mensaje: <b>"I allow callmebot to send me messages"</b>.</span></div>
+            <div class="paso"><span class="num">2</span><span>El bot te responderá con tu <b>API key</b> personal. Cópiala en el campo de arriba junto con tu número.</span></div>
+            <div class="paso"><span class="num">3</span><span>Activa el interruptor y presiona <b>"Enviar mensaje de prueba"</b> para verificar.</span></div>
+            <div class="paso"><span class="num">ℹ️</span><span>CallMeBot es un servicio gratuito de terceros, útil para partir. Para producción (varios destinatarios, sin depender de la página abierta) conviene la <b>fase 2</b>: un backend que vigile los sensores 24/7 y envíe por la API oficial de WhatsApp (Meta) o Twilio — también correo. La opción "Backend propio" de arriba ya deja lista esa conexión.</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+/* ================== CONFIGURACIÓN ================== */
+const SITIOS = [
+  { n: 1, nombre: "Calama",    canal: 3295963, key: "FFUP0A4K22HLJOHT", lat: -22.4544, lon: -68.9294 },
+  { n: 2, nombre: "La Ligua",  canal: 3295964, key: "URO7G2P6TJH3CDNF", lat: -32.4524, lon: -71.2311 },
+  { n: 3, nombre: "Yungay",    canal: 3295965, key: "PYE5M1O5RXTLSILG", lat: -37.1212, lon: -72.0170 },
+  { n: 4, nombre: "Copiapó",   canal: 3295966, key: "W6RRU2RSFLMNV0CU", lat: -27.3665, lon: -70.3323 },
+  { n: 5, nombre: "Pto Montt", canal: 3295967, key: "93GQ5HLEXVUSWQ88", lat: -41.4693, lon: -72.9424 },
+  { n: 6, nombre: "Curacaví",  canal: 3295968, key: "NPEK6DL0ME57ZLWB", lat: -33.4011, lon: -71.1443 },
+];
+// field1=Temperatura(°C) field2=Presión(hPa) field3=Humedad(%) field4=MP10 field5=MP2,5
+const UMBRAL_ALERTA_H = 2;
+const INTERVALO_DATO_H = 1;
+const REFRESCO_MS = 5 * 60 * 1000;
+
+/* ================== ESTADO ================== */
+let datos = {};
+let vistaActual = "resumen";
+let puntoActual = 1;
+let mapa = null, marcadores = {};
+
+/* ================== UTILIDADES ================== */
+const $ = id => document.getElementById(id);
+function fmtFecha(d) {
+  if (!d) return "—";
+  const p = x => String(x).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function haceCuanto(d) {
+  if (!d) return "sin datos";
+  const min = Math.round((Date.now() - d.getTime()) / 60000);
+  if (min < 60) return `hace ${min} min`;
+  const h = Math.floor(min / 60);
+  if (h < 48) return `hace ${h} h ${min % 60} min`;
+  return `hace ${Math.floor(h/24)} días`;
+}
+function stats(arr) {
+  const v = arr.filter(Number.isFinite);
+  if (!v.length) return { prom: NaN, min: NaN, max: NaN, n: 0 };
+  return { prom: v.reduce((a,b)=>a+b,0)/v.length, min: Math.min(...v), max: Math.max(...v), n: v.length };
+}
+const f1 = x => Number.isFinite(x) ? x.toFixed(1) : "—";
+const f0 = x => Number.isFinite(x) ? x.toFixed(0) : "—";
+
+const LAYOUT_BASE = {
+  font: { family: "Inter, sans-serif", size: 12, color: "#475569" },
+  plot_bgcolor: "#fbfdfe", paper_bgcolor: "#ffffff",
+  margin: { t: 30, b: 70, l: 55, r: 15 },
+};
+
+/* ================== NAVEGACIÓN ================== */
+const TITULOS = { resumen: "Resumen", estadisticas: "Estadísticas generales", descargas: "Centro de descargas", whatsapp: "Alertas WhatsApp" };
+
+function irA(vista, n) {
+  vistaActual = vista;
+  if (vista === "punto") puntoActual = n;
+  document.querySelectorAll(".view").forEach(v => v.classList.remove("visible"));
+  $("vista-" + vista).classList.add("visible");
+  document.querySelectorAll(".nav-item[data-view]").forEach(b =>
+    b.classList.toggle("active", b.dataset.view === vista));
+  document.querySelectorAll(".sub-item").forEach(b =>
+    b.classList.toggle("active", vista === "punto" && parseInt(b.dataset.n) === puntoActual));
+  if (vista === "punto") {
+    const s = SITIOS.find(x => x.n === puntoActual);
+    $("tituloVista").textContent = "📍 " + s.nombre;
+    if (!$("submenuPuntos").classList.contains("open")) togglePuntos(true);
+  } else {
+    $("tituloVista").textContent = TITULOS[vista] || vista;
+  }
+  cerrarSidebar();
+  pintarVista();
+}
+
+function togglePuntos(forzarAbrir) {
+  const sm = $("submenuPuntos"), btn = $("menuPuntos");
+  const abrir = forzarAbrir === true ? true : !sm.classList.contains("open");
+  sm.classList.toggle("open", abrir);
+  btn.classList.toggle("open", abrir);
+}
+function abrirSidebar() { $("sidebar").classList.add("open"); $("backdrop").classList.add("on"); }
+function cerrarSidebar() { $("sidebar").classList.remove("open"); $("backdrop").classList.remove("on"); }
+
+/* ================== CARGA DE DATOS ================== */
+async function cargarSitio(sitio, horas) {
+  const fin = new Date();
+  const ini = new Date(fin.getTime() - horas * 3600 * 1000);
+  const url = `https://api.thingspeak.com/channels/${sitio.canal}/feeds.json`
+    + `?api_key=${sitio.key}`
+    + `&start=${encodeURIComponent(fmtFecha(ini))}&end=${encodeURIComponent(fmtFecha(fin))}`
+    + `&timezone=America%2FSantiago&average=60&round=1`;
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const j = await r.json();
+    datos[sitio.n] = (j.feeds || []).map(f => ({
+      t: new Date(f.created_at),
+      temp: parseFloat(f.field1),
+      pres: parseFloat(f.field2),
+      hum:  parseFloat(f.field3),
+      mp10: parseFloat(f.field4),
+      mp25: parseFloat(f.field5),
+    })).filter(f => !isNaN(f.t) && (Number.isFinite(f.mp10) || Number.isFinite(f.mp25)))
+      .sort((a,b) => a.t - b.t);
+  } catch (e) {
+    console.error(`Error cargando ${sitio.nombre}:`, e);
+    datos[sitio.n] = datos[sitio.n] || [];
+  }
+}
+
+async function refrescar() {
+  const horas = parseInt($("rango").value);
+  $("spinner").classList.add("on");
+  await Promise.all(SITIOS.map(s => cargarSitio(s, horas)));
+  $("spinner").classList.remove("on");
+  $("reloj").textContent = "Última actualización: " + fmtFecha(new Date());
+  pintarSubmenu();
+  procesarAlertas();
+  pintarVista();
+}
+
+function pintarVista() {
+  const horas = parseInt($("rango").value);
+  if (vistaActual === "resumen") {
+    pintarKPIs();
+    actualizarMapa();
+    setTimeout(() => mapa && mapa.invalidateSize(), 60);
+    dibujarComparacion("chartComparacion");
+  } else if (vistaActual === "punto") {
+    pintarPunto();
+  } else if (vistaActual === "estadisticas") {
+    pintarTabla(horas);
+    dibujarComparacion("chartComparacion2");
+    dibujarDisponibilidad(horas);
+  } else if (vistaActual === "whatsapp") {
+    pintarEstadoWA();
+  } else if (vistaActual === "descargas") {
+    dcInit();
+  }
+}
+
+/* ================== ESTADO / ALERTAS ================== */
+function estadoSitio(n) {
+  const d = datos[n] || [];
+  const ultimo = d.length ? d[d.length-1].t : null;
+  if (!ultimo) return { estado: "off", ultimo, horas: Infinity };
+  const horas = (Date.now() - ultimo.getTime()) / 3600000;
+  if (horas > UMBRAL_ALERTA_H) return { estado: "off", ultimo, horas };
+  if (horas > INTERVALO_DATO_H * 1.5) return { estado: "warn", ultimo, horas };
+  return { estado: "on", ultimo, horas };
+}
+
+function procesarAlertas() {
+  const cont = $("alertas");
+  cont.innerHTML = "";
+  const caidos = SITIOS.map(s => ({ s, e: estadoSitio(s.n) })).filter(x => x.e.estado === "off");
+  if (!caidos.length) {
+    cont.innerHTML = `<div class="alerta ok">✅ <span>Todos los sensores están registrando datos con normalidad.</span></div>`;
+    return;
+  }
+  for (const { s, e } of caidos) {
+    const msg = `⚠️ ALERTA: ${s.nombre} (ID ${s.n}) no registra datos desde ${e.ultimo ? fmtFecha(e.ultimo) + " (" + haceCuanto(e.ultimo) + ")" : "el período consultado"}.`;
+    cont.insertAdjacentHTML("beforeend", `<div class="alerta">${msg}</div>`);
+    notificar(`Sensor ${s.nombre} sin datos`, msg);
+    enviarWhatsAppAlerta(s, e, msg);
+  }
+}
+
+/* ================== NOTIFICACIONES NAVEGADOR ================== */
+const notificados = new Set();
+function activarNotificaciones() {
+  if (!("Notification" in window)) { alert("Este navegador no soporta notificaciones."); return; }
+  Notification.requestPermission().then(p => {
+    $("btnNotif").textContent = p === "granted" ? "🔔 ✓" : "🔕";
+  });
+}
+function notificar(titulo, cuerpo) {
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
+  const clave = "notif_" + titulo + new Date().toDateString();
+  if (notificados.has(clave)) return;
+  new Notification(titulo, { body: cuerpo });
+  notificados.add(clave);
+}
+
+/* ================== SUBMENU / KPIs ================== */
+function pintarSubmenu() {
+  const sm = $("submenuPuntos");
+  sm.innerHTML = "";
+  for (const s of SITIOS) {
+    const e = estadoSitio(s.n);
+    sm.insertAdjacentHTML("beforeend", `
+      <button class="sub-item ${vistaActual==='punto'&&puntoActual===s.n?'active':''}" data-n="${s.n}" onclick="irA('punto', ${s.n})">
+        <span class="sdot ${e.estado}"></span> ${s.nombre}
+      </button>`);
+  }
+}
+
+function pintarKPIs() {
+  const estados = SITIOS.map(s => estadoSitio(s.n));
+  const activos = estados.filter(e => e.estado !== "off").length;
+  const caidos = SITIOS.length - activos;
+  let g25 = [], g10 = [];
+  for (const s of SITIOS) {
+    g25.push(...(datos[s.n]||[]).map(x=>x.mp25).filter(Number.isFinite));
+    g10.push(...(datos[s.n]||[]).map(x=>x.mp10).filter(Number.isFinite));
+  }
+  const s25 = stats(g25), s10 = stats(g10);
+  $("kpis").innerHTML = `
+    <div class="kpi ${caidos ? "" : "k-ok"}"><div class="k-label">Sensores activos</div>
+      <div class="k-val">${activos}/${SITIOS.length}</div><div class="k-sub">registrando datos</div></div>
+    <div class="kpi ${caidos ? "k-err" : ""}"><div class="k-label">Sensores caídos</div>
+      <div class="k-val">${caidos}</div><div class="k-sub">sin datos &gt; ${UMBRAL_ALERTA_H} h</div></div>
+    <div class="kpi"><div class="k-label">MP2,5 promedio</div>
+      <div class="k-val">${f1(s25.prom)}</div><div class="k-sub">µg/m³ · red completa</div></div>
+    <div class="kpi"><div class="k-label">MP10 promedio</div>
+      <div class="k-val">${f1(s10.prom)}</div><div class="k-sub">µg/m³ · red completa</div></div>`;
+}
+
+/* ================== MAPA ================== */
+const COLOR_ESTADO = { on: "#16a34a", warn: "#d97706", off: "#dc2626" };
+function iconoEstado(estado) {
+  return L.divIcon({
+    className: "",
+    html: `<div class="marker-pin" style="background:${COLOR_ESTADO[estado] || "#94a3b8"}"></div>`,
+    iconSize: [22, 22], iconAnchor: [11, 11],
+  });
+}
+function popupHTML(s) {
+  const d = datos[s.n] || [];
+  const ult = d.length ? d[d.length-1] : null;
+  const e = estadoSitio(s.n);
+  return `
+    <b style="color:#0065A3">${s.nombre}</b> <small>(ID ${s.n})</small>
+    <table class="popup-tabla">
+      <tr><td>MP2,5</td><td>${ult ? f1(ult.mp25) : "—"} µg/m³</td></tr>
+      <tr><td>MP10</td><td>${ult ? f1(ult.mp10) : "—"} µg/m³</td></tr>
+      <tr><td>Temperatura</td><td>${ult ? f1(ult.temp) : "—"} °C</td></tr>
+      <tr><td>Humedad</td><td>${ult ? f0(ult.hum) : "—"} %</td></tr>
+      <tr><td>Presión</td><td>${ult ? f0(ult.pres) : "—"} hPa</td></tr>
+    </table>
+    <small>Último dato: ${e.ultimo ? fmtFecha(e.ultimo) : "—"} (${haceCuanto(e.ultimo)})</small><br>
+    <a href="#" onclick="irA('punto', ${s.n}); return false;">Ver detalle →</a>`;
+}
+function initMapa() {
+  mapa = L.map("mapa").setView([-33.0, -71.0], 4);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 18, attribution: "&copy; OpenStreetMap",
+  }).addTo(mapa);
+  for (const s of SITIOS) {
+    marcadores[s.n] = L.marker([s.lat, s.lon], { icon: iconoEstado("off") })
+      .addTo(mapa).bindPopup(popupHTML(s)).bindTooltip(s.nombre);
+  }
+  mapa.fitBounds(SITIOS.map(s => [s.lat, s.lon]), { padding: [40, 40] });
+}
+function actualizarMapa() {
+  if (!mapa) return;
+  for (const s of SITIOS) {
+    const e = estadoSitio(s.n);
+    marcadores[s.n].setIcon(iconoEstado(e.estado));
+    marcadores[s.n].setPopupContent(popupHTML(s));
+  }
+}
+
+/* ================== VISTA PUNTO ================== */
+const VAR_DEF = {
+  mp25: { campo: "mp25", nombre: "MP2,5", unidad: "µg/m³", color: "#0065A3" },
+  mp10: { campo: "mp10", nombre: "MP10", unidad: "µg/m³", color: "#FF5733" },
+  temp: { campo: "temp", nombre: "Temperatura", unidad: "°C", color: "#e67e22" },
+  hum:  { campo: "hum",  nombre: "Humedad", unidad: "%", color: "#17a2b8" },
+  pres: { campo: "pres", nombre: "Presión", unidad: "hPa", color: "#6f42c1" },
+};
+const PILL_TXT = { on: "● En línea", warn: "● Con retraso", off: "● Sin datos" };
+
+function pintarPunto() {
+  const s = SITIOS.find(x => x.n === puntoActual);
+  const d = datos[s.n] || [];
+  const ult = d.length ? d[d.length-1] : null;
+  const e = estadoSitio(s.n);
+  $("puntoNombre").textContent = `📍 ${s.nombre} (ID airflux ${s.n})`;
+  $("puntoPill").innerHTML = `<span class="pill ${e.estado}">${PILL_TXT[e.estado]}</span>`;
+  $("puntoUltimo").textContent = e.ultimo ? `Último dato: ${fmtFecha(e.ultimo)} (${haceCuanto(e.ultimo)})` : "Sin datos en el período";
+  $("puntoMedidas").innerHTML = `
+    <div class="medida"><div class="m-val">${ult ? f1(ult.mp25) : "—"}</div><div class="m-lab">MP2,5 (µg/m³)</div></div>
+    <div class="medida"><div class="m-val">${ult ? f1(ult.mp10) : "—"}</div><div class="m-lab">MP10 (µg/m³)</div></div>
+    <div class="medida"><div class="m-val">${ult ? f1(ult.temp) : "—"}</div><div class="m-lab">Temperatura (°C)</div></div>
+    <div class="medida"><div class="m-val">${ult ? f0(ult.hum) : "—"}</div><div class="m-lab">Humedad (%)</div></div>
+    <div class="medida"><div class="m-val">${ult ? f0(ult.pres) : "—"}</div><div class="m-lab">Presión (hPa)</div></div>`;
+  dibujarSerie();
+  const tb = document.querySelector("#tablaPunto tbody");
+  tb.innerHTML = "";
+  for (const k of ["mp25", "mp10", "temp", "hum", "pres"]) {
+    const v = VAR_DEF[k];
+    const st = stats(d.map(x => x[v.campo]));
+    tb.insertAdjacentHTML("beforeend", `
+      <tr><td>${v.nombre} (${v.unidad})</td>
+      <td>${f1(st.prom)}</td><td>${f1(st.min)}</td><td>${f1(st.max)}</td><td>${st.n}</td></tr>`);
+  }
+}
+
+function dibujarSerie() {
+  if (vistaActual !== "punto") return;
+  const s = SITIOS.find(x => x.n === puntoActual);
+  const varSel = $("varSerie").value;
+  const d = datos[s.n] || [];
+  const x = d.map(f => f.t);
+  const claves = varSel === "mp" ? ["mp25", "mp10"] : [varSel];
+  const traces = claves.map(k => ({
+    x, y: d.map(f => f[VAR_DEF[k].campo]),
+    name: VAR_DEF[k].nombre, type: "scatter", mode: "lines+markers",
+    line: { color: VAR_DEF[k].color, shape: "spline", width: 2.5 },
+    marker: { size: 4 },
+  }));
+  Plotly.newPlot("chartSerie", traces, {
+    ...LAYOUT_BASE,
+    xaxis: { tickangle: -45, gridcolor: "#eef2f7" },
+    yaxis: { title: { text: VAR_DEF[claves[0]].unidad }, gridcolor: "#eef2f7" },
+    legend: { orientation: "h", y: 1.12 },
+  }, { responsive: true, displaylogo: false });
+}
+
+/* ================== ESTADÍSTICAS GENERALES ================== */
+function disponibilidad(n, horas) {
+  const esperados = Math.max(1, Math.floor(horas / INTERVALO_DATO_H));
+  return Math.min(100, 100 * (datos[n] || []).length / esperados);
+}
+function pintarTabla(horas) {
+  const tb = document.querySelector("#tablaStats tbody");
+  tb.innerHTML = "";
+  let g25 = [], g10 = [], gn = 0, gdisp = [];
+  for (const s of SITIOS) {
+    const d = datos[s.n] || [];
+    const s25 = stats(d.map(x => x.mp25));
+    const s10 = stats(d.map(x => x.mp10));
+    const disp = disponibilidad(s.n, horas);
+    g25.push(...d.map(x=>x.mp25).filter(Number.isFinite));
+    g10.push(...d.map(x=>x.mp10).filter(Number.isFinite));
+    gn += d.length; gdisp.push(disp);
+    const cls = disp >= 90 ? "disp-ok" : disp >= 70 ? "disp-warn" : "disp-bad";
+    tb.insertAdjacentHTML("beforeend", `
+      <tr><td style="cursor:pointer;color:var(--primary);font-weight:600" onclick="irA('punto', ${s.n})">${s.nombre}</td>
+      <td>${f1(s25.prom)}</td><td>${f1(s25.min)}</td><td>${f1(s25.max)}</td>
+      <td>${f1(s10.prom)}</td><td>${f1(s10.min)}</td><td>${f1(s10.max)}</td>
+      <td>${d.length}</td><td class="${cls}">${disp.toFixed(0)}%</td></tr>`);
+  }
+  const t25 = stats(g25), t10 = stats(g10);
+  const dprom = gdisp.reduce((a,b)=>a+b,0)/gdisp.length;
+  const clsG = dprom >= 90 ? "disp-ok" : dprom >= 70 ? "disp-warn" : "disp-bad";
+  tb.insertAdjacentHTML("beforeend", `
+    <tr class="fila-total"><td>GLOBAL</td>
+    <td>${f1(t25.prom)}</td><td>${f1(t25.min)}</td><td>${f1(t25.max)}</td>
+    <td>${f1(t10.prom)}</td><td>${f1(t10.min)}</td><td>${f1(t10.max)}</td>
+    <td>${gn}</td><td class="${clsG}">${dprom.toFixed(0)}%</td></tr>`);
+}
+
+function dibujarComparacion(divId) {
+  const nombres = SITIOS.map(s => s.nombre);
+  const prom25 = SITIOS.map(s => stats((datos[s.n]||[]).map(x=>x.mp25)).prom);
+  const prom10 = SITIOS.map(s => stats((datos[s.n]||[]).map(x=>x.mp10)).prom);
+  Plotly.newPlot(divId, [
+    { x: nombres, y: prom25, name: "MP2,5", type: "bar", marker: { color: "#0065A3", cornerradius: 6 } },
+    { x: nombres, y: prom10, name: "MP10", type: "bar", marker: { color: "#FF5733", cornerradius: 6 } },
+  ], {
+    ...LAYOUT_BASE, barmode: "group",
+    yaxis: { title: { text: "µg/m³" }, gridcolor: "#eef2f7" },
+    legend: { orientation: "h", y: 1.12 },
+  }, { responsive: true, displaylogo: false });
+}
+
+function dibujarDisponibilidad(horas) {
+  const nombres = SITIOS.map(s => s.nombre);
+  const disp = SITIOS.map(s => disponibilidad(s.n, horas));
+  const colores = disp.map(v => v >= 90 ? "#16a34a" : v >= 70 ? "#d97706" : "#dc2626");
+  Plotly.newPlot("chartDisp", [{
+    x: nombres, y: disp, type: "bar",
+    marker: { color: colores, cornerradius: 6 },
+    text: disp.map(v => v.toFixed(0) + "%"), textposition: "outside",
+  }], {
+    ...LAYOUT_BASE,
+    yaxis: { title: { text: "%" }, range: [0, 112], gridcolor: "#eef2f7" },
+  }, { responsive: true, displaylogo: false });
+}
+
+/* ================== CSV ORDENADO ================== */
+function descargarCSV(modo) {
+  const lista = modo === "all" ? SITIOS : SITIOS.filter(s => s.n === puntoActual);
+  const cab = ["Fecha/Hora", "Temperatura (°C)", "Presión (hPa)", "Humedad (%)", "MP10 (µg/m³)", "MP2.5 (µg/m³)"];
+  if (modo === "all") cab.unshift("Sitio");
+  const filas = [cab];
+  const todo = [];
+  for (const s of lista)
+    for (const f of (datos[s.n] || []))
+      todo.push({ s, f });
+  todo.sort((a,b) => a.f.t - b.f.t || a.s.n - b.s.n);
+  for (const { s, f } of todo) {
+    const fila = [fmtFecha(f.t), f1(f.temp), f0(f.pres), f0(f.hum), f1(f.mp10), f1(f.mp25)];
+    if (modo === "all") fila.unshift(s.nombre);
+    filas.push(fila);
+  }
+  const csv = "﻿" + filas.map(r => r.map(c => `"${c}"`).join(";")).join("\r\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  const nombre = modo === "all" ? "todos" : lista[0].nombre.replace(/\s/g, "_");
+  a.download = `airflux_${nombre}_${fmtFecha(new Date()).replace(/[: ]/g,"-")}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/* ================== DESCARGAS GENÉRICAS ================== */
+function bajarArchivo(contenido, nombreArchivo, tipo) {
+  const blob = new Blob([contenido], { type: tipo });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = nombreArchivo;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function aCSV(filas) {
+  return "﻿" + filas.map(r => r.map(c => `"${c}"`).join(";")).join("\r\n");
+}
+function marcaTiempo() { return fmtFecha(new Date()).replace(/[: ]/g, "-"); }
+
+function descargarPNG(divId, nombre) {
+  Plotly.downloadImage(divId, { format: "png", width: 1400, height: 700, filename: `airflux_${nombre}_${marcaTiempo()}` });
+}
+function csvTabla(tablaId, nombre) {
+  const filas = [];
+  document.querySelectorAll(`#${tablaId} tr`).forEach(tr => {
+    filas.push([...tr.querySelectorAll("th,td")].map(c => c.textContent.trim()));
+  });
+  bajarArchivo(aCSV(filas), `airflux_${nombre}_${marcaTiempo()}.csv`, "text/csv;charset=utf-8");
+}
+function csvComparacion() {
+  const filas = [["Sitio", "MP2,5 promedio (µg/m³)", "MP10 promedio (µg/m³)"]];
+  for (const s of SITIOS) {
+    const d = datos[s.n] || [];
+    filas.push([s.nombre, f1(stats(d.map(x=>x.mp25)).prom), f1(stats(d.map(x=>x.mp10)).prom)]);
+  }
+  bajarArchivo(aCSV(filas), `airflux_comparacion_${marcaTiempo()}.csv`, "text/csv;charset=utf-8");
+}
+function csvDisponibilidad() {
+  const horas = parseInt($("rango").value);
+  const filas = [["Sitio", "Disponibilidad (%)", "Datos recibidos", "Datos esperados"]];
+  for (const s of SITIOS) {
+    filas.push([s.nombre, disponibilidad(s.n, horas).toFixed(0), (datos[s.n]||[]).length, Math.floor(horas / INTERVALO_DATO_H)]);
+  }
+  bajarArchivo(aCSV(filas), `airflux_disponibilidad_${marcaTiempo()}.csv`, "text/csv;charset=utf-8");
+}
+
+/* ================== CENTRO DE DESCARGAS ================== */
+let dcDatos = null;   // { n: feeds[] } del último rango generado
+let dcRango = null;
+
+function dcInit() {
+  const sel = $("dcSitio");
+  if (sel.options.length === 1) {
+    for (const s of SITIOS)
+      sel.insertAdjacentHTML("beforeend", `<option value="${s.n}">${s.nombre}</option>`);
+  }
+  if (!$("dcDesde").value) dcRapido(168);
+}
+function dcRapido(horas) {
+  const fin = new Date(), ini = new Date(fin.getTime() - horas * 3600000);
+  const iso = d => {
+    const p = x => String(x).padStart(2, "0");
+    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+  };
+  $("dcDesde").value = iso(ini);
+  $("dcHasta").value = iso(fin);
+}
+function dcSitiosSel() {
+  const v = $("dcSitio").value;
+  return v === "all" ? SITIOS : SITIOS.filter(s => s.n === parseInt(v));
+}
+function dcVarsSel() {
+  const v = $("dcVariable").value;
+  return v === "all" ? ["mp25","mp10","temp","hum","pres"] : [v];
+}
+function dcValidar() {
+  const ini = new Date($("dcDesde").value), fin = new Date($("dcHasta").value);
+  if (isNaN(ini) || isNaN(fin) || ini >= fin) {
+    dcMsg("✖ Revisa las fechas seleccionadas.", "err");
+    return null;
+  }
+  return { ini, fin };
+}
+function dcMsg(txt, tipo) {
+  const el = $("dcEstado");
+  el.style.color = tipo === "err" ? "var(--err)" : tipo === "ok" ? "var(--ok)" : "var(--text-2)";
+  el.textContent = txt;
+}
+
+async function dcCargarFeeds(sitio, ini, fin) {
+  const url = `https://api.thingspeak.com/channels/${sitio.canal}/feeds.json`
+    + `?api_key=${sitio.key}`
+    + `&start=${encodeURIComponent(fmtFecha(ini))}&end=${encodeURIComponent(fmtFecha(fin))}`
+    + `&timezone=America%2FSantiago&average=60&round=1`;
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const j = await r.json();
+    return (j.feeds || []).map(f => ({
+      t: new Date(f.created_at),
+      temp: parseFloat(f.field1), pres: parseFloat(f.field2), hum: parseFloat(f.field3),
+      mp10: parseFloat(f.field4), mp25: parseFloat(f.field5),
+    })).filter(f => !isNaN(f.t) && (Number.isFinite(f.mp10) || Number.isFinite(f.mp25)))
+      .sort((a,b) => a.t - b.t);
+  } catch (e) {
+    console.error(`Descargas: error en ${sitio.nombre}:`, e);
+    return [];
+  }
+}
+
+async function dcObtener() {
+  const r = dcValidar();
+  if (!r) return null;
+  dcMsg("🔄 Consultando datos del período seleccionado…");
+  const lista = dcSitiosSel();
+  const res = await Promise.all(lista.map(s => dcCargarFeeds(s, r.ini, r.fin)));
+  dcDatos = {};
+  lista.forEach((s, i) => dcDatos[s.n] = res[i]);
+  dcRango = r;
+  const total = res.reduce((a, f) => a + f.length, 0);
+  dcMsg(total ? `✔ ${total} registros obtenidos.` : "✖ No se encontraron datos en ese período.", total ? "ok" : "err");
+  return total ? { lista, r } : null;
+}
+
+async function dcGenerar() {
+  const res = await dcObtener();
+  if (!res) return;
+  const { lista, r } = res;
+  const tipo = $("dcTipoGrafico").value;
+  const vars = dcVarsSel();
+  $("dcPanelPreview").style.display = "";
+  $("dcPreviewInfo").textContent = `${$("dcSitio").selectedOptions[0].text} · ${fmtFecha(r.ini)} → ${fmtFecha(r.fin)}`;
+  let traces = [], layoutExtra = {};
+
+  if (tipo === "serie") {
+    for (const s of lista) {
+      const d = dcDatos[s.n] || [];
+      for (const k of vars) {
+        traces.push({
+          x: d.map(f => f.t), y: d.map(f => f[VAR_DEF[k].campo]),
+          name: (lista.length > 1 ? s.nombre + " · " : "") + VAR_DEF[k].nombre,
+          type: "scatter", mode: "lines",
+          line: { width: 2, shape: "spline", color: lista.length === 1 ? VAR_DEF[k].color : undefined },
+        });
+      }
+    }
+    layoutExtra = { xaxis: { tickangle: -45, gridcolor: "#eef2f7" }, yaxis: { title: { text: vars.length === 1 ? VAR_DEF[vars[0]].unidad : "valor" }, gridcolor: "#eef2f7" } };
+  } else if (tipo === "comparacion") {
+    for (const k of vars) {
+      traces.push({
+        x: lista.map(s => s.nombre),
+        y: lista.map(s => stats((dcDatos[s.n]||[]).map(x => x[VAR_DEF[k].campo])).prom),
+        name: VAR_DEF[k].nombre, type: "bar",
+        marker: { color: VAR_DEF[k].color, cornerradius: 6 },
+      });
+    }
+    layoutExtra = { barmode: "group", yaxis: { gridcolor: "#eef2f7" } };
+  } else if (tipo === "estadistica") {
+    const k = vars[0];   // estadística general usa la primera variable seleccionada
+    const prom = [], min = [], max = [];
+    for (const s of lista) {
+      const st = stats((dcDatos[s.n]||[]).map(x => x[VAR_DEF[k].campo]));
+      prom.push(st.prom); min.push(st.min); max.push(st.max);
+    }
+    const nombres = lista.map(s => s.nombre);
+    traces = [
+      { x: nombres, y: prom, name: "Promedio", type: "bar", marker: { color: "#0065A3", cornerradius: 6 } },
+      { x: nombres, y: min, name: "Mínimo", type: "bar", marker: { color: "#94a3b8", cornerradius: 6 } },
+      { x: nombres, y: max, name: "Máximo", type: "bar", marker: { color: "#FF5733", cornerradius: 6 } },
+    ];
+    layoutExtra = {
+      barmode: "group",
+      yaxis: { title: { text: VAR_DEF[k].unidad }, gridcolor: "#eef2f7" },
+      title: { text: `Estadística general — ${VAR_DEF[k].nombre}`, font: { size: 14, color: "#475569" } },
+    };
+    if ($("dcVariable").value === "all") dcMsg("ℹ️ Estadística general usa 1 variable; se graficó MP2,5. Elige otra en el filtro si la necesitas.", "");
+  } else if (tipo === "disponibilidad") {
+    const horas = (r.fin - r.ini) / 3600000;
+    const esperados = Math.max(1, Math.floor(horas / INTERVALO_DATO_H));
+    const disp = lista.map(s => Math.min(100, 100 * (dcDatos[s.n]||[]).length / esperados));
+    traces = [{
+      x: lista.map(s => s.nombre), y: disp, type: "bar",
+      marker: { color: disp.map(v => v >= 90 ? "#16a34a" : v >= 70 ? "#d97706" : "#dc2626"), cornerradius: 6 },
+      text: disp.map(v => v.toFixed(0) + "%"), textposition: "outside",
+    }];
+    layoutExtra = { yaxis: { title: { text: "%" }, range: [0, 112], gridcolor: "#eef2f7" } };
+  }
+
+  Plotly.newPlot("chartDescarga", traces, { ...LAYOUT_BASE, ...layoutExtra, legend: { orientation: "h", y: 1.12 } },
+    { responsive: true, displaylogo: false });
+}
+
+async function dcDescargarDatos() {
+  if (!(await dcObtener())) return;
+  const lista = dcSitiosSel();
+  const vars = dcVarsSel();
+  const cab = ["Fecha/Hora", ...vars.map(k => `${VAR_DEF[k].nombre} (${VAR_DEF[k].unidad})`)];
+  if (lista.length > 1) cab.unshift("Sitio");
+  const filas = [cab];
+  const todo = [];
+  for (const s of lista)
+    for (const f of (dcDatos[s.n] || []))
+      todo.push({ s, f });
+  todo.sort((a,b) => a.f.t - b.f.t || a.s.n - b.s.n);
+  for (const { s, f } of todo) {
+    const fila = [fmtFecha(f.t), ...vars.map(k => f1(f[VAR_DEF[k].campo]))];
+    if (lista.length > 1) fila.unshift(s.nombre);
+    filas.push(fila);
+  }
+  bajarArchivo(aCSV(filas), `airflux_datos_${marcaTiempo()}.csv`, "text/csv;charset=utf-8");
+  dcMsg(`✔ CSV descargado (${todo.length} filas).`, "ok");
+}
+
+async function dcDescargarStats() {
+  if (!(await dcObtener())) return;
+  const lista = dcSitiosSel();
+  const vars = dcVarsSel();
+  const filas = [["Sitio", "Variable", "Promedio", "Mínimo", "Máximo", "N° datos"]];
+  for (const s of lista) {
+    const d = dcDatos[s.n] || [];
+    for (const k of vars) {
+      const st = stats(d.map(x => x[VAR_DEF[k].campo]));
+      filas.push([s.nombre, `${VAR_DEF[k].nombre} (${VAR_DEF[k].unidad})`, f1(st.prom), f1(st.min), f1(st.max), st.n]);
+    }
+  }
+  bajarArchivo(aCSV(filas), `airflux_estadisticas_${marcaTiempo()}.csv`, "text/csv;charset=utf-8");
+  dcMsg("✔ CSV de estadísticas descargado.", "ok");
+}
+
+async function dcDescargarPNG() {
+  if (!$("chartDescarga").data) await dcGenerar();
+  if (!$("chartDescarga").data) return;
+  descargarPNG("chartDescarga", "grafico_personalizado");
+}
+
+/* ================== WHATSAPP ================== */
+function configWA() {
+  try { return JSON.parse(localStorage.getItem("airflux_wa") || "{}"); }
+  catch { return {}; }
+}
+function guardarWA() {
+  const cfg = {
+    activo: $("waActivo").checked,
+    proveedor: $("waProveedor").value,
+    telefono: $("waTelefono").value.trim(),
+    apikey: $("waApikey").value.trim(),
+    backendUrl: $("waBackendUrl").value.trim(),
+  };
+  localStorage.setItem("airflux_wa", JSON.stringify(cfg));
+  pintarEstadoWA();
+}
+function cargarFormWA() {
+  const c = configWA();
+  $("waActivo").checked = !!c.activo;
+  $("waProveedor").value = c.proveedor || "callmebot";
+  $("waTelefono").value = c.telefono || "";
+  $("waApikey").value = c.apikey || "";
+  $("waBackendUrl").value = c.backendUrl || "";
+  pintarAyudaWA();
+  pintarEstadoWA();
+}
+function pintarAyudaWA() {
+  const prov = $("waProveedor").value;
+  $("campoApikey").style.display = prov === "callmebot" ? "" : "none";
+  $("campoBackend").style.display = prov === "backend" ? "" : "none";
+  $("waAyudaProv").textContent = prov === "callmebot"
+    ? "Envío directo desde esta página. Requiere activación única del bot (instrucciones abajo)."
+    : "La página hará POST a tu servidor y este envía por Twilio / API de Meta. Disponible al implementar la fase 2.";
+}
+function waConfigurado() {
+  const c = configWA();
+  if (!c.activo) return false;
+  if (c.proveedor === "callmebot") return !!(c.telefono && c.apikey);
+  return !!c.backendUrl;
+}
+function pintarEstadoWA() {
+  const el = $("waEstadoPill");
+  if (!el) return;
+  const c = configWA();
+  el.innerHTML = !c.activo
+    ? `<span class="pill off">● Desactivado</span>`
+    : waConfigurado()
+      ? `<span class="pill on">● Activo</span>`
+      : `<span class="pill warn">● Faltan datos de configuración</span>`;
+}
+
+async function enviarWA(texto) {
+  const c = configWA();
+  if (c.proveedor === "backend" && c.backendUrl) {
+    await fetch(c.backendUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mensaje: texto, origen: "airflux-dashboard" }),
+    });
+    return "backend";
+  }
+  const url = `https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(c.telefono)}`
+    + `&text=${encodeURIComponent(texto)}&apikey=${encodeURIComponent(c.apikey)}`;
+  // no-cors: el mensaje se envía aunque el navegador no pueda leer la respuesta
+  await fetch(url, { mode: "no-cors" });
+  return "callmebot";
+}
+
+const waEnviados = new Set(JSON.parse(localStorage.getItem("airflux_wa_enviados") || "[]"));
+async function enviarWhatsAppAlerta(s, e, msg) {
+  if (!waConfigurado()) return;
+  const clave = `wa_${s.n}_${new Date().toDateString()}`;   // máx 1 por sensor por día
+  if (waEnviados.has(clave)) return;
+  try {
+    await enviarWA(`🚨 AirFlux: ${msg}`);
+    waEnviados.add(clave);
+    localStorage.setItem("airflux_wa_enviados", JSON.stringify([...waEnviados].slice(-50)));
+  } catch (err) { console.error("Error enviando WhatsApp:", err); }
+}
+
+async function probarWA() {
+  const res = $("waResultado");
+  guardarWA();
+  if (!$("waTelefono").value.trim() && $("waProveedor").value === "callmebot") {
+    res.style.color = "var(--err)"; res.textContent = "✖ Ingresa tu número y API key primero."; return;
+  }
+  res.style.color = "var(--text-2)"; res.textContent = "Enviando…";
+  try {
+    const via = await enviarWA(`✅ AirFlux: mensaje de prueba enviado el ${fmtFecha(new Date())}. El bot de alertas está configurado correctamente.`);
+    res.style.color = "var(--ok)";
+    res.textContent = via === "callmebot"
+      ? "✔ Solicitud enviada a CallMeBot. Revisa tu WhatsApp (puede tardar unos segundos). Si no llega, verifica número y API key."
+      : "✔ Enviado a tu backend.";
+  } catch (err) {
+    res.style.color = "var(--err)";
+    res.textContent = "✖ Error al enviar: " + err.message;
+  }
+}
+async function simularCaida() {
+  const res = $("waResultado");
+  guardarWA();
+  if (!waConfigurado()) {
+    res.style.color = "var(--err)"; res.textContent = "✖ Activa el interruptor y completa la configuración primero."; return;
+  }
+  res.style.color = "var(--text-2)"; res.textContent = "Enviando simulación…";
+  try {
+    await enviarWA(`🚨 AirFlux (SIMULACIÓN): Yungay (ID 3) no registra datos desde ${fmtFecha(new Date(Date.now()-3*3600000))} (hace 3 h 0 min).`);
+    res.style.color = "var(--ok)"; res.textContent = "✔ Simulación enviada. Así se verá el aviso real.";
+  } catch (err) {
+    res.style.color = "var(--err)"; res.textContent = "✖ Error: " + err.message;
+  }
+}
+
+/* ================== INICIO ================== */
+function init() {
+  pintarSubmenu();
+  togglePuntos(true);
+  initMapa();
+  cargarFormWA();
+  refrescar();
+  setInterval(refrescar, REFRESCO_MS);
+}
+init();
+</script>
+</body>
+</html>
