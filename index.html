@@ -361,6 +361,9 @@
       <button class="nav-item" data-view="descargas" onclick="irA('descargas')">
         <span class="ico">⬇️</span> Centro de descargas
       </button>
+      <button class="nav-item" data-view="powerbi" onclick="irA('powerbi')">
+        <span class="ico">📈</span> Análisis Power BI
+      </button>
 
       <div class="nav-label">Aplicaciones</div>
       <button class="nav-item" onclick="window.open('norma.html', '_blank')">
@@ -615,6 +618,40 @@
         </div>
       </div>
 
+      <!-- ============ VISTA: POWER BI ============ -->
+      <div class="view" id="vista-powerbi">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>📈 Panel de análisis Power BI</h2>
+            <span class="hint">Informe embebido desde Power BI Service</span>
+          </div>
+          <div class="panel-body">
+            <div class="campo">
+              <label>URL de inserción del informe</label>
+              <div class="dest-row">
+                <input type="text" id="pbiUrl" placeholder="https://app.powerbi.com/view?r=...">
+                <button class="btn" onclick="guardarPBI()">Guardar</button>
+                <button class="btn-x" title="Quitar informe" onclick="$('pbiUrl').value=''; guardarPBI()">✕</button>
+              </div>
+              <div class="ayuda">
+                Cómo obtenerla: en <b>app.powerbi.com</b> abre tu informe → <b>Archivo → Insertar informe → Publicar en la web (público)</b> → copia el enlace que comienza con <code>https://app.powerbi.com/view?r=</code>.
+                Para construir el informe puedes usar los CSV del Centro de descargas, o conectar Power BI Desktop directo a ThingSpeak (Web) o a Supabase (PostgreSQL). El MCP de Power BI de VS Code sirve para trabajar el informe desde el editor, pero lo que se muestra aquí es el informe publicado.
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="panel" id="pbiPanel" style="display:none;overflow:hidden">
+          <iframe id="pbiFrame" title="Power BI"
+            style="width:100%;height:calc(100vh - 300px);min-height:520px;border:none;display:block;background:#f1f5f9"
+            allowfullscreen></iframe>
+        </div>
+        <div class="panel" id="pbiVacio">
+          <div class="panel-body" style="text-align:center;color:var(--text-3);padding:2.5rem">
+            Aún no hay informe configurado.<br>Pega arriba la URL de inserción de Power BI y presiona Guardar.
+          </div>
+        </div>
+      </div>
+
       <!-- ============ VISTA: CONFIGURACIÓN DE ALERTA ============ -->
       <div class="view" id="vista-alertconf">
         <div class="panel">
@@ -807,7 +844,7 @@ const LAYOUT_BASE = {
 };
 
 /* ================== NAVEGACIÓN ================== */
-const TITULOS = { resumen: "Resumen", estadisticas: "Estadísticas generales", descargas: "Centro de descargas", whatsapp: "Alertas WhatsApp", alertconf: "Configuración de alerta" };
+const TITULOS = { resumen: "Resumen", estadisticas: "Estadísticas generales", descargas: "Centro de descargas", powerbi: "Análisis Power BI", whatsapp: "Alertas WhatsApp", alertconf: "Configuración de alerta" };
 
 function irA(vista, n) {
   vistaActual = vista;
@@ -927,6 +964,27 @@ function pintarVista() {
     cargarFormAlerta();
   } else if (vistaActual === "descargas") {
     dcInit();
+  } else if (vistaActual === "powerbi") {
+    pintarPBI();
+  }
+}
+
+/* ================== POWER BI ================== */
+function guardarPBI() {
+  localStorage.setItem("airflux_pbi", $("pbiUrl").value.trim());
+  pintarPBI();
+}
+function pintarPBI() {
+  const url = localStorage.getItem("airflux_pbi") || "";
+  $("pbiUrl").value = url;
+  const ok = /^https:\/\/([a-z0-9-]+\.)?powerbi\.com\//i.test(url);
+  $("pbiPanel").style.display = ok ? "" : "none";
+  $("pbiVacio").style.display = ok ? "none" : "";
+  const fr = $("pbiFrame");
+  if (ok && fr.src !== url) fr.src = url;
+  if (!ok && url) {
+    $("pbiVacio").querySelector(".panel-body").innerHTML =
+      "⚠️ La URL no parece de Power BI (debe comenzar con https://app.powerbi.com/...). Revísala.";
   }
 }
 
@@ -1238,6 +1296,14 @@ function pintarPunto() {
   }
 }
 
+/* Normas chilenas de calidad del aire (promedio 24 h) para líneas de referencia */
+const NORMAS = { mp25: { valor: 50, texto: "Norma 24h MP2,5 (50 µg/m³)" }, mp10: { valor: 130, texto: "Norma 24h MP10 (130 µg/m³)" } };
+
+function hex2rgba(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
+}
+
 function dibujarSerie() {
   if (vistaActual !== "punto") return;
   const s = SITIOS.find(x => x.n === puntoActual);
@@ -1250,14 +1316,41 @@ function dibujarSerie() {
     x, y: d.map(f => f[VAR_DEF[k].campo]),
     name: VAR_DEF[k].nombre, type: "scatter",
     mode: muchos ? "lines" : "lines+markers",
-    line: { color: VAR_DEF[k].color, shape: muchos ? "linear" : "spline", width: 2 },
+    line: { color: VAR_DEF[k].color, shape: muchos ? "linear" : "spline", width: 2.2 },
     marker: { size: 4 },
+    fill: claves.length === 1 ? "tozeroy" : "none",
+    fillcolor: claves.length === 1 ? hex2rgba(VAR_DEF[k].color, .08) : undefined,
+    hovertemplate: `%{y:.1f} ${VAR_DEF[k].unidad}<extra>${VAR_DEF[k].nombre}</extra>`,
   }));
+  // Líneas de referencia de norma para material particulado
+  const refs = claves.filter(k => NORMAS[k]).map(k => ({ ...NORMAS[k], color: VAR_DEF[k].color }));
   Plotly.newPlot("chartSerie", traces, {
     ...LAYOUT_BASE,
-    xaxis: { tickangle: -45, gridcolor: "#eef2f7" },
-    yaxis: { title: { text: VAR_DEF[claves[0]].unidad }, gridcolor: "#eef2f7" },
-    legend: { orientation: "h", y: 1.12 },
+    hovermode: "x unified",
+    xaxis: {
+      gridcolor: "#eef2f7", showspikes: true, spikemode: "across", spikethickness: 1, spikedash: "dot", spikecolor: "#94a3b8",
+      rangeslider: { visible: true, thickness: .07 },
+      rangeselector: {
+        buttons: [
+          { count: 1, label: "1d", step: "day", stepmode: "backward" },
+          { count: 7, label: "7d", step: "day", stepmode: "backward" },
+          { count: 1, label: "1m", step: "month", stepmode: "backward" },
+          { step: "all", label: "Todo" },
+        ],
+        font: { size: 11 }, bgcolor: "#f1f5f9", activecolor: "#dbeafe",
+      },
+    },
+    yaxis: { title: { text: VAR_DEF[claves[0]].unidad }, gridcolor: "#eef2f7", zeroline: false, rangemode: "tozero" },
+    legend: { orientation: "h", y: 1.16 },
+    shapes: refs.map(r => ({
+      type: "line", xref: "paper", x0: 0, x1: 1, y0: r.valor, y1: r.valor,
+      line: { color: r.color, dash: "dot", width: 1.5 },
+    })),
+    annotations: refs.map(r => ({
+      xref: "paper", x: 1, y: r.valor, text: r.texto, showarrow: false,
+      font: { size: 10, color: r.color }, xanchor: "right", yanchor: "bottom",
+    })),
+    margin: { t: 40, b: 20, l: 60, r: 15 },
   }, { responsive: true, displaylogo: false });
 }
 
@@ -1300,13 +1393,22 @@ function dibujarComparacion(divId) {
   const nombres = SITIOS.map(s => s.nombre);
   const prom25 = SITIOS.map(s => stats((datos[s.n]||[]).map(x=>x.mp25)).prom);
   const prom10 = SITIOS.map(s => stats((datos[s.n]||[]).map(x=>x.mp10)).prom);
+  const max25 = SITIOS.map(s => stats((datos[s.n]||[]).map(x=>x.mp25)).max);
+  const max10 = SITIOS.map(s => stats((datos[s.n]||[]).map(x=>x.mp10)).max);
   Plotly.newPlot(divId, [
-    { x: nombres, y: prom25, name: "MP2,5", type: "bar", marker: { color: "#0065A3", cornerradius: 6 } },
-    { x: nombres, y: prom10, name: "MP10", type: "bar", marker: { color: "#FF5733", cornerradius: 6 } },
+    { x: nombres, y: prom25, name: "MP2,5", type: "bar",
+      marker: { color: "#0065A3", cornerradius: 6, line: { color: "#004d7a", width: 1 } },
+      text: prom25.map(f1), textposition: "outside", textfont: { size: 11 },
+      customdata: max25, hovertemplate: "Promedio: %{y:.1f} µg/m³<br>Máximo: %{customdata:.1f} µg/m³<extra>MP2,5</extra>" },
+    { x: nombres, y: prom10, name: "MP10", type: "bar",
+      marker: { color: "#FF5733", cornerradius: 6, line: { color: "#c73e1d", width: 1 } },
+      text: prom10.map(f1), textposition: "outside", textfont: { size: 11 },
+      customdata: max10, hovertemplate: "Promedio: %{y:.1f} µg/m³<br>Máximo: %{customdata:.1f} µg/m³<extra>MP10</extra>" },
   ], {
-    ...LAYOUT_BASE, barmode: "group",
-    yaxis: { title: { text: "µg/m³" }, gridcolor: "#eef2f7" },
-    legend: { orientation: "h", y: 1.12 },
+    ...LAYOUT_BASE, barmode: "group", bargap: .25, bargroupgap: .08,
+    hovermode: "x unified",
+    yaxis: { title: { text: "µg/m³" }, gridcolor: "#eef2f7", zeroline: false },
+    legend: { orientation: "h", y: 1.14 },
   }, { responsive: true, displaylogo: false });
 }
 
