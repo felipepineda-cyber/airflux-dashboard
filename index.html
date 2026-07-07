@@ -370,10 +370,13 @@
       <button class="nav-item" data-view="whatsapp" onclick="irA('whatsapp')">
         <span class="ico">💬</span> Alertas WhatsApp
       </button>
+      <button class="nav-item" data-view="alertconf" onclick="irA('alertconf')">
+        <span class="ico">⚙️</span> Configuración de alerta
+      </button>
     </nav>
     <div class="side-foot">
       Auto-actualización cada 5 min<br>
-      Umbral de alerta: <b style="color:#dbe7ef">2 h sin datos</b><br>
+      Umbral de alerta: <b style="color:#dbe7ef" id="footUmbral">2 h sin datos</b><br>
       Fuente: ThingSpeak · airflux
     </div>
   </aside>
@@ -611,6 +614,51 @@
         </div>
       </div>
 
+      <!-- ============ VISTA: CONFIGURACIÓN DE ALERTA ============ -->
+      <div class="view" id="vista-alertconf">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>⏱️ Tiempos de alerta</h2>
+            <span class="hint">Se guardan automáticamente en este navegador</span>
+          </div>
+          <div class="panel-body">
+            <div class="form-grid">
+              <div class="campo">
+                <label>Horas sin datos para considerar un sensor caído</label>
+                <input type="number" id="acUmbral" min="0.5" max="72" step="0.5" onchange="guardarConfigAlerta()">
+                <div class="ayuda">Los sensores envían promedios cada 1 h. Con 2 h se detectan fallas reales evitando falsas alarmas por retrasos.</div>
+              </div>
+              <div class="campo">
+                <label>Reenviar el aviso cada (horas) si el sensor sigue caído</label>
+                <input type="number" id="acReenvio" min="1" max="168" step="1" onchange="guardarConfigAlerta()">
+                <div class="ayuda">Evita que llegue el mismo aviso una y otra vez. Al volver el sensor, el contador se reinicia.</div>
+              </div>
+            </div>
+            <div class="ayuda" style="margin-top:.8rem">ℹ️ Estos valores aplican a esta página. El vigilante 24/7 de Supabase tiene los suyos en su código (UMBRAL_H y REENVIO_H) — dime si quieres que también se configuren desde aquí en la fase 2.</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>✍️ Mensaje de alerta</h2>
+            <button class="btn ghost" style="margin-left:auto" onclick="restaurarPlantilla()">↺ Restaurar por defecto</button>
+          </div>
+          <div class="panel-body">
+            <div class="campo">
+              <label>Plantilla del mensaje (editable)</label>
+              <textarea id="acPlantilla" rows="3" style="width:100%;padding:.6rem .75rem;border:1px solid var(--border);border-radius:9px;font:inherit;font-size:.87rem;resize:vertical" oninput="pintarPreviewAlerta()" onchange="guardarConfigAlerta()"></textarea>
+              <div class="ayuda">Comodines disponibles: <b>{sitio}</b> nombre del punto · <b>{id}</b> ID airflux · <b>{fecha}</b> fecha/hora del último dato · <b>{tiempo}</b> tiempo transcurrido (ej: "hace 3 h 0 min").</div>
+            </div>
+            <div class="sub-titulo">👁️ Previsualización (ejemplo con Yungay caído hace 3 horas)</div>
+            <div id="acPreview" style="background:var(--err-bg);border:1px solid #fecaca;border-left:5px solid var(--err);border-radius:11px;padding:.85rem 1.05rem;font-size:.88rem;color:#7f1d1d;font-weight:500"></div>
+            <div style="margin-top:1rem">
+              <button class="btn success" onclick="probarPlantilla()">📤 Enviar esta previsualización a mis destinos</button>
+            </div>
+            <div class="estado-envio" id="acResultado"></div>
+          </div>
+        </div>
+      </div>
+
       <!-- ============ VISTA: WHATSAPP ============ -->
       <div class="view" id="vista-whatsapp">
         <div class="panel">
@@ -758,7 +806,7 @@ const LAYOUT_BASE = {
 };
 
 /* ================== NAVEGACIÓN ================== */
-const TITULOS = { resumen: "Resumen", estadisticas: "Estadísticas generales", descargas: "Centro de descargas", whatsapp: "Alertas WhatsApp" };
+const TITULOS = { resumen: "Resumen", estadisticas: "Estadísticas generales", descargas: "Centro de descargas", whatsapp: "Alertas WhatsApp", alertconf: "Configuración de alerta" };
 
 function irA(vista, n) {
   vistaActual = vista;
@@ -874,8 +922,80 @@ function pintarVista() {
     dibujarDisponibilidad();
   } else if (vistaActual === "whatsapp") {
     pintarEstadoWA();
+  } else if (vistaActual === "alertconf") {
+    cargarFormAlerta();
   } else if (vistaActual === "descargas") {
     dcInit();
+  }
+}
+
+/* ================== CONFIGURACIÓN DE ALERTA ================== */
+const ALERT_DEFAULTS = {
+  umbral: UMBRAL_ALERTA_H,
+  reenvio: 24,
+  plantilla: "🚨 SenFePin: {sitio} (ID {id}) no registra datos desde {fecha} ({tiempo}).",
+};
+function configAlerta() {
+  try { return { ...ALERT_DEFAULTS, ...JSON.parse(localStorage.getItem("airflux_alertcfg") || "{}") }; }
+  catch { return { ...ALERT_DEFAULTS }; }
+}
+function mensajeAlerta(s, e) {
+  return configAlerta().plantilla
+    .replaceAll("{sitio}", s.nombre)
+    .replaceAll("{id}", s.n)
+    .replaceAll("{fecha}", e.ultimo ? fmtFecha(e.ultimo) : "—")
+    .replaceAll("{tiempo}", haceCuanto(e.ultimo));
+}
+function guardarConfigAlerta() {
+  const cfg = {
+    umbral: Math.min(72, Math.max(0.5, parseFloat($("acUmbral").value) || ALERT_DEFAULTS.umbral)),
+    reenvio: Math.min(168, Math.max(1, parseFloat($("acReenvio").value) || ALERT_DEFAULTS.reenvio)),
+    plantilla: $("acPlantilla").value.trim() || ALERT_DEFAULTS.plantilla,
+  };
+  localStorage.setItem("airflux_alertcfg", JSON.stringify(cfg));
+  $("acUmbral").value = cfg.umbral;
+  $("acReenvio").value = cfg.reenvio;
+  $("footUmbral").textContent = `${cfg.umbral} h sin datos`;
+  pintarPreviewAlerta();
+  pintarSubmenu();      // re-evaluar estados con el nuevo umbral
+  procesarAlertas();
+  if (vistaActual === "resumen") pintarKPIs();
+}
+function cargarFormAlerta() {
+  const c = configAlerta();
+  $("acUmbral").value = c.umbral;
+  $("acReenvio").value = c.reenvio;
+  $("acPlantilla").value = c.plantilla;
+  pintarPreviewAlerta();
+}
+function restaurarPlantilla() {
+  $("acPlantilla").value = ALERT_DEFAULTS.plantilla;
+  guardarConfigAlerta();
+}
+function ejemploAlerta() {
+  return mensajeAlerta(SITIOS[2], { ultimo: new Date(Date.now() - 3 * 3600000) });
+}
+function pintarPreviewAlerta() {
+  const plantilla = $("acPlantilla").value.trim() || ALERT_DEFAULTS.plantilla;
+  $("acPreview").textContent = plantilla
+    .replaceAll("{sitio}", "Yungay").replaceAll("{id}", "3")
+    .replaceAll("{fecha}", fmtFecha(new Date(Date.now() - 3 * 3600000)))
+    .replaceAll("{tiempo}", "hace 3 h 0 min");
+}
+async function probarPlantilla() {
+  const res = $("acResultado");
+  guardarConfigAlerta();
+  if (!waConfigurado()) {
+    res.style.color = "var(--err)";
+    res.textContent = "✖ Primero activa y configura destinos en la página Alertas WhatsApp.";
+    return;
+  }
+  res.style.color = "var(--text-2)"; res.textContent = "Enviando…";
+  try {
+    const n = await enviarAvisos($("acPreview").textContent + " (PRUEBA)");
+    res.style.color = "var(--ok)"; res.textContent = `✔ Enviado a ${n} destino(s).`;
+  } catch (err) {
+    res.style.color = "var(--err)"; res.textContent = "✖ Error: " + err.message;
   }
 }
 
@@ -885,7 +1005,7 @@ function estadoSitio(n) {
   const ultimo = u ? u.t : null;
   if (!ultimo) return { estado: "off", ultimo, horas: Infinity };
   const horas = (Date.now() - ultimo.getTime()) / 3600000;
-  if (horas > UMBRAL_ALERTA_H) return { estado: "off", ultimo, horas };
+  if (horas > configAlerta().umbral) return { estado: "off", ultimo, horas };
   if (horas > INTERVALO_DATO_H * 1.5) return { estado: "warn", ultimo, horas };
   return { estado: "on", ultimo, horas };
 }
@@ -899,7 +1019,7 @@ function procesarAlertas() {
     return;
   }
   for (const { s, e } of caidos) {
-    const msg = `⚠️ ALERTA: ${s.nombre} (ID ${s.n}) no registra datos desde ${e.ultimo ? fmtFecha(e.ultimo) + " (" + haceCuanto(e.ultimo) + ")" : "el período consultado"}.`;
+    const msg = mensajeAlerta(s, e);
     cont.insertAdjacentHTML("beforeend", `<div class="alerta">${msg}</div>`);
     notificar(`Sensor ${s.nombre} sin datos`, msg);
     enviarWhatsAppAlerta(s, e, msg);
@@ -949,7 +1069,7 @@ function pintarKPIs() {
     <div class="kpi ${caidos ? "" : "k-ok"}"><div class="k-label">Sensores activos</div>
       <div class="k-val">${activos}/${SITIOS.length}</div><div class="k-sub">registrando datos</div></div>
     <div class="kpi ${caidos ? "k-err" : ""}"><div class="k-label">Sensores caídos</div>
-      <div class="k-val">${caidos}</div><div class="k-sub">sin datos &gt; ${UMBRAL_ALERTA_H} h</div></div>
+      <div class="k-val">${caidos}</div><div class="k-sub">sin datos &gt; ${configAlerta().umbral} h</div></div>
     <div class="kpi"><div class="k-label">MP2,5 promedio</div>
       <div class="k-val">${f1(s25.prom)}</div><div class="k-sub">µg/m³ · red completa</div></div>
     <div class="kpi"><div class="k-label">MP10 promedio</div>
@@ -1454,9 +1574,12 @@ function guardarWA() {
 }
 function esc(s) { return String(s).replace(/"/g, "&quot;").replace(/</g, "&lt;"); }
 function filaNum(tel, key) {
+  const guardada = !!key;   // las API keys guardadas se muestran como puntitos y no se pueden editar
   return `<div class="dest-row">
     <input type="tel" class="d-tel" placeholder="+56912345678" value="${esc(tel)}" onchange="guardarWA()">
-    <input type="text" class="d-key" placeholder="API key CallMeBot" value="${esc(key)}" onchange="guardarWA()">
+    <input type="${guardada ? "password" : "text"}" class="d-key" placeholder="API key CallMeBot"
+      value="${esc(key)}" ${guardada ? 'readonly title="API key guardada. Para cambiarla, elimina la fila con ✕ y agrégala de nuevo."' : ""}
+      onchange="guardarWA(); if (this.value) { this.type='password'; this.readOnly = true; }">
     <button class="btn-x" title="Quitar" onclick="this.parentElement.remove(); guardarWA()">✕</button>
   </div>`;
 }
@@ -1547,15 +1670,20 @@ async function enviarAvisos(texto) {
   return res.length;
 }
 
-const waEnviados = new Set(JSON.parse(localStorage.getItem("airflux_wa_enviados") || "[]"));
+/* Reenvío controlado: 1 aviso por sensor cada "reenvio" horas (configurable) */
+function mapaEnviados() {
+  try { return JSON.parse(localStorage.getItem("airflux_wa_envmap") || "{}"); }
+  catch { return {}; }
+}
 async function enviarWhatsAppAlerta(s, e, msg) {
   if (!waConfigurado()) return;
-  const clave = `wa_${s.n}_${new Date().toDateString()}`;   // máx 1 por sensor por día
-  if (waEnviados.has(clave)) return;
+  const mapa = mapaEnviados();
+  const ult = mapa[s.n];
+  if (ult && (Date.now() - ult) / 3600000 < configAlerta().reenvio) return;
   try {
-    await enviarAvisos(`🚨 AirFlux: ${msg}`);
-    waEnviados.add(clave);
-    localStorage.setItem("airflux_wa_enviados", JSON.stringify([...waEnviados].slice(-50)));
+    await enviarAvisos(msg);
+    mapa[s.n] = Date.now();
+    localStorage.setItem("airflux_wa_envmap", JSON.stringify(mapa));
   } catch (err) { console.error("Error enviando avisos:", err); }
 }
 
@@ -1586,7 +1714,7 @@ async function simularCaida() {
   }
   res.style.color = "var(--text-2)"; res.textContent = "Enviando simulación…";
   try {
-    const n = await enviarAvisos(`🚨 AirFlux (SIMULACIÓN): Yungay (ID 3) no registra datos desde ${fmtFecha(new Date(Date.now()-3*3600000))} (hace 3 h 0 min).`);
+    const n = await enviarAvisos(ejemploAlerta() + " (SIMULACIÓN)");
     res.style.color = "var(--ok)"; res.textContent = `✔ Simulación enviada a ${n} destino(s). Así se verá el aviso real.`;
   } catch (err) {
     res.style.color = "var(--err)"; res.textContent = "✖ Error: " + err.message;
@@ -1599,6 +1727,7 @@ function init() {
   togglePuntos(true);
   initMapa();
   cargarFormWA();
+  $("footUmbral").textContent = `${configAlerta().umbral} h sin datos`;
   refrescar();
   setInterval(refrescar, REFRESCO_MS);
 }
