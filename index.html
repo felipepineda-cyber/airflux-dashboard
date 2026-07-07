@@ -381,6 +381,8 @@
             <option value="48">48 h</option>
             <option value="168" selected>7 días</option>
             <option value="720">30 días</option>
+            <option value="2160">90 días</option>
+            <option value="hist">📚 Todo el histórico</option>
           </select>
         </label>
         <button class="btn ghost" onclick="refrescar()">🔄 Actualizar</button>
@@ -546,6 +548,7 @@
               <button class="btn ghost" onclick="dcRapido(168)">7 días</button>
               <button class="btn ghost" onclick="dcRapido(720)">30 días</button>
               <button class="btn ghost" onclick="dcRapido(2160)">90 días</button>
+              <button class="btn ghost" onclick="dcRapido('hist')">📚 Todo el histórico</button>
             </div>
             <hr style="border:none;border-top:1px solid var(--border);margin:1.1rem 0">
             <div class="campo" style="max-width:340px">
@@ -653,12 +656,28 @@ const SITIOS = [
 const UMBRAL_ALERTA_H = 2;
 const INTERVALO_DATO_H = 1;
 const REFRESCO_MS = 5 * 60 * 1000;
+const HISTORICO_INICIO = new Date("2026-03-19T00:00:00");   // inicio del banco de datos
 
 /* ================== ESTADO ================== */
 let datos = {};
+let ultimos = {};          // n -> último registro real (independiente del período)
+let resActualMin = 60;     // resolución del período cargado (60 = horaria, 1440 = diaria)
 let vistaActual = "resumen";
 let puntoActual = 1;
 let mapa = null, marcadores = {};
+
+/* Rango según selector (soporta histórico completo) y resolución automática:
+   promedios horarios hasta 45 días; diarios para rangos mayores (límite de
+   8000 registros por consulta de ThingSpeak). */
+function rangoSeleccionado() {
+  const v = $("rango").value;
+  const fin = new Date();
+  const ini = v === "hist" ? new Date(HISTORICO_INICIO) : new Date(fin.getTime() - parseInt(v) * 3600000);
+  return { ini, fin };
+}
+function resolucionMin(ini, fin) {
+  return (fin - ini) / 86400000 > 45 ? 1440 : 60;
+}
 
 /* ================== UTILIDADES ================== */
 const $ = id => document.getElementById(id);
@@ -722,13 +741,11 @@ function abrirSidebar() { $("sidebar").classList.add("open"); $("backdrop").clas
 function cerrarSidebar() { $("sidebar").classList.remove("open"); $("backdrop").classList.remove("on"); }
 
 /* ================== CARGA DE DATOS ================== */
-async function cargarSitio(sitio, horas) {
-  const fin = new Date();
-  const ini = new Date(fin.getTime() - horas * 3600 * 1000);
+async function cargarSitio(sitio, ini, fin, resMin) {
   const url = `https://api.thingspeak.com/channels/${sitio.canal}/feeds.json`
     + `?api_key=${sitio.key}`
     + `&start=${encodeURIComponent(fmtFecha(ini))}&end=${encodeURIComponent(fmtFecha(fin))}`
-    + `&timezone=America%2FSantiago&average=60&round=1`;
+    + `&timezone=America%2FSantiago&average=${resMin}&round=1`;
   try {
     const r = await fetch(url);
     if (!r.ok) throw new Error("HTTP " + r.status);
@@ -748,19 +765,44 @@ async function cargarSitio(sitio, horas) {
   }
 }
 
+/* Último registro REAL de cada sensor (sin promediar): las tarjetas, el mapa
+   y las alertas siempre reflejan tiempo real, sin importar el período elegido. */
+async function cargarUltimo(sitio) {
+  try {
+    const r = await fetch(`https://api.thingspeak.com/channels/${sitio.canal}/feeds/last.json?api_key=${sitio.key}&timezone=America%2FSantiago`);
+    if (r.ok) {
+      const j = await r.json().catch(() => null);
+      if (j?.created_at) {
+        ultimos[sitio.n] = {
+          t: new Date(j.created_at),
+          temp: parseFloat(j.field1), pres: parseFloat(j.field2), hum: parseFloat(j.field3),
+          mp10: parseFloat(j.field4), mp25: parseFloat(j.field5),
+        };
+        return;
+      }
+    }
+  } catch (e) { console.error(`Último dato ${sitio.nombre}:`, e); }
+  const d = datos[sitio.n] || [];
+  ultimos[sitio.n] = d.length ? d[d.length-1] : null;   // respaldo
+}
+
 async function refrescar() {
-  const horas = parseInt($("rango").value);
+  const { ini, fin } = rangoSeleccionado();
+  resActualMin = resolucionMin(ini, fin);
   $("spinner").classList.add("on");
-  await Promise.all(SITIOS.map(s => cargarSitio(s, horas)));
+  await Promise.all([
+    ...SITIOS.map(s => cargarSitio(s, ini, fin, resActualMin)),
+    ...SITIOS.map(s => cargarUltimo(s)),
+  ]);
   $("spinner").classList.remove("on");
-  $("reloj").textContent = "Última actualización: " + fmtFecha(new Date());
+  $("reloj").textContent = "Última actualización: " + fmtFecha(new Date())
+    + ($("rango").value === "hist" ? " · histórico completo (promedios diarios)" : "");
   pintarSubmenu();
   procesarAlertas();
   pintarVista();
 }
 
 function pintarVista() {
-  const horas = parseInt($("rango").value);
   if (vistaActual === "resumen") {
     pintarKPIs();
     actualizarMapa();
@@ -769,9 +811,9 @@ function pintarVista() {
   } else if (vistaActual === "punto") {
     pintarPunto();
   } else if (vistaActual === "estadisticas") {
-    pintarTabla(horas);
+    pintarTabla();
     dibujarComparacion("chartComparacion2");
-    dibujarDisponibilidad(horas);
+    dibujarDisponibilidad();
   } else if (vistaActual === "whatsapp") {
     pintarEstadoWA();
   } else if (vistaActual === "descargas") {
@@ -781,8 +823,8 @@ function pintarVista() {
 
 /* ================== ESTADO / ALERTAS ================== */
 function estadoSitio(n) {
-  const d = datos[n] || [];
-  const ultimo = d.length ? d[d.length-1].t : null;
+  const u = ultimos[n];
+  const ultimo = u ? u.t : null;
   if (!ultimo) return { estado: "off", ultimo, horas: Infinity };
   const horas = (Date.now() - ultimo.getTime()) / 3600000;
   if (horas > UMBRAL_ALERTA_H) return { estado: "off", ultimo, horas };
@@ -866,8 +908,7 @@ function iconoEstado(estado) {
   });
 }
 function popupHTML(s) {
-  const d = datos[s.n] || [];
-  const ult = d.length ? d[d.length-1] : null;
+  const ult = ultimos[s.n];
   const e = estadoSitio(s.n);
   return `
     <b style="color:#0065A3">${s.nombre}</b> <small>(ID ${s.n})</small>
@@ -914,7 +955,7 @@ const PILL_TXT = { on: "● En línea", warn: "● Con retraso", off: "● Sin d
 function pintarPunto() {
   const s = SITIOS.find(x => x.n === puntoActual);
   const d = datos[s.n] || [];
-  const ult = d.length ? d[d.length-1] : null;
+  const ult = ultimos[s.n];
   const e = estadoSitio(s.n);
   $("puntoNombre").textContent = `📍 ${s.nombre} (ID airflux ${s.n})`;
   $("puntoPill").innerHTML = `<span class="pill ${e.estado}">${PILL_TXT[e.estado]}</span>`;
@@ -944,10 +985,12 @@ function dibujarSerie() {
   const d = datos[s.n] || [];
   const x = d.map(f => f.t);
   const claves = varSel === "mp" ? ["mp25", "mp10"] : [varSel];
+  const muchos = d.length > 400;   // histórico: solo líneas para rendimiento
   const traces = claves.map(k => ({
     x, y: d.map(f => f[VAR_DEF[k].campo]),
-    name: VAR_DEF[k].nombre, type: "scatter", mode: "lines+markers",
-    line: { color: VAR_DEF[k].color, shape: "spline", width: 2.5 },
+    name: VAR_DEF[k].nombre, type: "scatter",
+    mode: muchos ? "lines" : "lines+markers",
+    line: { color: VAR_DEF[k].color, shape: muchos ? "linear" : "spline", width: 2 },
     marker: { size: 4 },
   }));
   Plotly.newPlot("chartSerie", traces, {
@@ -959,11 +1002,12 @@ function dibujarSerie() {
 }
 
 /* ================== ESTADÍSTICAS GENERALES ================== */
-function disponibilidad(n, horas) {
-  const esperados = Math.max(1, Math.floor(horas / INTERVALO_DATO_H));
+function disponibilidad(n) {
+  const { ini, fin } = rangoSeleccionado();
+  const esperados = Math.max(1, Math.floor((fin - ini) / 3600000 / (resActualMin / 60)));
   return Math.min(100, 100 * (datos[n] || []).length / esperados);
 }
-function pintarTabla(horas) {
+function pintarTabla() {
   const tb = document.querySelector("#tablaStats tbody");
   tb.innerHTML = "";
   let g25 = [], g10 = [], gn = 0, gdisp = [];
@@ -971,7 +1015,7 @@ function pintarTabla(horas) {
     const d = datos[s.n] || [];
     const s25 = stats(d.map(x => x.mp25));
     const s10 = stats(d.map(x => x.mp10));
-    const disp = disponibilidad(s.n, horas);
+    const disp = disponibilidad(s.n);
     g25.push(...d.map(x=>x.mp25).filter(Number.isFinite));
     g10.push(...d.map(x=>x.mp10).filter(Number.isFinite));
     gn += d.length; gdisp.push(disp);
@@ -1006,9 +1050,9 @@ function dibujarComparacion(divId) {
   }, { responsive: true, displaylogo: false });
 }
 
-function dibujarDisponibilidad(horas) {
+function dibujarDisponibilidad() {
   const nombres = SITIOS.map(s => s.nombre);
-  const disp = SITIOS.map(s => disponibilidad(s.n, horas));
+  const disp = SITIOS.map(s => disponibilidad(s.n));
   const colores = disp.map(v => v >= 90 ? "#16a34a" : v >= 70 ? "#d97706" : "#dc2626");
   Plotly.newPlot("chartDisp", [{
     x: nombres, y: disp, type: "bar",
@@ -1079,10 +1123,11 @@ function csvComparacion() {
   bajarArchivo(aCSV(filas), `airflux_comparacion_${marcaTiempo()}.csv`, "text/csv;charset=utf-8");
 }
 function csvDisponibilidad() {
-  const horas = parseInt($("rango").value);
+  const { ini, fin } = rangoSeleccionado();
+  const esperados = Math.max(1, Math.floor((fin - ini) / 3600000 / (resActualMin / 60)));
   const filas = [["Sitio", "Disponibilidad (%)", "Datos recibidos", "Datos esperados"]];
   for (const s of SITIOS) {
-    filas.push([s.nombre, disponibilidad(s.n, horas).toFixed(0), (datos[s.n]||[]).length, Math.floor(horas / INTERVALO_DATO_H)]);
+    filas.push([s.nombre, disponibilidad(s.n).toFixed(0), (datos[s.n]||[]).length, esperados]);
   }
   bajarArchivo(aCSV(filas), `airflux_disponibilidad_${marcaTiempo()}.csv`, "text/csv;charset=utf-8");
 }
@@ -1100,7 +1145,8 @@ function dcInit() {
   if (!$("dcDesde").value) dcRapido(168);
 }
 function dcRapido(horas) {
-  const fin = new Date(), ini = new Date(fin.getTime() - horas * 3600000);
+  const fin = new Date();
+  const ini = horas === "hist" ? new Date(HISTORICO_INICIO) : new Date(fin.getTime() - horas * 3600000);
   const iso = d => {
     const p = x => String(x).padStart(2, "0");
     return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1134,7 +1180,7 @@ async function dcCargarFeeds(sitio, ini, fin) {
   const url = `https://api.thingspeak.com/channels/${sitio.canal}/feeds.json`
     + `?api_key=${sitio.key}`
     + `&start=${encodeURIComponent(fmtFecha(ini))}&end=${encodeURIComponent(fmtFecha(fin))}`
-    + `&timezone=America%2FSantiago&average=60&round=1`;
+    + `&timezone=America%2FSantiago&average=${resolucionMin(ini, fin)}&round=1`;
   try {
     const r = await fetch(url);
     if (!r.ok) throw new Error("HTTP " + r.status);
@@ -1219,7 +1265,7 @@ async function dcGenerar() {
     if ($("dcVariable").value === "all") dcMsg("ℹ️ Estadística general usa 1 variable; se graficó MP2,5. Elige otra en el filtro si la necesitas.", "");
   } else if (tipo === "disponibilidad") {
     const horas = (r.fin - r.ini) / 3600000;
-    const esperados = Math.max(1, Math.floor(horas / INTERVALO_DATO_H));
+    const esperados = Math.max(1, Math.floor(horas / (resolucionMin(r.ini, r.fin) / 60)));
     const disp = lista.map(s => Math.min(100, 100 * (dcDatos[s.n]||[]).length / esperados));
     traces = [{
       x: lista.map(s => s.nombre), y: disp, type: "bar",
