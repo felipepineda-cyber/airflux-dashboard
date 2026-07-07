@@ -441,6 +441,27 @@
 
         <div class="panel">
           <div class="panel-head">
+            <h2>📅 Consulta por rango de fechas</h2>
+            <span class="hint" id="ptRangoInfo">Usando el período general del selector superior</span>
+          </div>
+          <div class="panel-body">
+            <div class="controls">
+              <label style="font-size:.8rem;font-weight:600;color:var(--text-2)">Fecha inicio
+                <input type="datetime-local" id="ptDesde">
+              </label>
+              <label style="font-size:.8rem;font-weight:600;color:var(--text-2)">Fecha final
+                <input type="datetime-local" id="ptHasta">
+              </label>
+              <button class="btn" onclick="aplicarRangoPunto()">📊 Visualizar</button>
+              <button class="btn success" onclick="descargarCSV('one')">⬇️ Descargar CSV del rango</button>
+              <button class="btn ghost" onclick="resetRangoPunto()">↺ Restablecer</button>
+            </div>
+            <div class="estado-envio" id="ptEstado"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
             <h2>📈 Serie temporal</h2>
             <button class="btn ghost" style="margin-left:auto" onclick="descargarPNG('chartSerie','serie_'+SITIOS.find(x=>x.n===puntoActual).nombre.replace(/\s/g,'_'))">🖼️ PNG</button>
             <label style="font-size:.8rem;font-weight:600;color:var(--text-2)">Variable
@@ -984,9 +1005,52 @@ const VAR_DEF = {
 };
 const PILL_TXT = { on: "● En línea", warn: "● Con retraso", off: "● Sin datos" };
 
+/* Rango de fechas propio de la vista de punto */
+let rangoPunto = null;   // { n, ini, fin, feeds }
+function isoLocal(d) {
+  const p = x => String(x).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function datosDePunto(n) {
+  return (rangoPunto && rangoPunto.n === n) ? rangoPunto.feeds : (datos[n] || []);
+}
+async function aplicarRangoPunto() {
+  const ini = new Date($("ptDesde").value), fin = new Date($("ptHasta").value);
+  const el = $("ptEstado");
+  if (isNaN(ini) || isNaN(fin) || ini >= fin) {
+    el.style.color = "var(--err)"; el.textContent = "✖ Revisa las fechas seleccionadas."; return;
+  }
+  const s = SITIOS.find(x => x.n === puntoActual);
+  el.style.color = "var(--text-2)"; el.textContent = "🔄 Consultando el rango…";
+  const feeds = await dcCargarFeeds(s, ini, fin);
+  rangoPunto = { n: s.n, ini, fin, feeds };
+  el.style.color = feeds.length ? "var(--ok)" : "var(--err)";
+  el.textContent = feeds.length
+    ? `✔ ${feeds.length} registros cargados (${fmtFecha(ini)} → ${fmtFecha(fin)})${resolucionMin(ini, fin) === 1440 ? " · promedios diarios" : " · promedios horarios"}`
+    : "✖ No hay datos en ese rango.";
+  $("ptRangoInfo").textContent = `Rango personalizado: ${fmtFecha(ini)} → ${fmtFecha(fin)}`;
+  pintarPunto();
+}
+function resetRangoPunto() {
+  rangoPunto = null;
+  if ($("ptEstado")) $("ptEstado").textContent = "";
+  if ($("ptRangoInfo")) $("ptRangoInfo").textContent = "Usando el período general del selector superior";
+  pintarPunto();
+}
+
 function pintarPunto() {
   const s = SITIOS.find(x => x.n === puntoActual);
-  const d = datos[s.n] || [];
+  if (rangoPunto && rangoPunto.n !== s.n) {   // al cambiar de punto se vuelve al período general
+    rangoPunto = null;
+    $("ptEstado").textContent = "";
+    $("ptRangoInfo").textContent = "Usando el período general del selector superior";
+  }
+  if (!$("ptDesde").value || !$("ptHasta").value) {
+    const { ini, fin } = rangoSeleccionado();
+    $("ptDesde").value = isoLocal(ini);
+    $("ptHasta").value = isoLocal(fin);
+  }
+  const d = datosDePunto(s.n);
   const ult = ultimos[s.n];
   const e = estadoSitio(s.n);
   $("puntoNombre").textContent = `📍 ${s.nombre} (ID airflux ${s.n})`;
@@ -1014,7 +1078,7 @@ function dibujarSerie() {
   if (vistaActual !== "punto") return;
   const s = SITIOS.find(x => x.n === puntoActual);
   const varSel = $("varSerie").value;
-  const d = datos[s.n] || [];
+  const d = datosDePunto(s.n);
   const x = d.map(f => f.t);
   const claves = varSel === "mp" ? ["mp25", "mp10"] : [varSel];
   const muchos = d.length > 400;   // histórico: solo líneas para rendimiento
@@ -1104,7 +1168,7 @@ function descargarCSV(modo) {
   const filas = [cab];
   const todo = [];
   for (const s of lista)
-    for (const f of (datos[s.n] || []))
+    for (const f of (modo === "one" ? datosDePunto(s.n) : (datos[s.n] || [])))
       todo.push({ s, f });
   todo.sort((a,b) => a.f.t - b.f.t || a.s.n - b.s.n);
   for (const { s, f } of todo) {
