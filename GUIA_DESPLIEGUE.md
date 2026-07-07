@@ -58,11 +58,13 @@ Tiempo total: ~20 minutos.
 4. Borra el código de ejemplo y pega TODO el contenido de `supabase/functions/vigilante/index.ts`.
 5. Clic **Deploy function**.
 
-### 3.3 Configurar los secretos (número y API key)
+### 3.3 Configurar los secretos (destinos de los avisos)
 1. **Edge Functions → Secrets** (o Settings → Edge Functions).
-2. Agrega:
-   - `CALLMEBOT_PHONE` = tu número con código de país, ej. `+56912345678`
-   - `CALLMEBOT_APIKEY` = la API key de CallMeBot
+2. Agrega (admite varios destinos separados por coma):
+   - `CALLMEBOT_DESTINOS` = `+56911111111:apikey1,+56922222222:apikey2`
+     (cada número con SU api key de CallMeBot, unidos por `:`)
+   - `EMAIL_DESTINOS` = `correo1@dominio.cl,correo2@dominio.cl`
+     (envío vía FormSubmit; el primer correo llega como solicitud de confirmación — presiona "Activate")
    (Las claves `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` ya existen automáticamente.)
 
 ### 3.4 Crear la tabla y programar el cron

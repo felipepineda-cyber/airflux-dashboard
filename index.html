@@ -294,6 +294,15 @@
     font-size: .74rem; font-weight: 800;
   }
   .estado-envio { font-size: .82rem; margin-top: .8rem; font-weight: 600; }
+  .dest-row { display: flex; gap: .5rem; margin-bottom: .55rem; flex-wrap: wrap; }
+  .dest-row input { flex: 1; min-width: 150px; }
+  .btn-x {
+    background: var(--err-bg); color: var(--err);
+    border: none; border-radius: 9px;
+    padding: .45rem .75rem; cursor: pointer; font-weight: 700; font-size: .85rem;
+  }
+  .btn-x:hover { background: #fecaca; }
+  .sub-titulo { font-size: .85rem; font-weight: 700; color: var(--text-2); margin: .9rem 0 .5rem; }
 
   #spinner {
     display: none; align-items: center; gap: .5rem;
@@ -580,7 +589,7 @@
       <div class="view" id="vista-whatsapp">
         <div class="panel">
           <div class="panel-head">
-            <h2>💬 Bot de WhatsApp — avisos de no funcionamiento</h2>
+            <h2>💬 Avisos de no funcionamiento — WhatsApp y correo</h2>
             <span id="waEstadoPill"></span>
           </div>
           <div class="panel-body">
@@ -590,37 +599,51 @@
                 <span class="slider"></span>
               </label>
               <div>
-                <b style="font-size:.9rem">Enviar aviso por WhatsApp cuando un sensor deje de registrar datos</b>
-                <div style="font-size:.76rem;color:var(--text-3)">Se envía máximo 1 mensaje por sensor cada 24 h, mientras esta página esté abierta.</div>
+                <b style="font-size:.9rem">Enviar avisos automáticos cuando un sensor deje de registrar datos</b>
+                <div style="font-size:.76rem;color:var(--text-3)">Máximo 1 aviso por sensor cada 24 h, mientras esta página esté abierta. Para vigilancia 24/7 usa el vigilante de Supabase.</div>
               </div>
             </div>
             <hr style="border:none;border-top:1px solid var(--border);margin:1rem 0">
             <div class="form-grid">
               <div class="campo">
-                <label>Proveedor</label>
+                <label>Proveedor de WhatsApp</label>
                 <select id="waProveedor" onchange="guardarWA(); pintarAyudaWA()">
                   <option value="callmebot" selected>CallMeBot (gratis, sin backend)</option>
                   <option value="backend">Backend propio / Twilio / Meta (fase 2)</option>
                 </select>
                 <div class="ayuda" id="waAyudaProv"></div>
               </div>
-              <div class="campo">
-                <label>Número de WhatsApp (con código de país)</label>
-                <input type="tel" id="waTelefono" placeholder="+56912345678" onchange="guardarWA()">
-              </div>
-              <div class="campo" id="campoApikey">
-                <label>API key de CallMeBot</label>
-                <input type="text" id="waApikey" placeholder="123456" onchange="guardarWA()">
-                <div class="ayuda">La recibes por WhatsApp al activar el bot (paso 1 de abajo).</div>
-              </div>
               <div class="campo" id="campoBackend" style="display:none">
                 <label>URL del endpoint de tu backend</label>
                 <input type="text" id="waBackendUrl" placeholder="https://tu-servidor.cl/api/alerta" onchange="guardarWA()">
-                <div class="ayuda">Se hará POST con JSON: {sitio, id, ultimo_dato, mensaje}. Aquí conectas Twilio o la API oficial de Meta.</div>
+                <div class="ayuda">Se hará POST con JSON: {mensaje, whatsapps, correos, origen}. Aquí conectas Twilio o la API oficial de Meta.</div>
               </div>
             </div>
-            <div style="margin-top:1.1rem;display:flex;gap:.6rem;flex-wrap:wrap">
-              <button class="btn success" onclick="probarWA()">📤 Enviar mensaje de prueba</button>
+
+            <div id="bloqueCallmebot">
+              <div class="sub-titulo">📱 Números de WhatsApp (puedes agregar varios)</div>
+              <div id="listaNums"></div>
+              <button class="btn ghost" onclick="agregarNum()">➕ Añadir número</button>
+              <div class="ayuda" style="margin-top:.4rem">Cada número debe activar CallMeBot una vez (pasos abajo) y tiene su propia API key.</div>
+            </div>
+
+            <hr style="border:none;border-top:1px solid var(--border);margin:1.1rem 0">
+            <div class="switch-row">
+              <label class="switch">
+                <input type="checkbox" id="mailActivo" onchange="guardarWA()">
+                <span class="slider"></span>
+              </label>
+              <div>
+                <b style="font-size:.9rem">Enviar también el mismo aviso por correo electrónico</b>
+                <div style="font-size:.76rem;color:var(--text-3)">Vía FormSubmit (gratis, sin registro). ⚠️ El primer envío a cada correo llega como solicitud de confirmación: ábrela y presiona "Activate" una sola vez.</div>
+              </div>
+            </div>
+            <div class="sub-titulo">📧 Correos de destino (puedes agregar varios)</div>
+            <div id="listaMails"></div>
+            <button class="btn ghost" onclick="agregarMail()">➕ Añadir correo</button>
+
+            <div style="margin-top:1.2rem;display:flex;gap:.6rem;flex-wrap:wrap">
+              <button class="btn success" onclick="probarWA()">📤 Enviar prueba a todos los destinos</button>
               <button class="btn ghost" onclick="simularCaida()">🧪 Simular alerta de sensor caído</button>
             </div>
             <div class="estado-envio" id="waResultado"></div>
@@ -628,11 +651,11 @@
         </div>
 
         <div class="panel">
-          <div class="panel-head"><h2>🛠️ Cómo activar CallMeBot (una sola vez)</h2></div>
+          <div class="panel-head"><h2>🛠️ Cómo activar CallMeBot (una sola vez por cada número)</h2></div>
           <div class="panel-body">
-            <div class="paso"><span class="num">1</span><span>Agrega el número <b>+34 623 78 95 90</b> a tus contactos y envíale por WhatsApp el mensaje: <b>"I allow callmebot to send me messages"</b>.</span></div>
-            <div class="paso"><span class="num">2</span><span>El bot te responderá con tu <b>API key</b> personal. Cópiala en el campo de arriba junto con tu número.</span></div>
-            <div class="paso"><span class="num">3</span><span>Activa el interruptor y presiona <b>"Enviar mensaje de prueba"</b> para verificar.</span></div>
+            <div class="paso"><span class="num">1</span><span>Desde CADA número que quieras recibir avisos: agrega <b>+34 623 78 95 90</b> a los contactos y envíale por WhatsApp: <b>"I allow callmebot to send me messages"</b>.</span></div>
+            <div class="paso"><span class="num">2</span><span>El bot responde a cada número con su <b>API key</b> personal. Agrégala arriba junto a su número con "➕ Añadir número".</span></div>
+            <div class="paso"><span class="num">3</span><span>Para los correos: actívalos con su interruptor, agrégalos y envía una prueba; el primer mensaje de FormSubmit llega como <b>solicitud de confirmación</b> — presiona "Activate" en ese correo y los siguientes llegarán normal.</span></div>
             <div class="paso"><span class="num">ℹ️</span><span>CallMeBot es un servicio gratuito de terceros, útil para partir. Para producción (varios destinatarios, sin depender de la página abierta) conviene la <b>fase 2</b>: un backend que vigile los sensores 24/7 y envíe por la API oficial de WhatsApp (Meta) o Twilio — también correo. La opción "Backend propio" de arriba ya deja lista esa conexión.</span></div>
           </div>
         </div>
@@ -765,25 +788,34 @@ async function cargarSitio(sitio, ini, fin, resMin) {
   }
 }
 
-/* Último registro REAL de cada sensor (sin promediar): las tarjetas, el mapa
-   y las alertas siempre reflejan tiempo real, sin importar el período elegido. */
+/* Último registro VÁLIDO de cada sensor (sin promediar): las tarjetas, el mapa
+   y las alertas siempre reflejan tiempo real, sin importar el período elegido.
+   Importante: solo cuenta como "registrando" si el dato trae valores reales de
+   MP2,5 o MP10 — entradas vacías o sin mediciones NO mantienen el sensor en línea. */
 async function cargarUltimo(sitio) {
   try {
-    const r = await fetch(`https://api.thingspeak.com/channels/${sitio.canal}/feeds/last.json?api_key=${sitio.key}&timezone=America%2FSantiago`);
+    // Últimas 24 entradas crudas: buscamos la más reciente con mediciones válidas
+    const r = await fetch(`https://api.thingspeak.com/channels/${sitio.canal}/feeds.json?api_key=${sitio.key}&results=24&timezone=America%2FSantiago`);
     if (r.ok) {
       const j = await r.json().catch(() => null);
-      if (j?.created_at) {
-        ultimos[sitio.n] = {
-          t: new Date(j.created_at),
-          temp: parseFloat(j.field1), pres: parseFloat(j.field2), hum: parseFloat(j.field3),
-          mp10: parseFloat(j.field4), mp25: parseFloat(j.field5),
-        };
+      const validos = (j?.feeds || []).map(f => ({
+        t: new Date(f.created_at),
+        temp: parseFloat(f.field1), pres: parseFloat(f.field2), hum: parseFloat(f.field3),
+        mp10: parseFloat(f.field4), mp25: parseFloat(f.field5),
+      })).filter(f => !isNaN(f.t) && (Number.isFinite(f.mp10) || Number.isFinite(f.mp25)));
+      if (validos.length) {
+        validos.sort((a, b) => a.t - b.t);
+        ultimos[sitio.n] = validos[validos.length - 1];
         return;
       }
+      // Respondió pero sin ningún dato válido reciente => usar el período cargado
+      const d = datos[sitio.n] || [];
+      ultimos[sitio.n] = d.length ? d[d.length-1] : null;
+      return;
     }
   } catch (e) { console.error(`Último dato ${sitio.nombre}:`, e); }
   const d = datos[sitio.n] || [];
-  ultimos[sitio.n] = d.length ? d[d.length-1] : null;   // respaldo
+  ultimos[sitio.n] = d.length ? d[d.length-1] : null;   // respaldo si falla la consulta
 }
 
 async function refrescar() {
@@ -1322,72 +1354,128 @@ async function dcDescargarPNG() {
   descargarPNG("chartDescarga", "grafico_personalizado");
 }
 
-/* ================== WHATSAPP ================== */
+/* ================== AVISOS (WHATSAPP + CORREO, MULTI-DESTINO) ================== */
 function configWA() {
-  try { return JSON.parse(localStorage.getItem("airflux_wa") || "{}"); }
-  catch { return {}; }
+  try {
+    const c = JSON.parse(localStorage.getItem("airflux_wa") || "{}");
+    // migración desde la versión de 1 solo número
+    if (!c.whatsapps && (c.telefono || c.apikey))
+      c.whatsapps = [{ tel: c.telefono || "", key: c.apikey || "" }];
+    c.whatsapps = c.whatsapps || [];
+    c.correos = c.correos || [];
+    return c;
+  } catch { return { whatsapps: [], correos: [] }; }
 }
 function guardarWA() {
+  const whatsapps = [...document.querySelectorAll("#listaNums .dest-row")].map(r => ({
+    tel: r.querySelector(".d-tel").value.trim(),
+    key: r.querySelector(".d-key").value.trim(),
+  })).filter(x => x.tel || x.key);
+  const correos = [...document.querySelectorAll("#listaMails .d-mail")]
+    .map(i => i.value.trim()).filter(Boolean);
   const cfg = {
     activo: $("waActivo").checked,
     proveedor: $("waProveedor").value,
-    telefono: $("waTelefono").value.trim(),
-    apikey: $("waApikey").value.trim(),
     backendUrl: $("waBackendUrl").value.trim(),
+    mailActivo: $("mailActivo").checked,
+    whatsapps, correos,
   };
   localStorage.setItem("airflux_wa", JSON.stringify(cfg));
   pintarEstadoWA();
 }
+function esc(s) { return String(s).replace(/"/g, "&quot;").replace(/</g, "&lt;"); }
+function filaNum(tel, key) {
+  return `<div class="dest-row">
+    <input type="tel" class="d-tel" placeholder="+56912345678" value="${esc(tel)}" onchange="guardarWA()">
+    <input type="text" class="d-key" placeholder="API key CallMeBot" value="${esc(key)}" onchange="guardarWA()">
+    <button class="btn-x" title="Quitar" onclick="this.parentElement.remove(); guardarWA()">✕</button>
+  </div>`;
+}
+function filaMail(m) {
+  return `<div class="dest-row">
+    <input type="text" class="d-mail" placeholder="correo@dominio.cl" value="${esc(m)}" onchange="guardarWA()">
+    <button class="btn-x" title="Quitar" onclick="this.parentElement.remove(); guardarWA()">✕</button>
+  </div>`;
+}
+function agregarNum() { $("listaNums").insertAdjacentHTML("beforeend", filaNum("", "")); }
+function agregarMail() { $("listaMails").insertAdjacentHTML("beforeend", filaMail("")); }
+
 function cargarFormWA() {
   const c = configWA();
   $("waActivo").checked = !!c.activo;
   $("waProveedor").value = c.proveedor || "callmebot";
-  $("waTelefono").value = c.telefono || "";
-  $("waApikey").value = c.apikey || "";
   $("waBackendUrl").value = c.backendUrl || "";
+  $("mailActivo").checked = !!c.mailActivo;
+  $("listaNums").innerHTML = (c.whatsapps.length ? c.whatsapps : [{ tel: "", key: "" }])
+    .map(w => filaNum(w.tel, w.key)).join("");
+  $("listaMails").innerHTML = (c.correos.length ? c.correos : [""]).map(filaMail).join("");
   pintarAyudaWA();
   pintarEstadoWA();
 }
 function pintarAyudaWA() {
   const prov = $("waProveedor").value;
-  $("campoApikey").style.display = prov === "callmebot" ? "" : "none";
+  $("bloqueCallmebot").style.display = prov === "callmebot" ? "" : "none";
   $("campoBackend").style.display = prov === "backend" ? "" : "none";
   $("waAyudaProv").textContent = prov === "callmebot"
-    ? "Envío directo desde esta página. Requiere activación única del bot (instrucciones abajo)."
+    ? "Envío directo desde esta página. Requiere activación única del bot por cada número (instrucciones abajo)."
     : "La página hará POST a tu servidor y este envía por Twilio / API de Meta. Disponible al implementar la fase 2.";
+}
+function destinosValidos() {
+  const c = configWA();
+  const nums = c.proveedor === "callmebot" ? c.whatsapps.filter(w => w.tel && w.key).length : 0;
+  const backend = c.proveedor === "backend" && c.backendUrl ? 1 : 0;
+  const mails = c.mailActivo ? c.correos.length : 0;
+  return { nums, backend, mails, total: nums + backend + mails };
 }
 function waConfigurado() {
   const c = configWA();
-  if (!c.activo) return false;
-  if (c.proveedor === "callmebot") return !!(c.telefono && c.apikey);
-  return !!c.backendUrl;
+  return !!c.activo && destinosValidos().total > 0;
 }
 function pintarEstadoWA() {
   const el = $("waEstadoPill");
   if (!el) return;
   const c = configWA();
+  const d = destinosValidos();
   el.innerHTML = !c.activo
     ? `<span class="pill off">● Desactivado</span>`
-    : waConfigurado()
-      ? `<span class="pill on">● Activo</span>`
-      : `<span class="pill warn">● Faltan datos de configuración</span>`;
+    : d.total > 0
+      ? `<span class="pill on">● Activo · ${d.nums + d.backend} WhatsApp · ${d.mails} correo(s)</span>`
+      : `<span class="pill warn">● Faltan destinos configurados</span>`;
 }
 
-async function enviarWA(texto) {
+/* Envía el mismo texto a TODOS los destinos configurados */
+async function enviarAvisos(texto) {
   const c = configWA();
+  const tareas = [];
   if (c.proveedor === "backend" && c.backendUrl) {
-    await fetch(c.backendUrl, {
+    tareas.push(fetch(c.backendUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mensaje: texto, origen: "airflux-dashboard" }),
-    });
-    return "backend";
+      body: JSON.stringify({
+        mensaje: texto,
+        whatsapps: c.whatsapps.map(w => w.tel).filter(Boolean),
+        correos: c.correos,
+        origen: "airflux-dashboard",
+      }),
+    }));
+  } else {
+    for (const w of c.whatsapps.filter(w => w.tel && w.key)) {
+      const url = `https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(w.tel)}`
+        + `&text=${encodeURIComponent(texto)}&apikey=${encodeURIComponent(w.key)}`;
+      tareas.push(fetch(url, { mode: "no-cors" }));   // se envía aunque no se pueda leer la respuesta
+    }
   }
-  const url = `https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(c.telefono)}`
-    + `&text=${encodeURIComponent(texto)}&apikey=${encodeURIComponent(c.apikey)}`;
-  // no-cors: el mensaje se envía aunque el navegador no pueda leer la respuesta
-  await fetch(url, { mode: "no-cors" });
-  return "callmebot";
+  if (c.mailActivo) {
+    for (const m of c.correos.filter(Boolean)) {
+      tareas.push(fetch(`https://formsubmit.co/ajax/${encodeURIComponent(m)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({ _subject: "🚨 Alerta AirFlux — sensor sin datos", mensaje: texto }),
+      }));
+    }
+  }
+  const res = await Promise.allSettled(tareas);
+  return res.length;
 }
 
 const waEnviados = new Set(JSON.parse(localStorage.getItem("airflux_wa_enviados") || "[]"));
@@ -1396,25 +1484,26 @@ async function enviarWhatsAppAlerta(s, e, msg) {
   const clave = `wa_${s.n}_${new Date().toDateString()}`;   // máx 1 por sensor por día
   if (waEnviados.has(clave)) return;
   try {
-    await enviarWA(`🚨 AirFlux: ${msg}`);
+    await enviarAvisos(`🚨 AirFlux: ${msg}`);
     waEnviados.add(clave);
     localStorage.setItem("airflux_wa_enviados", JSON.stringify([...waEnviados].slice(-50)));
-  } catch (err) { console.error("Error enviando WhatsApp:", err); }
+  } catch (err) { console.error("Error enviando avisos:", err); }
 }
 
 async function probarWA() {
   const res = $("waResultado");
   guardarWA();
-  if (!$("waTelefono").value.trim() && $("waProveedor").value === "callmebot") {
-    res.style.color = "var(--err)"; res.textContent = "✖ Ingresa tu número y API key primero."; return;
+  const d = destinosValidos();
+  if (d.total === 0) {
+    res.style.color = "var(--err)";
+    res.textContent = "✖ Agrega al menos un número con API key o un correo (con su interruptor activado).";
+    return;
   }
-  res.style.color = "var(--text-2)"; res.textContent = "Enviando…";
+  res.style.color = "var(--text-2)"; res.textContent = "Enviando a todos los destinos…";
   try {
-    const via = await enviarWA(`✅ AirFlux: mensaje de prueba enviado el ${fmtFecha(new Date())}. El bot de alertas está configurado correctamente.`);
+    const n = await enviarAvisos(`✅ AirFlux: mensaje de prueba enviado el ${fmtFecha(new Date())}. Los avisos están configurados correctamente.`);
     res.style.color = "var(--ok)";
-    res.textContent = via === "callmebot"
-      ? "✔ Solicitud enviada a CallMeBot. Revisa tu WhatsApp (puede tardar unos segundos). Si no llega, verifica número y API key."
-      : "✔ Enviado a tu backend.";
+    res.textContent = `✔ Prueba enviada a ${n} destino(s). WhatsApp puede tardar unos segundos; el correo, la primera vez, llega como solicitud de confirmación de FormSubmit.`;
   } catch (err) {
     res.style.color = "var(--err)";
     res.textContent = "✖ Error al enviar: " + err.message;
@@ -1424,12 +1513,12 @@ async function simularCaida() {
   const res = $("waResultado");
   guardarWA();
   if (!waConfigurado()) {
-    res.style.color = "var(--err)"; res.textContent = "✖ Activa el interruptor y completa la configuración primero."; return;
+    res.style.color = "var(--err)"; res.textContent = "✖ Activa el interruptor principal y agrega destinos primero."; return;
   }
   res.style.color = "var(--text-2)"; res.textContent = "Enviando simulación…";
   try {
-    await enviarWA(`🚨 AirFlux (SIMULACIÓN): Yungay (ID 3) no registra datos desde ${fmtFecha(new Date(Date.now()-3*3600000))} (hace 3 h 0 min).`);
-    res.style.color = "var(--ok)"; res.textContent = "✔ Simulación enviada. Así se verá el aviso real.";
+    const n = await enviarAvisos(`🚨 AirFlux (SIMULACIÓN): Yungay (ID 3) no registra datos desde ${fmtFecha(new Date(Date.now()-3*3600000))} (hace 3 h 0 min).`);
+    res.style.color = "var(--ok)"; res.textContent = `✔ Simulación enviada a ${n} destino(s). Así se verá el aviso real.`;
   } catch (err) {
     res.style.color = "var(--err)"; res.textContent = "✖ Error: " + err.message;
   }

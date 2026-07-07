@@ -1,9 +1,15 @@
 // ============================================================
 // AirFlux · Vigilante 24/7 de sensores (Supabase Edge Function)
 // Revisa el último dato de cada sensor en ThingSpeak.
-// Si un sensor lleva más de UMBRAL_H horas sin datos, envía un
-// aviso por WhatsApp (CallMeBot). Máximo 1 aviso por sensor
+// Si un sensor lleva más de UMBRAL_H horas sin datos, envía el
+// aviso por WhatsApp (CallMeBot) y por correo (FormSubmit) a
+// TODOS los destinos configurados. Máximo 1 aviso por sensor
 // cada REENVIO_H horas (se reinicia cuando el sensor vuelve).
+//
+// Secretos (Edge Functions → Secrets):
+//   CALLMEBOT_DESTINOS = "+56911111111:apikey1,+56922222222:apikey2"
+//   EMAIL_DESTINOS     = "correo1@dominio.cl,correo2@dominio.cl"
+//   (compatibilidad: CALLMEBOT_PHONE + CALLMEBOT_APIKEY para 1 número)
 // ============================================================
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -18,25 +24,64 @@ const SITIOS = [
 const UMBRAL_H = 2;    // horas sin datos => sensor caído
 const REENVIO_H = 24;  // no repetir aviso del mismo sensor antes de esto
 
+function destinosWhatsApp(): { tel: string; key: string }[] {
+  const out: { tel: string; key: string }[] = [];
+  for (const par of (Deno.env.get("CALLMEBOT_DESTINOS") ?? "").split(",")) {
+    const idx = par.lastIndexOf(":");
+    if (idx > 0) {
+      const tel = par.slice(0, idx).trim(), key = par.slice(idx + 1).trim();
+      if (tel && key) out.push({ tel, key });
+    }
+  }
+  const tel = Deno.env.get("CALLMEBOT_PHONE"), key = Deno.env.get("CALLMEBOT_APIKEY");
+  if (tel && key && !out.some(d => d.tel === tel)) out.push({ tel, key });
+  return out;
+}
+function destinosCorreo(): string[] {
+  return (Deno.env.get("EMAIL_DESTINOS") ?? "").split(",").map(x => x.trim()).filter(Boolean);
+}
+
+async function enviarAvisos(msg: string) {
+  const tareas: Promise<unknown>[] = [];
+  for (const d of destinosWhatsApp()) {
+    tareas.push(fetch(
+      `https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(d.tel)}&text=${encodeURIComponent(msg)}&apikey=${encodeURIComponent(d.key)}`,
+    ).catch(console.error));
+  }
+  for (const m of destinosCorreo()) {
+    tareas.push(fetch(`https://formsubmit.co/ajax/${encodeURIComponent(m)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify({ _subject: "🚨 Alerta AirFlux — sensor sin datos", mensaje: msg }),
+    }).catch(console.error));
+  }
+  await Promise.allSettled(tareas);
+  return tareas.length;
+}
+
 Deno.serve(async () => {
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
-  const phone = Deno.env.get("CALLMEBOT_PHONE") ?? "";
-  const apikey = Deno.env.get("CALLMEBOT_APIKEY") ?? "";
   const resultados: unknown[] = [];
 
   for (const s of SITIOS) {
-    // Último dato del canal
+    // Último dato VÁLIDO del canal: solo cuentan entradas con mediciones
+    // reales de MP10/MP2,5 — entradas vacías no mantienen el sensor "en línea".
     let ultimo: Date | null = null;
     try {
       const r = await fetch(
-        `https://api.thingspeak.com/channels/${s.canal}/feeds/last.json?api_key=${s.key}&timezone=America%2FSantiago`,
+        `https://api.thingspeak.com/channels/${s.canal}/feeds.json?api_key=${s.key}&results=24&timezone=America%2FSantiago`,
       );
       if (r.ok) {
         const j = await r.json().catch(() => null);
-        if (j?.created_at) ultimo = new Date(j.created_at);
+        for (const f of (j?.feeds ?? [])) {
+          const mp10 = parseFloat(f.field4), mp25 = parseFloat(f.field5);
+          if (!f.created_at || (!Number.isFinite(mp10) && !Number.isFinite(mp25))) continue;
+          const t = new Date(f.created_at);
+          if (!isNaN(t.getTime()) && (!ultimo || t > ultimo)) ultimo = t;
+        }
       }
     } catch (_) { /* se trata como sin datos */ }
 
@@ -52,27 +97,27 @@ Deno.serve(async () => {
       const yaAvisado = !!data &&
         (Date.now() - new Date(data.enviado_en).getTime()) / 3600000 < REENVIO_H;
 
-      let avisado = false;
-      if (!yaAvisado && phone && apikey) {
+      let enviados = 0;
+      if (!yaAvisado) {
         const desde = ultimo
           ? ultimo.toLocaleString("es-CL", { timeZone: "America/Santiago" })
           : "hace más de lo consultable";
-        const msg = `🚨 AirFlux: ${s.nombre} (ID ${s.n}) no registra datos desde ${desde}.`;
-        await fetch(
-          `https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(msg)}&apikey=${encodeURIComponent(apikey)}`,
-        ).catch(console.error);
-        await supabase.from("alertas_enviadas").upsert({
-          sitio_n: s.n,
-          sitio: s.nombre,
-          enviado_en: new Date().toISOString(),
-        });
-        avisado = true;
+        enviados = await enviarAvisos(
+          `🚨 AirFlux: ${s.nombre} (ID ${s.n}) no registra datos desde ${desde}.`,
+        );
+        if (enviados > 0) {
+          await supabase.from("alertas_enviadas").upsert({
+            sitio_n: s.n,
+            sitio: s.nombre,
+            enviado_en: new Date().toISOString(),
+          });
+        }
       }
       resultados.push({
         sitio: s.nombre,
         estado: "CAIDO",
         horas_sin_datos: horas === Infinity ? null : +horas.toFixed(1),
-        aviso_enviado_ahora: avisado,
+        avisos_enviados_ahora: enviados,
       });
     } else {
       // Sensor OK: limpiar registro para que una futura caída vuelva a avisar
