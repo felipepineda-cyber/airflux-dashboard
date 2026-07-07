@@ -361,6 +361,11 @@
         <span class="ico">⬇️</span> Centro de descargas
       </button>
 
+      <div class="nav-label">Aplicaciones</div>
+      <button class="nav-item" data-view="norma" onclick="irA('norma')">
+        <span class="ico">📋</span> Norma Background
+      </button>
+
       <div class="nav-label">Sistema</div>
       <button class="nav-item" data-view="whatsapp" onclick="irA('whatsapp')">
         <span class="ico">💬</span> Alertas WhatsApp
@@ -606,6 +611,18 @@
         </div>
       </div>
 
+      <!-- ============ VISTA: NORMA BACKGROUND ============ -->
+      <div class="view" id="vista-norma">
+        <div class="panel" style="overflow:hidden">
+          <div class="panel-head">
+            <h2>📋 Norma Background — USACH · In-Data</h2>
+            <a class="btn ghost" style="margin-left:auto;text-decoration:none" href="norma.html" target="_blank">🔗 Abrir en pestaña propia</a>
+          </div>
+          <iframe id="frameNorma" title="Norma Background"
+            style="width:100%;height:calc(100vh - 190px);min-height:560px;border:none;display:block;background:#f1f5f9"></iframe>
+        </div>
+      </div>
+
       <!-- ============ VISTA: WHATSAPP ============ -->
       <div class="view" id="vista-whatsapp">
         <div class="panel">
@@ -753,7 +770,7 @@ const LAYOUT_BASE = {
 };
 
 /* ================== NAVEGACIÓN ================== */
-const TITULOS = { resumen: "Resumen", estadisticas: "Estadísticas generales", descargas: "Centro de descargas", whatsapp: "Alertas WhatsApp" };
+const TITULOS = { resumen: "Resumen", estadisticas: "Estadísticas generales", descargas: "Centro de descargas", whatsapp: "Alertas WhatsApp", norma: "Norma Background" };
 
 function irA(vista, n) {
   vistaActual = vista;
@@ -871,6 +888,9 @@ function pintarVista() {
     pintarEstadoWA();
   } else if (vistaActual === "descargas") {
     dcInit();
+  } else if (vistaActual === "norma") {
+    const fr = $("frameNorma");
+    if (fr && !fr.src) fr.src = "norma.html";   // carga diferida
   }
 }
 
