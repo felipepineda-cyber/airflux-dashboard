@@ -11,6 +11,7 @@
   integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin="" />
 <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
   integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
     --primary: #0065A3;
@@ -619,7 +620,7 @@
         <div class="panel">
           <div class="panel-head">
             <h2>⏱️ Tiempos de alerta</h2>
-            <span class="hint">Se guardan automáticamente en este navegador</span>
+            <span class="hint" id="acNube">Se guardan automáticamente (local + nube)</span>
           </div>
           <div class="panel-body">
             <div class="form-grid">
@@ -634,7 +635,7 @@
                 <div class="ayuda">Evita que llegue el mismo aviso una y otra vez. Al volver el sensor, el contador se reinicia.</div>
               </div>
             </div>
-            <div class="ayuda" style="margin-top:.8rem">ℹ️ Estos valores aplican a esta página. El vigilante 24/7 de Supabase tiene los suyos en su código (UMBRAL_H y REENVIO_H) — dime si quieres que también se configuren desde aquí en la fase 2.</div>
+            <div class="ayuda" style="margin-top:.8rem">☁️ Estos valores se guardan en Supabase (tabla <b>config_alertas</b>): la página y el vigilante 24/7 usan la misma configuración.</div>
           </div>
         </div>
 
@@ -939,6 +940,43 @@ function configAlerta() {
   try { return { ...ALERT_DEFAULTS, ...JSON.parse(localStorage.getItem("airflux_alertcfg") || "{}") }; }
   catch { return { ...ALERT_DEFAULTS }; }
 }
+
+/* --- Sincronización con Supabase (misma config para la página y el vigilante 24/7) --- */
+const SUPA_URL = "https://txhkpyvknxegqyefjhpb.supabase.co";
+const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4aGtweXZrbnhlZ3F5ZWZqaHBiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExMDExOTYsImV4cCI6MjA5NjY3NzE5Nn0.YNfMaEYQ-Me6EShnQ9PQf-XQXODKTscizWWm72Ac8r4";
+let supaCfg = null;
+try { supaCfg = window.supabase.createClient(SUPA_URL, SUPA_KEY); } catch (e) { console.warn("Supabase no disponible:", e); }
+
+function marcarNube(txt, ok) {
+  const el = $("acNube");
+  if (el) { el.textContent = txt; el.style.color = ok ? "var(--ok)" : "var(--warn)"; }
+}
+async function sincronizarConfigAlerta() {
+  if (!supaCfg) return;
+  try {
+    const { data, error } = await supaCfg.from("config_alertas").select("*").eq("id", 1).maybeSingle();
+    if (error) throw error;
+    if (data) {
+      localStorage.setItem("airflux_alertcfg", JSON.stringify({
+        umbral: Number(data.umbral) || ALERT_DEFAULTS.umbral,
+        reenvio: Number(data.reenvio) || ALERT_DEFAULTS.reenvio,
+        plantilla: data.plantilla || ALERT_DEFAULTS.plantilla,
+      }));
+      $("footUmbral").textContent = `${configAlerta().umbral} h sin datos`;
+      if (vistaActual === "alertconf") cargarFormAlerta();
+      marcarNube("☁️ Sincronizado con la nube", true);
+    }
+  } catch (e) { console.warn("Config nube (lectura):", e); marcarNube("⚠️ Sin conexión con la nube — usando config local", false); }
+}
+async function guardarConfigNube(cfg) {
+  if (!supaCfg) return;
+  try {
+    const { error } = await supaCfg.from("config_alertas")
+      .upsert({ id: 1, umbral: cfg.umbral, reenvio: cfg.reenvio, plantilla: cfg.plantilla, updated_at: new Date().toISOString() });
+    if (error) throw error;
+    marcarNube("☁️ Guardado en la nube — el vigilante 24/7 usará estos valores", true);
+  } catch (e) { console.warn("Config nube (guardado):", e); marcarNube("⚠️ No se pudo guardar en la nube (¿falta la tabla config_alertas?) — guardado solo local", false); }
+}
 function mensajeAlerta(s, e) {
   return configAlerta().plantilla
     .replaceAll("{sitio}", s.nombre)
@@ -953,6 +991,7 @@ function guardarConfigAlerta() {
     plantilla: $("acPlantilla").value.trim() || ALERT_DEFAULTS.plantilla,
   };
   localStorage.setItem("airflux_alertcfg", JSON.stringify(cfg));
+  guardarConfigNube(cfg);
   $("acUmbral").value = cfg.umbral;
   $("acReenvio").value = cfg.reenvio;
   $("footUmbral").textContent = `${cfg.umbral} h sin datos`;
@@ -1728,6 +1767,7 @@ function init() {
   initMapa();
   cargarFormWA();
   $("footUmbral").textContent = `${configAlerta().umbral} h sin datos`;
+  sincronizarConfigAlerta();
   refrescar();
   setInterval(refrescar, REFRESCO_MS);
 }

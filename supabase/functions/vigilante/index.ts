@@ -21,8 +21,22 @@ const SITIOS = [
   { n: 5, nombre: "Pto Montt", canal: 3295967, key: "93GQ5HLEXVUSWQ88" },
   { n: 6, nombre: "Curacaví",  canal: 3295968, key: "NPEK6DL0ME57ZLWB" },
 ];
-const UMBRAL_H = 2;    // horas sin datos => sensor caído
-const REENVIO_H = 24;  // no repetir aviso del mismo sensor antes de esto
+// Valores por defecto — se sobreescriben con la tabla config_alertas,
+// editable desde la página SenFePin → "Configuración de alerta".
+const DEFAULTS = {
+  umbral: 2,    // horas sin datos => sensor caído
+  reenvio: 24,  // no repetir aviso del mismo sensor antes de esto
+  plantilla: "🚨 SenFePin: {sitio} (ID {id}) no registra datos desde {fecha} ({tiempo}).",
+};
+
+function haceCuanto(d: Date | null): string {
+  if (!d) return "sin datos";
+  const min = Math.round((Date.now() - d.getTime()) / 60000);
+  if (min < 60) return `hace ${min} min`;
+  const h = Math.floor(min / 60);
+  if (h < 48) return `hace ${h} h ${min % 60} min`;
+  return `hace ${Math.floor(h / 24)} días`;
+}
 
 function destinosWhatsApp(): { tel: string; key: string }[] {
   const out: { tel: string; key: string }[] = [];
@@ -66,6 +80,19 @@ Deno.serve(async () => {
   );
   const resultados: unknown[] = [];
 
+  // Configuración compartida (misma que edita la página en "Configuración de alerta")
+  let cfg = { ...DEFAULTS };
+  try {
+    const { data } = await supabase.from("config_alertas").select("*").eq("id", 1).maybeSingle();
+    if (data) {
+      cfg = {
+        umbral: Number(data.umbral) || DEFAULTS.umbral,
+        reenvio: Number(data.reenvio) || DEFAULTS.reenvio,
+        plantilla: data.plantilla || DEFAULTS.plantilla,
+      };
+    }
+  } catch (e) { console.warn("config_alertas no disponible, usando defaults:", e); }
+
   for (const s of SITIOS) {
     // Último dato VÁLIDO del canal: solo cuentan entradas con mediciones
     // reales de MP10/MP2,5 — entradas vacías no mantienen el sensor "en línea".
@@ -87,7 +114,7 @@ Deno.serve(async () => {
 
     const horas = ultimo ? (Date.now() - ultimo.getTime()) / 3600000 : Infinity;
 
-    if (horas > UMBRAL_H) {
+    if (horas > cfg.umbral) {
       // ¿Ya avisamos hace poco?
       const { data } = await supabase
         .from("alertas_enviadas")
@@ -95,16 +122,19 @@ Deno.serve(async () => {
         .eq("sitio_n", s.n)
         .maybeSingle();
       const yaAvisado = !!data &&
-        (Date.now() - new Date(data.enviado_en).getTime()) / 3600000 < REENVIO_H;
+        (Date.now() - new Date(data.enviado_en).getTime()) / 3600000 < cfg.reenvio;
 
       let enviados = 0;
       if (!yaAvisado) {
         const desde = ultimo
           ? ultimo.toLocaleString("es-CL", { timeZone: "America/Santiago" })
-          : "hace más de lo consultable";
-        enviados = await enviarAvisos(
-          `🚨 AirFlux: ${s.nombre} (ID ${s.n}) no registra datos desde ${desde}.`,
-        );
+          : "—";
+        const msg = cfg.plantilla
+          .replaceAll("{sitio}", s.nombre)
+          .replaceAll("{id}", String(s.n))
+          .replaceAll("{fecha}", desde)
+          .replaceAll("{tiempo}", haceCuanto(ultimo));
+        enviados = await enviarAvisos(msg);
         if (enviados > 0) {
           await supabase.from("alertas_enviadas").upsert({
             sitio_n: s.n,
