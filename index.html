@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AirFlux · Monitoreo Ambiental</title>
+<title>SenFePin · Monitoreo Ambiental</title>
 <link rel="preconnect" href="https://fonts.gstatic.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
@@ -337,7 +337,7 @@
     <div class="brand">
       <div class="logo">🌫️</div>
       <div>
-        <b>AirFlux</b>
+        <b>SenFePin</b>
         <small>Monitoreo Ambiental</small>
       </div>
     </div>
@@ -362,8 +362,8 @@
       </button>
 
       <div class="nav-label">Aplicaciones</div>
-      <button class="nav-item" data-view="norma" onclick="irA('norma')">
-        <span class="ico">📋</span> Norma Background
+      <button class="nav-item" onclick="window.open('norma.html', '_blank')">
+        <span class="ico">📋</span> Norma Background <span style="margin-left:auto;font-size:.75rem">↗</span>
       </button>
 
       <div class="nav-label">Sistema</div>
@@ -611,18 +611,6 @@
         </div>
       </div>
 
-      <!-- ============ VISTA: NORMA BACKGROUND ============ -->
-      <div class="view" id="vista-norma">
-        <div class="panel" style="overflow:hidden">
-          <div class="panel-head">
-            <h2>📋 Norma Background — USACH · In-Data</h2>
-            <a class="btn ghost" style="margin-left:auto;text-decoration:none" href="norma.html" target="_blank">🔗 Abrir en pestaña propia</a>
-          </div>
-          <iframe id="frameNorma" title="Norma Background"
-            style="width:100%;height:calc(100vh - 190px);min-height:560px;border:none;display:block;background:#f1f5f9"></iframe>
-        </div>
-      </div>
-
       <!-- ============ VISTA: WHATSAPP ============ -->
       <div class="view" id="vista-whatsapp">
         <div class="panel">
@@ -770,7 +758,7 @@ const LAYOUT_BASE = {
 };
 
 /* ================== NAVEGACIÓN ================== */
-const TITULOS = { resumen: "Resumen", estadisticas: "Estadísticas generales", descargas: "Centro de descargas", whatsapp: "Alertas WhatsApp", norma: "Norma Background" };
+const TITULOS = { resumen: "Resumen", estadisticas: "Estadísticas generales", descargas: "Centro de descargas", whatsapp: "Alertas WhatsApp" };
 
 function irA(vista, n) {
   vistaActual = vista;
@@ -888,9 +876,6 @@ function pintarVista() {
     pintarEstadoWA();
   } else if (vistaActual === "descargas") {
     dcInit();
-  } else if (vistaActual === "norma") {
-    const fr = $("frameNorma");
-    if (fr && !fr.src) fr.src = "norma.html";   // carga diferida
   }
 }
 
