@@ -345,23 +345,31 @@ async function enviarConAdjuntos(remitente: string, pass: string, dest: string[]
 }
 
 /* ---------- handler principal ---------- */
+// CORS: necesario para que la página (otro dominio) pueda invocar esta función
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+const json = (o: unknown) => Response.json(o, { headers: CORS });
+
 Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
   const url = new URL(req.url);
   const forzar = url.searchParams.get("forzar") === "1";
   const semanas = Math.min(2, Math.max(1, Number(url.searchParams.get("semanas") || "1")));
 
   const { data: cfg } = await supabase.from("config_resumen").select("*").eq("id", 1).maybeSingle();
-  if (!cfg || !cfg.activo) return Response.json({ ok: true, enviado: false, motivo: "resumen desactivado" });
+  if (!cfg || !cfg.activo) return json({ ok: true, enviado: false, motivo: "resumen desactivado" });
   const correos = (cfg.correos || "").split(",").map((x: string) => x.trim()).filter(Boolean);
-  if (!correos.length) return Response.json({ ok: true, enviado: false, motivo: "sin correos" });
+  if (!correos.length) return json({ ok: true, enviado: false, motivo: "sin correos" });
 
   // Programación: coincide día/hora de Chile (salvo ?forzar=1)
   const chile = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Santiago" }));
   const coincide = chile.getDay() === Number(cfg.dia) && chile.getHours() === Number(cfg.hora);
   const yaEnviado = cfg.last_sent && (Date.now() - new Date(cfg.last_sent).getTime()) < 20 * 3600000;
   if (!forzar && (!coincide || yaEnviado)) {
-    return Response.json({ ok: true, enviado: false, motivo: "fuera de horario o ya enviado" });
+    return json({ ok: true, enviado: false, motivo: "fuera de horario o ya enviado" });
   }
 
   // Remitente (config_destinos) + contraseña de aplicación (secreto)
@@ -394,7 +402,7 @@ Deno.serve(async (req) => {
     try {
       await enviarConAdjuntos(remitente, pass, correos, asunto, cuerpo, adjuntos);
       if (!forzar) await supabase.from("config_resumen").update({ last_sent: new Date().toISOString() }).eq("id", 1);
-      return Response.json({ ok: true, enviado: true, via: "smtp-pdf", correos: correos.length, adjuntos: adjuntos.length });
+      return json({ ok: true, enviado: true, via: "smtp-pdf", correos: correos.length, adjuntos: adjuntos.length });
     } catch (e) {
       console.error("SMTP con adjuntos falló:", e);
     }
@@ -410,5 +418,5 @@ Deno.serve(async (req) => {
       }),
     }).catch(console.error)));
   if (!forzar) await supabase.from("config_resumen").update({ last_sent: new Date().toISOString() }).eq("id", 1);
-  return Response.json({ ok: true, enviado: true, via: "formsubmit-texto", correos: correos.length });
+  return json({ ok: true, enviado: true, via: "formsubmit-texto", correos: correos.length });
 });
