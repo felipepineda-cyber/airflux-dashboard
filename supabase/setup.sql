@@ -52,6 +52,26 @@ create policy "config_resumen_update" on public.config_resumen for update using 
 drop policy if exists "config_resumen_insert" on public.config_resumen;
 create policy "config_resumen_insert" on public.config_resumen for insert with check (id = 1);
 
+-- A4) Destinos de avisos (números CallMeBot, correos y remitente) —
+--     se configuran 100% desde la página, sin tocar secretos.
+create table if not exists public.config_destinos (
+  id int primary key default 1,
+  activo boolean not null default false,
+  whatsapps text not null default '',      -- "+569xxxx:apikey,+569yyyy:apikey"
+  correos text not null default '',        -- "a@x.cl,b@y.cl"
+  mail_activo boolean not null default false,
+  remitente text not null default '',      -- correo desde el que se envía (Gmail)
+  updated_at timestamptz default now()
+);
+insert into public.config_destinos (id) values (1) on conflict (id) do nothing;
+alter table public.config_destinos enable row level security;
+drop policy if exists "config_destinos_select" on public.config_destinos;
+create policy "config_destinos_select" on public.config_destinos for select using (true);
+drop policy if exists "config_destinos_update" on public.config_destinos;
+create policy "config_destinos_update" on public.config_destinos for update using (true) with check (id = 1);
+drop policy if exists "config_destinos_insert" on public.config_destinos;
+create policy "config_destinos_insert" on public.config_destinos for insert with check (id = 1);
+
 -- B) Extensiones para programar la revisión automática
 create extension if not exists pg_cron;
 create extension if not exists pg_net;

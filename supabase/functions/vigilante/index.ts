@@ -38,39 +38,71 @@ function haceCuanto(d: Date | null): string {
   return `hace ${Math.floor(h / 24)} días`;
 }
 
-function destinosWhatsApp(): { tel: string; key: string }[] {
-  const out: { tel: string; key: string }[] = [];
-  for (const par of (Deno.env.get("CALLMEBOT_DESTINOS") ?? "").split(",")) {
+type Destinos = { activo: boolean; whatsapps: { tel: string; key: string }[]; correos: string[]; mailActivo: boolean; remitente: string };
+
+/* Destinos: primero la tabla config_destinos (configurada desde la página);
+   los secretos CALLMEBOT_* / EMAIL_DESTINOS quedan como respaldo. */
+function parsearDestinos(row: Record<string, unknown> | null): Destinos {
+  const wa: { tel: string; key: string }[] = [];
+  const fuenteWA = String(row?.whatsapps ?? Deno.env.get("CALLMEBOT_DESTINOS") ?? "");
+  for (const par of fuenteWA.split(",")) {
     const idx = par.lastIndexOf(":");
     if (idx > 0) {
       const tel = par.slice(0, idx).trim(), key = par.slice(idx + 1).trim();
-      if (tel && key) out.push({ tel, key });
+      if (tel && key) wa.push({ tel, key });
     }
   }
   const tel = Deno.env.get("CALLMEBOT_PHONE"), key = Deno.env.get("CALLMEBOT_APIKEY");
-  if (tel && key && !out.some(d => d.tel === tel)) out.push({ tel, key });
-  return out;
-}
-function destinosCorreo(): string[] {
-  return (Deno.env.get("EMAIL_DESTINOS") ?? "").split(",").map(x => x.trim()).filter(Boolean);
+  if (!wa.length && tel && key) wa.push({ tel, key });
+  const correos = String(row?.correos ?? Deno.env.get("EMAIL_DESTINOS") ?? "")
+    .split(",").map(x => x.trim()).filter(Boolean);
+  return {
+    activo: row ? !!row.activo : true,
+    whatsapps: wa,
+    correos,
+    mailActivo: row ? !!row.mail_activo : correos.length > 0,
+    remitente: String(row?.remitente ?? ""),
+  };
 }
 
-async function enviarAvisos(msg: string) {
+/* Correo: si hay remitente + GMAIL_APP_PASSWORD envía desde tu Gmail (SMTP);
+   si no, usa FormSubmit (remitente genérico). */
+async function enviarCorreos(dest: string[], asunto: string, texto: string, remitente: string) {
+  const pass = Deno.env.get("GMAIL_APP_PASSWORD") ?? "";
+  if (remitente && pass) {
+    try {
+      const { SMTPClient } = await import("https://deno.land/x/denomailer@1.6.0/mod.ts");
+      const client = new SMTPClient({
+        connection: { hostname: "smtp.gmail.com", port: 465, tls: true,
+          auth: { username: remitente, password: pass } },
+      });
+      await client.send({ from: remitente, to: dest, subject: asunto, content: texto });
+      await client.close();
+      return;
+    } catch (e) { console.error("SMTP falló, usando FormSubmit:", e); }
+  }
+  await Promise.allSettled(dest.map(m =>
+    fetch(`https://formsubmit.co/ajax/${encodeURIComponent(m)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify({ _subject: asunto, mensaje: texto }),
+    }).catch(console.error)));
+}
+
+async function enviarAvisos(msg: string, dst: Destinos) {
   const tareas: Promise<unknown>[] = [];
-  for (const d of destinosWhatsApp()) {
+  for (const d of dst.whatsapps) {
     tareas.push(fetch(
       `https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(d.tel)}&text=${encodeURIComponent(msg)}&apikey=${encodeURIComponent(d.key)}`,
     ).catch(console.error));
   }
-  for (const m of destinosCorreo()) {
-    tareas.push(fetch(`https://formsubmit.co/ajax/${encodeURIComponent(m)}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Accept": "application/json" },
-      body: JSON.stringify({ _subject: "🚨 Alerta AirFlux — sensor sin datos", mensaje: msg }),
-    }).catch(console.error));
+  let n = tareas.length;
+  if (dst.mailActivo && dst.correos.length) {
+    tareas.push(enviarCorreos(dst.correos, "🚨 Alerta SenFePin — sensor sin datos", msg, dst.remitente));
+    n += dst.correos.length;
   }
   await Promise.allSettled(tareas);
-  return tareas.length;
+  return n;
 }
 
 Deno.serve(async () => {
@@ -92,6 +124,13 @@ Deno.serve(async () => {
       };
     }
   } catch (e) { console.warn("config_alertas no disponible, usando defaults:", e); }
+
+  // Destinos configurados desde la página (tabla config_destinos)
+  let dst = parsearDestinos(null);
+  try {
+    const { data } = await supabase.from("config_destinos").select("*").eq("id", 1).maybeSingle();
+    if (data) dst = parsearDestinos(data);
+  } catch (e) { console.warn("config_destinos no disponible, usando secretos:", e); }
 
   for (const s of SITIOS) {
     // Último dato VÁLIDO del canal: solo cuentan entradas con mediciones
@@ -125,7 +164,7 @@ Deno.serve(async () => {
         (Date.now() - new Date(data.enviado_en).getTime()) / 3600000 < cfg.reenvio;
 
       let enviados = 0;
-      if (!yaAvisado) {
+      if (!yaAvisado && dst.activo) {
         const desde = ultimo
           ? ultimo.toLocaleString("es-CL", { timeZone: "America/Santiago" })
           : "—";
@@ -134,7 +173,7 @@ Deno.serve(async () => {
           .replaceAll("{id}", String(s.n))
           .replaceAll("{fecha}", desde)
           .replaceAll("{tiempo}", haceCuanto(ultimo));
-        enviados = await enviarAvisos(msg);
+        enviados = await enviarAvisos(msg, dst);
         if (enviados > 0) {
           await supabase.from("alertas_enviadas").upsert({
             sitio_n: s.n,

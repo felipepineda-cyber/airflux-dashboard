@@ -87,13 +87,34 @@ Deno.serve(async (req) => {
   const datos = await Promise.all(SITIOS.map(cargar7d));
   const texto = construirResumen(datos);
 
-  const envios = correos.map((m: string) =>
-    fetch(`https://formsubmit.co/ajax/${encodeURIComponent(m)}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Accept": "application/json" },
-      body: JSON.stringify({ _subject: "📊 Resumen semanal SenFePin", resumen: texto }),
-    }).catch(console.error));
-  await Promise.allSettled(envios);
+  // Remitente configurado en la página (tabla config_destinos) + secreto GMAIL_APP_PASSWORD
+  let remitente = "";
+  try {
+    const { data: dst } = await supabase.from("config_destinos").select("remitente").eq("id", 1).maybeSingle();
+    remitente = String(dst?.remitente ?? "");
+  } catch { /* opcional */ }
+  const pass = Deno.env.get("GMAIL_APP_PASSWORD") ?? "";
+  let viaSMTP = false;
+  if (remitente && pass) {
+    try {
+      const { SMTPClient } = await import("https://deno.land/x/denomailer@1.6.0/mod.ts");
+      const client = new SMTPClient({
+        connection: { hostname: "smtp.gmail.com", port: 465, tls: true,
+          auth: { username: remitente, password: pass } },
+      });
+      await client.send({ from: remitente, to: correos, subject: "📊 Resumen semanal SenFePin", content: texto });
+      await client.close();
+      viaSMTP = true;
+    } catch (e) { console.error("SMTP falló, usando FormSubmit:", e); }
+  }
+  if (!viaSMTP) {
+    await Promise.allSettled(correos.map((m: string) =>
+      fetch(`https://formsubmit.co/ajax/${encodeURIComponent(m)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({ _subject: "📊 Resumen semanal SenFePin", resumen: texto }),
+      }).catch(console.error)));
+  }
 
   await supabase.from("config_resumen").update({ last_sent: new Date().toISOString() }).eq("id", 1);
   return Response.json({ ok: true, enviado: true, correos: correos.length });
