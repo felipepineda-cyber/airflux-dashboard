@@ -832,8 +832,9 @@
             <div class="sub-titulo">📧 Correos de destino (puedes agregar varios)</div>
             <div id="rsMails"></div>
             <button class="btn ghost" onclick="agregarRsMail()">➕ Añadir correo</button>
-            <div style="margin-top:1.1rem">
+            <div style="margin-top:1.1rem;display:flex;gap:.6rem;flex-wrap:wrap">
               <button class="btn success" onclick="probarResumen()">📤 Enviar resumen de prueba ahora</button>
+              <button class="btn" onclick="enviarUltimosDosResumenes()">📤📤 Enviar últimos 2 resúmenes (una semana c/u)</button>
             </div>
             <div class="estado-envio" id="rsResultado"></div>
           </div>
@@ -1354,9 +1355,10 @@ async function sincronizarConfigResumen() {
   } catch (e) { console.warn("config_resumen:", e); }
 }
 
-/* Texto de análisis descriptivo de los últimos 7 días */
-async function construirResumenSemanal() {
-  const fin = new Date(), ini = new Date(fin.getTime() - 7 * 24 * 3600000);
+/* Texto de análisis descriptivo de una semana (por defecto: los últimos 7 días) */
+async function construirResumenSemanal(ini, fin) {
+  fin = fin || new Date();
+  ini = ini || new Date(fin.getTime() - 7 * 24 * 3600000);
   const res = await Promise.all(SITIOS.map(s => tvCargarHorario(s, ini, fin)));
   const lineas = [`📊 RESUMEN SEMANAL SenFePin (${fmtFecha(ini)} → ${fmtFecha(fin)})`, ""];
   let g25 = [], g10 = [];
@@ -1391,6 +1393,39 @@ async function probarResumen() {
         body: JSON.stringify({ _subject: "📊 Resumen semanal SenFePin (prueba)", resumen: texto }),
       })));
     el.style.color = "var(--ok)"; el.textContent = `✔ Resumen enviado a ${c.correos.length} correo(s). Recuerda que el primer envío de FormSubmit pide confirmación.`;
+  } catch (e) { el.style.color = "var(--err)"; el.textContent = "✖ Error: " + e.message; }
+}
+
+/* Envía dos resúmenes: la semana pasada y la antepasada, cada uno en su propio correo */
+async function enviarUltimosDosResumenes() {
+  const el = $("rsResultado");
+  guardarResumen();
+  const c = configResumen();
+  if (!c.correos.length) { el.style.color = "var(--err)"; el.textContent = "✖ Agrega al menos un correo."; return; }
+  const ahora = new Date();
+  const hace7 = new Date(ahora.getTime() - 7 * 24 * 3600000);
+  const hace14 = new Date(ahora.getTime() - 14 * 24 * 3600000);
+  const semanas = [
+    { titulo: "Semana antepasada", ini: hace14, fin: hace7 },
+    { titulo: "Semana pasada", ini: hace7, fin: ahora },
+  ];
+  try {
+    for (const [i, sem] of semanas.entries()) {
+      el.style.color = "var(--text-2)";
+      el.textContent = `🔄 Calculando y enviando resumen ${i + 1} de 2 (${sem.titulo.toLowerCase()})…`;
+      const texto = await construirResumenSemanal(sem.ini, sem.fin);
+      await Promise.allSettled(c.correos.map(m =>
+        fetch(`https://formsubmit.co/ajax/${encodeURIComponent(m)}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify({
+            _subject: `📊 Resumen SenFePin — ${sem.titulo} (${fmtFecha(sem.ini).slice(0,10)} → ${fmtFecha(sem.fin).slice(0,10)})`,
+            resumen: texto,
+          }),
+        })));
+    }
+    el.style.color = "var(--ok)";
+    el.textContent = `✔ 2 resúmenes enviados a ${c.correos.length} correo(s): semana pasada y antepasada (un correo por semana).`;
   } catch (e) { el.style.color = "var(--err)"; el.textContent = "✖ Error: " + e.message; }
 }
 
