@@ -93,6 +93,57 @@ function agrupar(datos: Fila[], campo: "mp25" | "mp10", claveFn: (p: ReturnType<
 }
 
 /* ---------- gráficos vía QuickChart ---------- */
+async function quickFetch(cfg: unknown, w = 860, h = 340): Promise<Uint8Array | null> {
+  try {
+    const r = await fetch("https://quickchart.io/chart", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chart: cfg, width: w, height: h, format: "png", backgroundColor: "white", version: "4" }),
+    });
+    if (!r.ok) return null;
+    return new Uint8Array(await r.arrayBuffer());
+  } catch { return null; }
+}
+
+/* Serie temporal semanal de una estación (MP2,5 + MP10) */
+async function serieSemanaPNG(d: Fila[], titulo: string): Promise<Uint8Array | null> {
+  const labels = d.map(f => f.t.toLocaleString("es-CL", { timeZone: "America/Santiago", weekday: "short", hour: "2-digit" }));
+  return await quickFetch({
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        { label: "MP2,5", data: d.map(f => Number.isFinite(f.mp25) ? f.mp25 : null), borderColor: "#0065A3", pointRadius: 0, borderWidth: 1.8, fill: false, tension: .3 },
+        { label: "MP10", data: d.map(f => Number.isFinite(f.mp10) ? f.mp10 : null), borderColor: "#FF5733", pointRadius: 0, borderWidth: 1.8, fill: false, tension: .3 },
+      ],
+    },
+    options: {
+      plugins: { legend: { position: "top" }, title: { display: true, text: titulo, color: "#334155", font: { size: 13 } } },
+      scales: {
+        y: { beginAtZero: true, title: { display: true, text: "µg/m³" } },
+        x: { ticks: { autoSkip: true, maxTicksLimit: 14 }, grid: { display: false } },
+      },
+    },
+  }, 860, 300);
+}
+
+/* Días (promedio diario) sobre la norma 24h */
+function diasSobreNorma(d: Fila[], campo: "mp25" | "mp10", norma: number): number {
+  const m = new Map<string, number[]>();
+  for (const f of d) {
+    const v = f[campo];
+    if (!Number.isFinite(v)) continue;
+    const k = partesChile(f.t).fecha;
+    if (!m.has(k)) m.set(k, []);
+    m.get(k)!.push(v);
+  }
+  let c = 0;
+  for (const vs of m.values()) {
+    if (vs.reduce((a, b) => a + b, 0) / vs.length > norma) c++;
+  }
+  return c;
+}
+
 async function graficoPNG(labels: (string | number)[], res: { prom: number | null; lo: number | null; hi: number | null }[],
   color: string, titulo: string, unidad: string): Promise<Uint8Array | null> {
   const cfg = {
@@ -113,15 +164,7 @@ async function graficoPNG(labels: (string | number)[], res: { prom: number | nul
       },
     },
   };
-  try {
-    const r = await fetch("https://quickchart.io/chart", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chart: cfg, width: 860, height: 340, format: "png", backgroundColor: "white", version: "4" }),
-    });
-    if (!r.ok) return null;
-    return new Uint8Array(await r.arrayBuffer());
-  } catch { return null; }
+  return await quickFetch(cfg, 860, 340);
 }
 
 /* ---------- construcción del PDF ---------- */
@@ -232,6 +275,48 @@ async function construirPDF(ini: Date, fin: Date, d7: Fila[][], hist: Fila[]): P
       y -= h + 14;
     }
     texto("Banda sombreada: intervalo de confianza del 95% de la media.", M, y, 8, font, GRIS);
+  }
+
+  // 5. Análisis por estación (serie semanal + diagnóstico automático)
+  const promRed25 = stats(todos7.map(x => x.mp25).filter(Number.isFinite)).prom;
+  const promRed10 = stats(todos7.map(x => x.mp10).filter(Number.isFinite)).prom;
+  for (let i = 0; i < SITIOS.length; i++) {
+    if (i % 3 === 0) {
+      page = pdf.addPage([W, H]); y = H - 42;
+      texto(`5. Análisis por estación (últimos 7 días)${i ? " - continuación" : ""}`, M, y, 13, bold, AZUL);
+      y -= 8;
+    }
+    const s = SITIOS[i], d = d7[i];
+    const v25 = d.map(x => x.mp25).filter(Number.isFinite);
+    const v10 = d.map(x => x.mp10).filter(Number.isFinite);
+    const s25 = stats(v25), s10 = stats(v10);
+    const disp = Math.min(100, 100 * d.length / (7 * 24));
+    const rel25 = Number.isFinite(s25.prom) && Number.isFinite(promRed25)
+      ? ` (${s25.prom >= promRed25 ? "+" : ""}${((s25.prom / promRed25 - 1) * 100).toFixed(0)}% vs red)` : "";
+    const rel10 = Number.isFinite(s10.prom) && Number.isFinite(promRed10)
+      ? ` (${s10.prom >= promRed10 ? "+" : ""}${((s10.prom / promRed10 - 1) * 100).toFixed(0)}% vs red)` : "";
+    const exc25 = diasSobreNorma(d, "mp25", 50), exc10 = diasSobreNorma(d, "mp10", 130);
+
+    y -= 14;
+    texto(`${s.nombre} (ID ${s.n})`, M, y, 11.5, bold, AZUL);
+    y -= 13;
+    texto(`Disponibilidad ${disp.toFixed(0)}% (${d.length}/168 h) · MP2,5 prom ${f1(s25.prom)} µg/m³${rel25} · MP10 prom ${f1(s10.prom)} µg/m³${rel10}`, M, y, 8.8, font, GRIS);
+    y -= 11;
+    const excTxt = (exc25 || exc10)
+      ? `Días con promedio diario sobre norma: MP2,5 ${exc25} día(s), MP10 ${exc10} día(s).`
+      : "Sin días sobre la norma 24h en el período.";
+    texto(`Máximos horarios: MP2,5 ${f1(s25.max)} · MP10 ${f1(s10.max)} µg/m³. ${excTxt}`, M, y, 8.8, font, (exc25 || exc10) ? ROJO : GRIS);
+    y -= 6;
+    const png = d.length ? await serieSemanaPNG(d, `Serie semanal - ${s.nombre}`) : null;
+    if (png) {
+      const img = await pdf.embedPng(png);
+      const w = W - 2 * M, h = w * 300 / 860;
+      page.drawImage(img, { x: M, y: y - h, width: w, height: h });
+      y -= h + 6;
+    } else {
+      texto("(sin datos suficientes para graficar)", M, y - 10, 9, font, GRIS);
+      y -= 22;
+    }
   }
 
   // Pie de página

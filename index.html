@@ -1732,6 +1732,70 @@ async function generarInformePDF() {
       doc.text("Banda sombreada: intervalo de confianza del 95% de la media.", M, yy);
     }
 
+    // ---- 5. Análisis por estación (serie semanal + diagnóstico automático) ----
+    el.textContent = "🔄 Generando análisis por estación…";
+    const todos7 = d7.flat();
+    const promRed25 = stats(todos7.map(x => x.mp25).filter(Number.isFinite)).prom;
+    const promRed10 = stats(todos7.map(x => x.mp10).filter(Number.isFinite)).prom;
+    const diasSobre = (d, campo, norma) => {
+      const m = new Map();
+      for (const f of d) {
+        const v = f[campo];
+        if (!Number.isFinite(v)) continue;
+        const k = claveAgregado(f.t, "dia");
+        if (!m.has(k)) m.set(k, []);
+        m.get(k).push(v);
+      }
+      let c = 0;
+      for (const vs of m.values()) if (vs.reduce((a, b) => a + b, 0) / vs.length > norma) c++;
+      return c;
+    };
+    const anchoImg2 = W - 2 * M, altoImg2 = anchoImg2 * 300 / 900;
+    for (let i = 0; i < SITIOS.length; i++) {
+      if (i % 2 === 0) {
+        doc.addPage();
+        let yEnc = 16;
+        doc.setFontSize(13); doc.setFont(undefined, "bold"); doc.setTextColor(0, 101, 163);
+        doc.text(`5. Análisis por estación (últimos 7 días)${i ? " - continuación" : ""}`, M, yEnc);
+        y = yEnc + 8;
+      }
+      const s = SITIOS[i], d = d7[i];
+      const v25 = d.map(x => x.mp25).filter(Number.isFinite);
+      const v10 = d.map(x => x.mp10).filter(Number.isFinite);
+      const s25 = stats(v25), s10 = stats(v10);
+      const disp = Math.min(100, 100 * d.length / (7 * 24));
+      const rel = (p, red) => Number.isFinite(p) && Number.isFinite(red)
+        ? ` (${p >= red ? "+" : ""}${((p / red - 1) * 100).toFixed(0)}% vs red)` : "";
+      const exc25 = diasSobre(d, "mp25", 50), exc10 = diasSobre(d, "mp10", 130);
+
+      doc.setFontSize(11.5); doc.setFont(undefined, "bold"); doc.setTextColor(0, 101, 163);
+      doc.text(`${s.nombre} (ID ${s.n})`, M, y + 6);
+      doc.setFontSize(8.8); doc.setFont(undefined, "normal"); doc.setTextColor(90);
+      doc.text(`Disponibilidad ${disp.toFixed(0)}% (${d.length}/168 h) · MP2,5 prom ${f1(s25.prom)} µg/m³${rel(s25.prom, promRed25)} · MP10 prom ${f1(s10.prom)} µg/m³${rel(s10.prom, promRed10)}`, M, y + 11);
+      const excTxt = (exc25 || exc10)
+        ? `Días con promedio diario sobre norma: MP2,5 ${exc25} día(s), MP10 ${exc10} día(s).`
+        : "Sin días sobre la norma 24h en el período.";
+      if (exc25 || exc10) doc.setTextColor(220, 38, 38);
+      doc.text(`Máximos horarios: MP2,5 ${f1(s25.max)} · MP10 ${f1(s10.max)} µg/m³. ${excTxt}`, M, y + 15.5);
+      doc.setTextColor(90);
+      if (d.length) {
+        const png = await chartPNG([
+          { x: d.map(f => f.t), y: d.map(f => f.mp25), name: "MP2,5", mode: "lines", line: { color: "#0065A3", width: 1.8 } },
+          { x: d.map(f => f.t), y: d.map(f => f.mp10), name: "MP10", mode: "lines", line: { color: "#FF5733", width: 1.8 } },
+        ], {
+          ...LAYOUT_BASE,
+          yaxis: { title: { text: "µg/m³" }, gridcolor: "#eef2f7", rangemode: "tozero" },
+          xaxis: { gridcolor: "#f3f6fa" },
+          legend: { orientation: "h", y: 1.15 },
+          margin: { t: 15, b: 35, l: 55, r: 15 },
+        }, 900, 300);
+        doc.addImage(png, "PNG", M, y + 18, anchoImg2, altoImg2);
+      } else {
+        doc.text("(sin datos suficientes para graficar)", M, y + 24);
+      }
+      y += 18 + altoImg2 + 12;
+    }
+
     // ---- Pie de página ----
     const paginas = doc.getNumberOfPages();
     for (let p = 1; p <= paginas; p++) {
