@@ -358,6 +358,9 @@
       <button class="nav-item" data-view="estadisticas" onclick="irA('estadisticas')">
         <span class="ico">📊</span> Estadísticas generales
       </button>
+      <button class="nav-item" data-view="variacion" onclick="irA('variacion')">
+        <span class="ico">🕒</span> Variación temporal
+      </button>
       <button class="nav-item" data-view="descargas" onclick="irA('descargas')">
         <span class="ico">⬇️</span> Centro de descargas
       </button>
@@ -529,6 +532,33 @@
         </div>
 
         <div class="panel">
+          <div class="panel-head">
+            <h2>🗓️ Resúmenes por día / semana / mes</h2>
+            <div style="margin-left:auto;display:flex;gap:.5rem;flex-wrap:wrap">
+              <select id="agSitio" onchange="pintarAgregados()"><option value="all">Todos los puntos</option></select>
+              <select id="agRes" onchange="pintarAgregados()">
+                <option value="dia" selected>Por día</option>
+                <option value="semana">Por semana</option>
+                <option value="mes">Por mes</option>
+              </select>
+              <button class="btn ghost" onclick="csvTabla('tablaAgregados','resumen_periodo')">⬇️ CSV</button>
+            </div>
+          </div>
+          <div class="panel-body tabla-wrap" style="max-height:430px;overflow-y:auto">
+            <div class="ayuda" style="margin-bottom:.6rem">Calculado sobre los promedios horarios del período seleccionado arriba. Para resúmenes mensuales completos elige "Todo el histórico".</div>
+            <table id="tablaAgregados">
+              <thead><tr>
+                <th>Período</th>
+                <th>MP2,5 prom</th><th>MP2,5 mín</th><th>MP2,5 máx</th>
+                <th>MP10 prom</th><th>MP10 mín</th><th>MP10 máx</th>
+                <th>N° datos</th>
+              </tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
           <div class="panel-head"><h2>🏙️ Comparación entre sitios</h2>
             <div style="margin-left:auto;display:flex;gap:.4rem">
               <button class="btn ghost" onclick="descargarPNG('chartComparacion2','comparacion_sitios')">🖼️ PNG</button>
@@ -546,6 +576,78 @@
             </div>
           </div>
           <div class="panel-body"><div id="chartDisp" class="chart" style="height:320px"></div></div>
+        </div>
+      </div>
+
+      <!-- ============ VISTA: VARIACIÓN TEMPORAL (estilo openair) ============ -->
+      <div class="view" id="vista-variacion">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>🕒 Variación temporal</h2>
+            <span class="hint">Análisis estilo openair (timeVariation) · promedios horarios con IC 95% de la media</span>
+          </div>
+          <div class="panel-body">
+            <div class="controls">
+              <label style="font-size:.8rem;font-weight:600;color:var(--text-2)">Sitio
+                <select id="tvSitio"><option value="all">Todos los puntos</option></select>
+              </label>
+              <label style="font-size:.8rem;font-weight:600;color:var(--text-2)">Variable
+                <select id="tvVariable">
+                  <option value="mp10" selected>MP10</option>
+                  <option value="mp25">MP2,5</option>
+                  <option value="temp">Temperatura</option>
+                  <option value="hum">Humedad</option>
+                  <option value="pres">Presión</option>
+                </select>
+              </label>
+              <label style="font-size:.8rem;font-weight:600;color:var(--text-2)">Período
+                <select id="tvPeriodo">
+                  <option value="720">Últimos 30 días</option>
+                  <option value="2160">Últimos 90 días</option>
+                  <option value="hist" selected>Todo el histórico</option>
+                </select>
+              </label>
+              <button class="btn" onclick="tvGenerar()">📊 Generar análisis</button>
+            </div>
+            <div class="estado-envio" id="tvEstado"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Perfil horario por día de la semana</h2>
+            <button class="btn ghost" style="margin-left:auto" onclick="descargarPNG('tvSemanaHora','variacion_semana_hora')">🖼️ PNG</button>
+          </div>
+          <div class="panel-body"><div id="tvSemanaHora" style="width:100%;height:360px"></div></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.3rem;margin-bottom:1.3rem">
+          <div class="panel" style="margin-bottom:0">
+            <div class="panel-head"><h2>Perfil horario (todos los días)</h2>
+              <button class="btn ghost" style="margin-left:auto" onclick="descargarPNG('tvHora','variacion_hora')">🖼️</button></div>
+            <div class="panel-body"><div id="tvHora" style="width:100%;height:300px"></div></div>
+          </div>
+          <div class="panel" style="margin-bottom:0">
+            <div class="panel-head"><h2>Perfil mensual</h2>
+              <button class="btn ghost" style="margin-left:auto" onclick="descargarPNG('tvMes','variacion_mes')">🖼️</button></div>
+            <div class="panel-body"><div id="tvMes" style="width:100%;height:300px"></div></div>
+          </div>
+          <div class="panel" style="margin-bottom:0">
+            <div class="panel-head"><h2>Por día de la semana</h2>
+              <button class="btn ghost" style="margin-left:auto" onclick="descargarPNG('tvDia','variacion_dia')">🖼️</button></div>
+            <div class="panel-body"><div id="tvDia" style="width:100%;height:300px"></div></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h2>📖 Cómo interpretar estos gráficos</h2></div>
+          <div class="panel-body" style="font-size:.88rem;line-height:1.65;color:var(--text-2)">
+            <p style="margin-bottom:.7rem"><b>La banda sombreada</b> es el intervalo de confianza del 95% de la media: si las bandas de dos períodos no se traslapan, la diferencia entre ellos es estadísticamente significativa y no producto del azar. Bandas anchas indican pocos datos o alta variabilidad.</p>
+            <p style="margin-bottom:.7rem"><b>Perfil horario</b>: en material particulado, los picos matinales (7–9 h) y vespertinos (19–23 h) suelen asociarse a tráfico vehicular y, en ciudades del sur de Chile, a calefacción a leña; un valle de madrugada refleja menor actividad y mejor dispersión.</p>
+            <p style="margin-bottom:.7rem"><b>Día de la semana</b>: concentraciones menores en sábado y domingo ("efecto fin de semana") apuntan a fuentes antropogénicas ligadas a la actividad laboral (tráfico, industria); si no hay diferencia, dominan fuentes constantes (polvo natural, calefacción residencial).</p>
+            <p style="margin-bottom:.7rem"><b>Perfil mensual</b>: revela la estacionalidad — en Chile centro-sur el MP sube en otoño-invierno (mayo–agosto) por calefacción y peores condiciones de ventilación (inversión térmica).</p>
+            <p><b>Panel superior (hora × día)</b>: combina ambos efectos y permite ver, por ejemplo, si el pico matinal desaparece el fin de semana. Referencia: <a href="https://bookdown.org/david_carslaw/openair/sections/trend-analysis/time-variation.html" target="_blank" style="color:var(--primary)">The openair book — Temporal variations</a>.</p>
+          </div>
         </div>
       </div>
 
@@ -693,6 +795,47 @@
               <button class="btn success" onclick="probarPlantilla()">📤 Enviar esta previsualización a mis destinos</button>
             </div>
             <div class="estado-envio" id="acResultado"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>📧 Resumen semanal automático</h2>
+            <span class="hint" id="rsNube">Config compartida con el vigilante 24/7</span>
+          </div>
+          <div class="panel-body">
+            <div class="switch-row">
+              <label class="switch">
+                <input type="checkbox" id="rsActivo" onchange="guardarResumen()">
+                <span class="slider"></span>
+              </label>
+              <div>
+                <b style="font-size:.9rem">Enviar cada semana un análisis descriptivo de los últimos 7 días</b>
+                <div style="font-size:.76rem;color:var(--text-3)">Lo envía el vigilante de Supabase aunque la página esté cerrada. Incluye promedio, mín, máx, desviación estándar y disponibilidad por punto.</div>
+              </div>
+            </div>
+            <div class="form-grid" style="margin-top:.6rem">
+              <div class="campo">
+                <label>Día de envío</label>
+                <select id="rsDia" onchange="guardarResumen()">
+                  <option value="1" selected>Lunes</option><option value="2">Martes</option>
+                  <option value="3">Miércoles</option><option value="4">Jueves</option>
+                  <option value="5">Viernes</option><option value="6">Sábado</option>
+                  <option value="0">Domingo</option>
+                </select>
+              </div>
+              <div class="campo">
+                <label>Hora de envío (hora de Chile)</label>
+                <select id="rsHora" onchange="guardarResumen()"></select>
+              </div>
+            </div>
+            <div class="sub-titulo">📧 Correos de destino (puedes agregar varios)</div>
+            <div id="rsMails"></div>
+            <button class="btn ghost" onclick="agregarRsMail()">➕ Añadir correo</button>
+            <div style="margin-top:1.1rem">
+              <button class="btn success" onclick="probarResumen()">📤 Enviar resumen de prueba ahora</button>
+            </div>
+            <div class="estado-envio" id="rsResultado"></div>
           </div>
         </div>
       </div>
@@ -844,7 +987,7 @@ const LAYOUT_BASE = {
 };
 
 /* ================== NAVEGACIÓN ================== */
-const TITULOS = { resumen: "Resumen", estadisticas: "Estadísticas generales", descargas: "Centro de descargas", powerbi: "Análisis Power BI", whatsapp: "Alertas WhatsApp", alertconf: "Configuración de alerta" };
+const TITULOS = { resumen: "Resumen", estadisticas: "Estadísticas generales", variacion: "Variación temporal", descargas: "Centro de descargas", powerbi: "Análisis Power BI", whatsapp: "Alertas WhatsApp", alertconf: "Configuración de alerta" };
 
 function irA(vista, n) {
   vistaActual = vista;
@@ -956,17 +1099,292 @@ function pintarVista() {
     pintarPunto();
   } else if (vistaActual === "estadisticas") {
     pintarTabla();
+    pintarAgregados();
     dibujarComparacion("chartComparacion2");
     dibujarDisponibilidad();
   } else if (vistaActual === "whatsapp") {
     pintarEstadoWA();
   } else if (vistaActual === "alertconf") {
     cargarFormAlerta();
+    cargarFormResumen();
   } else if (vistaActual === "descargas") {
     dcInit();
+  } else if (vistaActual === "variacion") {
+    tvInit();
   } else if (vistaActual === "powerbi") {
     pintarPBI();
   }
+}
+
+/* ================== VARIACIÓN TEMPORAL (estilo openair timeVariation) ================== */
+const DIAS_SEM = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"];
+const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+let tvDatos = null;
+
+function tvInit() {
+  const sel = $("tvSitio");
+  if (sel.options.length === 1)
+    for (const s of SITIOS) sel.insertAdjacentHTML("beforeend", `<option value="${s.n}">${s.nombre}</option>`);
+  if (!tvDatos) tvGenerar();
+}
+
+async function tvCargarHorario(s, ini, fin) {
+  // SIEMPRE promedios horarios (average=60) para todos los parámetros
+  const url = `https://api.thingspeak.com/channels/${s.canal}/feeds.json`
+    + `?api_key=${s.key}&start=${encodeURIComponent(fmtFecha(ini))}&end=${encodeURIComponent(fmtFecha(fin))}`
+    + `&timezone=America%2FSantiago&average=60&round=1`;
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const j = await r.json();
+    return (j.feeds || []).map(f => ({
+      t: new Date(f.created_at),
+      temp: parseFloat(f.field1), pres: parseFloat(f.field2), hum: parseFloat(f.field3),
+      mp10: parseFloat(f.field4), mp25: parseFloat(f.field5),
+    })).filter(f => !isNaN(f.t));
+  } catch (e) { console.error("tv:", s.nombre, e); return []; }
+}
+
+async function tvGenerar() {
+  const el = $("tvEstado");
+  el.style.color = "var(--text-2)"; el.textContent = "🔄 Cargando promedios horarios…";
+  const fin = new Date();
+  const p = $("tvPeriodo").value;
+  const ini = p === "hist" ? new Date(HISTORICO_INICIO) : new Date(fin.getTime() - parseInt(p) * 3600000);
+  const sitioSel = $("tvSitio").value;
+  const lista = sitioSel === "all" ? SITIOS : SITIOS.filter(s => s.n === parseInt(sitioSel));
+  const res = await Promise.all(lista.map(s => tvCargarHorario(s, ini, fin)));
+  tvDatos = res.flat();
+  if (!tvDatos.length) { el.style.color = "var(--err)"; el.textContent = "✖ Sin datos en el período."; return; }
+  el.style.color = "var(--ok)";
+  el.textContent = `✔ ${tvDatos.length} registros horarios analizados (${lista.length} punto${lista.length > 1 ? "s" : ""}).`;
+  tvDibujar();
+}
+
+/* Media e IC95 de la media por grupo temporal */
+function tvAgrupar(campo, claveFn, nClaves) {
+  const grupos = Array.from({ length: nClaves }, () => []);
+  for (const f of tvDatos) {
+    const v = f[campo];
+    if (!Number.isFinite(v)) continue;
+    grupos[claveFn(f.t)].push(v);
+  }
+  return grupos.map(g => {
+    if (g.length < 2) return { prom: g.length ? g[0] : null, lo: null, hi: null, n: g.length };
+    const m = g.reduce((a, b) => a + b, 0) / g.length;
+    const sd = Math.sqrt(g.reduce((a, b) => a + (b - m) ** 2, 0) / (g.length - 1));
+    const e = 1.96 * sd / Math.sqrt(g.length);
+    return { prom: m, lo: m - e, hi: m + e, n: g.length };
+  });
+}
+
+function tvTraces(x, res, color, nombre) {
+  return [
+    { x, y: res.map(r => r.lo), mode: "lines", line: { width: 0 }, hoverinfo: "skip", showlegend: false, connectgaps: false },
+    { x, y: res.map(r => r.hi), mode: "lines", line: { width: 0 }, fill: "tonexty",
+      fillcolor: hex2rgba(color, .18), hoverinfo: "skip", showlegend: false, connectgaps: false },
+    { x, y: res.map(r => r.prom), mode: "lines+markers", name: nombre,
+      line: { color, width: 2.2 }, marker: { size: 4 }, connectgaps: false,
+      customdata: res.map(r => r.n), hovertemplate: "%{y:.1f}<br>n = %{customdata}<extra></extra>" },
+  ];
+}
+
+function tvDibujar() {
+  if (!tvDatos) return;
+  const k = $("tvVariable").value;
+  const v = VAR_DEF[k];
+  const diaIdx = t => (t.getDay() + 6) % 7;   // 0 = lunes
+
+  // 1) hora × día de la semana (0..167)
+  const semHora = tvAgrupar(v.campo, t => diaIdx(t) * 24 + t.getHours(), 168);
+  const xSH = [...Array(168).keys()];
+  Plotly.newPlot("tvSemanaHora", tvTraces(xSH, semHora, v.color, v.nombre), {
+    ...LAYOUT_BASE,
+    xaxis: {
+      tickvals: [...Array(28).keys()].map(i => i * 6),
+      ticktext: [...Array(28).keys()].map(i => (i * 6) % 24),
+      gridcolor: "#f3f6fa", tickfont: { size: 9 },
+    },
+    yaxis: { title: { text: `${v.nombre} (${v.unidad})` }, gridcolor: "#eef2f7", rangemode: "tozero" },
+    shapes: [...Array(6).keys()].map(i => ({
+      type: "line", x0: (i + 1) * 24, x1: (i + 1) * 24, yref: "paper", y0: 0, y1: 1,
+      line: { color: "#cbd5e1", width: 1 },
+    })),
+    annotations: DIAS_SEM.map((d, i) => ({
+      x: i * 24 + 12, yref: "paper", y: 1.06, text: `<b>${d}</b>`, showarrow: false,
+      font: { size: 11, color: "#475569" },
+    })),
+    showlegend: false,
+    margin: { t: 35, b: 35, l: 60, r: 15 },
+  }, { responsive: true, displaylogo: false });
+
+  // 2) perfil horario
+  const porHora = tvAgrupar(v.campo, t => t.getHours(), 24);
+  Plotly.newPlot("tvHora", tvTraces([...Array(24).keys()], porHora, v.color, v.nombre), {
+    ...LAYOUT_BASE,
+    xaxis: { title: { text: "hora" }, dtick: 6, gridcolor: "#eef2f7" },
+    yaxis: { title: { text: v.unidad }, gridcolor: "#eef2f7", rangemode: "tozero" },
+    showlegend: false, margin: { t: 20, b: 45, l: 55, r: 10 },
+  }, { responsive: true, displaylogo: false });
+
+  // 3) perfil mensual
+  const porMes = tvAgrupar(v.campo, t => t.getMonth(), 12);
+  Plotly.newPlot("tvMes", tvTraces(MESES, porMes, v.color, v.nombre), {
+    ...LAYOUT_BASE,
+    xaxis: { title: { text: "mes" }, gridcolor: "#eef2f7" },
+    yaxis: { title: { text: v.unidad }, gridcolor: "#eef2f7", rangemode: "tozero" },
+    showlegend: false, margin: { t: 20, b: 45, l: 55, r: 10 },
+  }, { responsive: true, displaylogo: false });
+
+  // 4) por día de la semana
+  const porDia = tvAgrupar(v.campo, diaIdx, 7);
+  Plotly.newPlot("tvDia", tvTraces(DIAS_SEM, porDia, v.color, v.nombre), {
+    ...LAYOUT_BASE,
+    xaxis: { title: { text: "día de la semana" }, gridcolor: "#eef2f7" },
+    yaxis: { title: { text: v.unidad }, gridcolor: "#eef2f7", rangemode: "tozero" },
+    showlegend: false, margin: { t: 20, b: 45, l: 55, r: 10 },
+  }, { responsive: true, displaylogo: false });
+}
+
+/* ================== RESÚMENES POR DÍA / SEMANA / MES ================== */
+function claveAgregado(t, res) {
+  const p = x => String(x).padStart(2, "0");
+  if (res === "dia") return `${t.getFullYear()}-${p(t.getMonth()+1)}-${p(t.getDate())}`;
+  if (res === "mes") return `${t.getFullYear()}-${p(t.getMonth()+1)} (${MESES[t.getMonth()]})`;
+  const lunes = new Date(t);                     // semana: desde el lunes
+  lunes.setDate(t.getDate() - ((t.getDay() + 6) % 7));
+  return `Sem. ${lunes.getFullYear()}-${p(lunes.getMonth()+1)}-${p(lunes.getDate())}`;
+}
+
+function pintarAgregados() {
+  const tb = document.querySelector("#tablaAgregados tbody");
+  if (!tb) return;
+  tb.innerHTML = "";
+  const res = $("agRes").value;
+  const sitioSel = $("agSitio").value;
+  const lista = sitioSel === "all" ? SITIOS : SITIOS.filter(s => s.n === parseInt(sitioSel));
+  const mapa = new Map();
+  for (const s of lista)
+    for (const f of (datos[s.n] || [])) {
+      const clave = claveAgregado(f.t, res);
+      if (!mapa.has(clave)) mapa.set(clave, { v25: [], v10: [], n: 0 });
+      const g = mapa.get(clave);
+      if (Number.isFinite(f.mp25)) g.v25.push(f.mp25);
+      if (Number.isFinite(f.mp10)) g.v10.push(f.mp10);
+      g.n++;
+    }
+  const claves = [...mapa.keys()].sort().reverse();
+  for (const clave of claves) {
+    const g = mapa.get(clave);
+    const s25 = stats(g.v25), s10 = stats(g.v10);
+    tb.insertAdjacentHTML("beforeend", `
+      <tr><td>${clave}</td>
+      <td>${f1(s25.prom)}</td><td>${f1(s25.min)}</td><td>${f1(s25.max)}</td>
+      <td>${f1(s10.prom)}</td><td>${f1(s10.min)}</td><td>${f1(s10.max)}</td>
+      <td>${g.n}</td></tr>`);
+  }
+  if (!claves.length)
+    tb.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--text-3)">Sin datos en el período seleccionado</td></tr>`;
+}
+
+/* ================== RESUMEN SEMANAL AUTOMÁTICO ================== */
+function configResumen() {
+  try {
+    const c = JSON.parse(localStorage.getItem("airflux_resumen") || "{}");
+    return { activo: false, dia: 1, hora: 8, correos: [], ...c };
+  } catch { return { activo: false, dia: 1, hora: 8, correos: [] }; }
+}
+function filaRsMail(m) {
+  return `<div class="dest-row">
+    <input type="text" class="rs-mail" placeholder="correo@dominio.cl" value="${esc(m)}" onchange="guardarResumen()">
+    <button class="btn-x" title="Quitar" onclick="this.parentElement.remove(); guardarResumen()">✕</button>
+  </div>`;
+}
+function agregarRsMail() { $("rsMails").insertAdjacentHTML("beforeend", filaRsMail("")); }
+
+function cargarFormResumen() {
+  const selH = $("rsHora");
+  if (!selH.options.length)
+    for (let h = 0; h < 24; h++) selH.insertAdjacentHTML("beforeend", `<option value="${h}">${String(h).padStart(2,"0")}:00</option>`);
+  const c = configResumen();
+  $("rsActivo").checked = !!c.activo;
+  $("rsDia").value = c.dia;
+  $("rsHora").value = c.hora;
+  $("rsMails").innerHTML = (c.correos.length ? c.correos : [""]).map(filaRsMail).join("");
+}
+function guardarResumen() {
+  const cfg = {
+    activo: $("rsActivo").checked,
+    dia: parseInt($("rsDia").value),
+    hora: parseInt($("rsHora").value),
+    correos: [...document.querySelectorAll("#rsMails .rs-mail")].map(i => i.value.trim()).filter(Boolean),
+  };
+  localStorage.setItem("airflux_resumen", JSON.stringify(cfg));
+  if (supaCfg) {
+    supaCfg.from("config_resumen").upsert({
+      id: 1, activo: cfg.activo, dia: cfg.dia, hora: cfg.hora,
+      correos: cfg.correos.join(","), updated_at: new Date().toISOString(),
+    }).then(({ error }) => {
+      const el = $("rsNube");
+      if (el) {
+        el.textContent = error ? "⚠️ No se pudo guardar en la nube (¿falta la tabla config_resumen?)" : "☁️ Guardado en la nube";
+        el.style.color = error ? "var(--warn)" : "var(--ok)";
+      }
+    });
+  }
+}
+async function sincronizarConfigResumen() {
+  if (!supaCfg) return;
+  try {
+    const { data } = await supaCfg.from("config_resumen").select("*").eq("id", 1).maybeSingle();
+    if (data) {
+      localStorage.setItem("airflux_resumen", JSON.stringify({
+        activo: !!data.activo, dia: Number(data.dia) ?? 1, hora: Number(data.hora) ?? 8,
+        correos: (data.correos || "").split(",").map(x => x.trim()).filter(Boolean),
+      }));
+      if (vistaActual === "alertconf") cargarFormResumen();
+    }
+  } catch (e) { console.warn("config_resumen:", e); }
+}
+
+/* Texto de análisis descriptivo de los últimos 7 días */
+async function construirResumenSemanal() {
+  const fin = new Date(), ini = new Date(fin.getTime() - 7 * 24 * 3600000);
+  const res = await Promise.all(SITIOS.map(s => tvCargarHorario(s, ini, fin)));
+  const lineas = [`📊 RESUMEN SEMANAL SenFePin (${fmtFecha(ini)} → ${fmtFecha(fin)})`, ""];
+  let g25 = [], g10 = [];
+  SITIOS.forEach((s, i) => {
+    const d = res[i];
+    const v25 = d.map(x => x.mp25).filter(Number.isFinite);
+    const v10 = d.map(x => x.mp10).filter(Number.isFinite);
+    g25.push(...v25); g10.push(...v10);
+    const s25 = stats(v25), s10 = stats(v10);
+    const sd25 = v25.length > 1 ? Math.sqrt(v25.reduce((a,b)=>a+(b-s25.prom)**2,0)/(v25.length-1)) : NaN;
+    const disp = Math.min(100, 100 * d.length / (7 * 24));
+    lineas.push(`• ${s.nombre} (ID ${s.n}): MP2,5 prom ${f1(s25.prom)} (mín ${f1(s25.min)}, máx ${f1(s25.max)}, σ ${f1(sd25)}) µg/m³ · MP10 prom ${f1(s10.prom)} (máx ${f1(s10.max)}) µg/m³ · disponibilidad ${disp.toFixed(0)}%`);
+  });
+  const t25 = stats(g25), t10 = stats(g10);
+  lineas.push("", `🌐 RED COMPLETA: MP2,5 prom ${f1(t25.prom)} µg/m³ · MP10 prom ${f1(t10.prom)} µg/m³ · máximos ${f1(t25.max)} / ${f1(t10.max)} µg/m³`);
+  lineas.push(`Norma 24h de referencia: MP2,5 = 50 µg/m³ · MP10 = 130 µg/m³.`);
+  return lineas.join("\n");
+}
+
+async function probarResumen() {
+  const el = $("rsResultado");
+  guardarResumen();
+  const c = configResumen();
+  if (!c.correos.length) { el.style.color = "var(--err)"; el.textContent = "✖ Agrega al menos un correo."; return; }
+  el.style.color = "var(--text-2)"; el.textContent = "🔄 Calculando resumen de los últimos 7 días…";
+  try {
+    const texto = await construirResumenSemanal();
+    await Promise.allSettled(c.correos.map(m =>
+      fetch(`https://formsubmit.co/ajax/${encodeURIComponent(m)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({ _subject: "📊 Resumen semanal SenFePin (prueba)", resumen: texto }),
+      })));
+    el.style.color = "var(--ok)"; el.textContent = `✔ Resumen enviado a ${c.correos.length} correo(s). Recuerda que el primer envío de FormSubmit pide confirmación.`;
+  } catch (e) { el.style.color = "var(--err)"; el.textContent = "✖ Error: " + e.message; }
 }
 
 /* ================== POWER BI ================== */
@@ -1868,8 +2286,11 @@ function init() {
   togglePuntos(true);
   initMapa();
   cargarFormWA();
+  const agS = $("agSitio");
+  for (const s of SITIOS) agS.insertAdjacentHTML("beforeend", `<option value="${s.n}">${s.nombre}</option>`);
   $("footUmbral").textContent = `${configAlerta().umbral} h sin datos`;
   sincronizarConfigAlerta();
+  sincronizarConfigResumen();
   refrescar();
   setInterval(refrescar, REFRESCO_MS);
 }

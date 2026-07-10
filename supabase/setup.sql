@@ -32,6 +32,26 @@ create policy "config_alertas_update" on public.config_alertas for update using 
 drop policy if exists "config_alertas_insert" on public.config_alertas;
 create policy "config_alertas_insert" on public.config_alertas for insert with check (id = 1);
 
+-- A3) Configuración del resumen semanal automático (día/hora/correos,
+--     editable desde la página en "Configuración de alerta")
+create table if not exists public.config_resumen (
+  id int primary key default 1,
+  activo boolean not null default false,
+  dia int not null default 1,       -- 0=domingo … 6=sábado (hora de Chile)
+  hora int not null default 8,      -- 0-23 (hora de Chile)
+  correos text not null default '',
+  last_sent timestamptz,
+  updated_at timestamptz default now()
+);
+insert into public.config_resumen (id) values (1) on conflict (id) do nothing;
+alter table public.config_resumen enable row level security;
+drop policy if exists "config_resumen_select" on public.config_resumen;
+create policy "config_resumen_select" on public.config_resumen for select using (true);
+drop policy if exists "config_resumen_update" on public.config_resumen;
+create policy "config_resumen_update" on public.config_resumen for update using (true) with check (id = 1);
+drop policy if exists "config_resumen_insert" on public.config_resumen;
+create policy "config_resumen_insert" on public.config_resumen for insert with check (id = 1);
+
 -- B) Extensiones para programar la revisión automática
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
@@ -55,7 +75,25 @@ select cron.schedule(
   $$
 );
 
+-- Tarea: el resumen semanal se revisa cada hora (envía solo en el
+-- día/hora configurados desde la página). MISMOS REEMPLAZOS que arriba.
+select cron.schedule(
+  'resumen-airflux',
+  '5 * * * *',
+  $$
+  select net.http_post(
+    url     := 'https://TU-PROYECTO.supabase.co/functions/v1/resumen',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer TU_ANON_KEY'
+    ),
+    body    := '{}'::jsonb
+  );
+  $$
+);
+
 -- Ver tareas programadas:
 --   select * from cron.job;
--- Eliminar la tarea si necesitas recrearla:
+-- Eliminar una tarea si necesitas recrearla:
 --   select cron.unschedule('vigilante-airflux');
+--   select cron.unschedule('resumen-airflux');
