@@ -1843,8 +1843,10 @@ function configAlerta() {
 }
 
 /* --- Sincronización con Supabase (misma config para la página y el vigilante 24/7) --- */
-const SUPA_URL = "https://txhkpyvknxegqyefjhpb.supabase.co";
-const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4aGtweXZrbnhlZ3F5ZWZqaHBiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExMDExOTYsImV4cCI6MjA5NjY3NzE5Nn0.YNfMaEYQ-Me6EShnQ9PQf-XQXODKTscizWWm72Ac8r4";
+// Proyecto Supabase "airflux-dashboard" (config, respaldos y funciones).
+// Nota: la app Norma Background usa su propio proyecto, independiente de este.
+const SUPA_URL = "https://stuxspraehjbxyiujsnu.supabase.co";
+const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN0dXhzcHJhZWhqYnh5aXVqc251Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0MzMyMTQsImV4cCI6MjA5OTAwOTIxNH0.03RhkWD28e9T9TG4RWsyfIXGZNZwPdAUEThY5K8b_qY";
 let supaCfg = null;
 try { supaCfg = window.supabase.createClient(SUPA_URL, SUPA_KEY); } catch (e) { console.warn("Supabase no disponible:", e); }
 
