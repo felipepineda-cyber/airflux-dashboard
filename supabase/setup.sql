@@ -72,6 +72,20 @@ create policy "config_destinos_update" on public.config_destinos for update usin
 drop policy if exists "config_destinos_insert" on public.config_destinos;
 create policy "config_destinos_insert" on public.config_destinos for insert with check (id = 1);
 
+-- A5) Respaldo histórico de mediciones: lo escribe el vigilante cada 30 min.
+--     Si ThingSpeak falla o cierra, la página lee de aquí automáticamente.
+create table if not exists public.mediciones (
+  sitio_n int not null,
+  ts timestamptz not null,
+  temp numeric, pres numeric, hum numeric, mp10 numeric, mp25 numeric,
+  primary key (sitio_n, ts)
+);
+create index if not exists mediciones_sitio_ts on public.mediciones (sitio_n, ts desc);
+alter table public.mediciones enable row level security;
+drop policy if exists "mediciones_select" on public.mediciones;
+create policy "mediciones_select" on public.mediciones for select using (true);
+-- (solo el vigilante escribe, con la service key — no se necesitan más políticas)
+
 -- B) Extensiones para programar la revisión automática
 create extension if not exists pg_cron;
 create extension if not exists pg_net;

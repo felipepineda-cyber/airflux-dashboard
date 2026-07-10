@@ -418,6 +418,7 @@
 
       <!-- ============ VISTA: RESUMEN ============ -->
       <div class="view visible" id="vista-resumen">
+        <div id="avisoFuente"></div>
         <div id="alertas"></div>
         <div class="kpis" id="kpis"></div>
 
@@ -929,7 +930,33 @@
 </div>
 
 <script>
-/* ================== CONFIGURACIÓN ================== */
+/* ============================================================================
+   SenFePin · Dashboard de monitoreo de calidad del aire (red AirFlux)
+   ============================================================================
+   ARQUITECTURA GENERAL
+   - SPA de un solo archivo (index.html): sin build, sin dependencias locales.
+   - Librerías por CDN: Plotly (gráficos), Leaflet (mapa), supabase-js (config).
+   - Fuente de datos PRIMARIA: API pública de ThingSpeak (canales 3295963-68),
+     siempre con promedios horarios (average=60) salvo períodos >45 días,
+     donde se usan promedios diarios (límite de 8000 registros por consulta).
+   - RESPALDOS (en orden): 1) tabla 'mediciones' de Supabase, archivada cada
+     30 min por la función Edge 'vigilante'; 2) caché en localStorage con la
+     última carga exitosa. Si ThingSpeak falla, la página sigue mostrando datos.
+   - CONFIGURACIÓN compartida vía Supabase (la lee también el vigilante 24/7):
+     · config_alertas  → umbral de horas, reenvío y plantilla del mensaje
+     · config_destinos → números CallMeBot, correos y remitente
+     · config_resumen  → día/hora y correos del resumen semanal
+   - AVISOS: WhatsApp vía CallMeBot; correo vía SMTP Gmail (si hay remitente +
+     secreto GMAIL_APP_PASSWORD) o FormSubmit como alternativa sin registro.
+   SECCIONES DE ESTE SCRIPT (en orden):
+     1. Configuración y utilidades   2. Red resiliente y caché
+     3. Navegación (SPA)             4. Carga de datos
+     5. Alertas y notificaciones     6. Vistas (mapa, punto, estadísticas…)
+     7. Variación temporal (openair) 8. Descargas
+     9. Avisos WhatsApp/correo      10. Power BI e inicio
+   ============================================================================ */
+
+/* ================== 1. CONFIGURACIÓN ================== */
 const SITIOS = [
   { n: 1, nombre: "Calama",    canal: 3295963, key: "FFUP0A4K22HLJOHT", lat: -22.4544, lon: -68.9294 },
   { n: 2, nombre: "La Ligua",  canal: 3295964, key: "URO7G2P6TJH3CDNF", lat: -32.4524, lon: -71.2311 },
@@ -1026,28 +1053,103 @@ function togglePuntos(forzarAbrir) {
 function abrirSidebar() { $("sidebar").classList.add("open"); $("backdrop").classList.add("on"); }
 function cerrarSidebar() { $("sidebar").classList.remove("open"); $("backdrop").classList.remove("on"); }
 
-/* ================== CARGA DE DATOS ================== */
+/* ================== 2. RED RESILIENTE Y CACHÉ ================== */
+/* fetch con timeout (15 s) y 2 intentos con espera creciente: evita que una
+   petición colgada congele la página y tolera cortes breves de red. */
+async function fetchJSON(url, intentos = 2, timeoutMs = 15000) {
+  let ultimoError;
+  for (let i = 0; i < intentos; i++) {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), timeoutMs);
+    try {
+      const r = await fetch(url, { signal: ctl.signal });
+      clearTimeout(timer);
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return await r.json();
+    } catch (e) {
+      clearTimeout(timer);
+      ultimoError = e;
+      if (i < intentos - 1) await new Promise(res => setTimeout(res, 1500 * (i + 1)));
+    }
+  }
+  throw ultimoError;
+}
+
+function mapearFeeds(feeds) {
+  return (feeds || []).map(f => ({
+    t: new Date(f.created_at),
+    temp: parseFloat(f.field1),
+    pres: parseFloat(f.field2),
+    hum:  parseFloat(f.field3),
+    mp10: parseFloat(f.field4),
+    mp25: parseFloat(f.field5),
+  })).filter(f => !isNaN(f.t) && (Number.isFinite(f.mp10) || Number.isFinite(f.mp25)))
+    .sort((a, b) => a.t - b.t);
+}
+
+/* Caché local: guarda la última carga exitosa (hasta 400 puntos por sitio).
+   Si ThingSpeak y Supabase fallan, la página muestra esta copia. */
+function cacheGuardar() {
+  try {
+    const pack = { ts: Date.now(), datos: {} };
+    for (const s of SITIOS)
+      pack.datos[s.n] = (datos[s.n] || []).slice(-400)
+        .map(f => [f.t.getTime(), f.temp, f.pres, f.hum, f.mp10, f.mp25]);
+    localStorage.setItem("airflux_cache", JSON.stringify(pack));
+  } catch (e) { /* cuota de localStorage llena: se omite sin romper nada */ }
+}
+function cacheLeer(n) {
+  try {
+    const pack = JSON.parse(localStorage.getItem("airflux_cache") || "null");
+    if (!pack || !pack.datos || !pack.datos[n] || !pack.datos[n].length) return null;
+    return {
+      ts: pack.ts,
+      feeds: pack.datos[n].map(a => ({ t: new Date(a[0]), temp: a[1], pres: a[2], hum: a[3], mp10: a[4], mp25: a[5] })),
+    };
+  } catch { return null; }
+}
+
+/* Respaldo Supabase: la función 'vigilante' archiva cada 30 min las mediciones
+   en la tabla 'mediciones'; aquí se leen si ThingSpeak no responde. */
+async function cargarRespaldoSupabase(sitio, ini, fin) {
+  if (!supaCfg) return null;
+  try {
+    const { data, error } = await supaCfg.from("mediciones")
+      .select("ts,temp,pres,hum,mp10,mp25")
+      .eq("sitio_n", sitio.n)
+      .gte("ts", ini.toISOString()).lte("ts", fin.toISOString())
+      .order("ts", { ascending: true }).limit(5000);
+    if (error || !data?.length) return null;
+    return data.map(r => ({
+      t: new Date(r.ts), temp: +r.temp, pres: +r.pres, hum: +r.hum, mp10: +r.mp10, mp25: +r.mp25,
+    })).filter(f => Number.isFinite(f.mp10) || Number.isFinite(f.mp25));
+  } catch { return null; }
+}
+
+/* ================== 4. CARGA DE DATOS ================== */
+let origenDatos = {};   // n -> "thingspeak" | "supabase" | "cache" | "memoria" | "sin-datos"
+
 async function cargarSitio(sitio, ini, fin, resMin) {
   const url = `https://api.thingspeak.com/channels/${sitio.canal}/feeds.json`
     + `?api_key=${sitio.key}`
     + `&start=${encodeURIComponent(fmtFecha(ini))}&end=${encodeURIComponent(fmtFecha(fin))}`
     + `&timezone=America%2FSantiago&average=${resMin}&round=1`;
   try {
-    const r = await fetch(url);
-    if (!r.ok) throw new Error("HTTP " + r.status);
-    const j = await r.json();
-    datos[sitio.n] = (j.feeds || []).map(f => ({
-      t: new Date(f.created_at),
-      temp: parseFloat(f.field1),
-      pres: parseFloat(f.field2),
-      hum:  parseFloat(f.field3),
-      mp10: parseFloat(f.field4),
-      mp25: parseFloat(f.field5),
-    })).filter(f => !isNaN(f.t) && (Number.isFinite(f.mp10) || Number.isFinite(f.mp25)))
-      .sort((a,b) => a.t - b.t);
+    const j = await fetchJSON(url);
+    datos[sitio.n] = mapearFeeds(j.feeds);
+    origenDatos[sitio.n] = "thingspeak";
   } catch (e) {
-    console.error(`Error cargando ${sitio.nombre}:`, e);
-    datos[sitio.n] = datos[sitio.n] || [];
+    console.error(`ThingSpeak falló para ${sitio.nombre}:`, e);
+    // Respaldo 1: archivo de mediciones en Supabase
+    const resp = await cargarRespaldoSupabase(sitio, ini, fin);
+    if (resp?.length) { datos[sitio.n] = resp; origenDatos[sitio.n] = "supabase"; return; }
+    // Respaldo 2: lo que ya estaba cargado en memoria en esta sesión
+    if (datos[sitio.n]?.length) { origenDatos[sitio.n] = "memoria"; return; }
+    // Respaldo 3: caché en localStorage de una sesión anterior
+    const c = cacheLeer(sitio.n);
+    if (c) { datos[sitio.n] = c.feeds; origenDatos[sitio.n] = "cache"; return; }
+    datos[sitio.n] = [];
+    origenDatos[sitio.n] = "sin-datos";
   }
 }
 
@@ -1058,9 +1160,8 @@ async function cargarSitio(sitio, ini, fin, resMin) {
 async function cargarUltimo(sitio) {
   try {
     // Últimas 24 entradas crudas: buscamos la más reciente con mediciones válidas
-    const r = await fetch(`https://api.thingspeak.com/channels/${sitio.canal}/feeds.json?api_key=${sitio.key}&results=24&timezone=America%2FSantiago`);
-    if (r.ok) {
-      const j = await r.json().catch(() => null);
+    const j = await fetchJSON(`https://api.thingspeak.com/channels/${sitio.canal}/feeds.json?api_key=${sitio.key}&results=24&timezone=America%2FSantiago`);
+    {
       const validos = (j?.feeds || []).map(f => ({
         t: new Date(f.created_at),
         temp: parseFloat(f.field1), pres: parseFloat(f.field2), hum: parseFloat(f.field3),
@@ -1092,6 +1193,19 @@ async function refrescar() {
   $("spinner").classList.remove("on");
   $("reloj").textContent = "Última actualización: " + fmtFecha(new Date())
     + ($("rango").value === "hist" ? " · histórico completo (promedios diarios)" : "");
+
+  // Aviso de fuente: si algún sitio no vino directo de ThingSpeak, se informa
+  const degradados = SITIOS.filter(s => origenDatos[s.n] && origenDatos[s.n] !== "thingspeak");
+  const av = $("avisoFuente");
+  if (av) {
+    if (degradados.length) {
+      const detalle = degradados.map(s => `${s.nombre} (${({supabase:"respaldo Supabase",cache:"caché local",memoria:"datos previos",["sin-datos"]:"sin datos"})[origenDatos[s.n]]})`).join(", ");
+      av.innerHTML = `<div class="alerta" style="animation:none;background:var(--warn-bg);border-color:#fde68a;border-left-color:var(--warn);color:#78350f">⚠️ ThingSpeak no respondió para: ${detalle}. Se muestra la mejor copia disponible.</div>`;
+    } else {
+      av.innerHTML = "";
+      cacheGuardar();   // solo se cachea una carga 100% exitosa
+    }
+  }
   pintarSubmenu();
   procesarAlertas();
   pintarVista();
@@ -1142,15 +1256,17 @@ async function tvCargarHorario(s, ini, fin) {
     + `?api_key=${s.key}&start=${encodeURIComponent(fmtFecha(ini))}&end=${encodeURIComponent(fmtFecha(fin))}`
     + `&timezone=America%2FSantiago&average=60&round=1`;
   try {
-    const r = await fetch(url);
-    if (!r.ok) throw new Error("HTTP " + r.status);
-    const j = await r.json();
+    const j = await fetchJSON(url);
     return (j.feeds || []).map(f => ({
       t: new Date(f.created_at),
       temp: parseFloat(f.field1), pres: parseFloat(f.field2), hum: parseFloat(f.field3),
       mp10: parseFloat(f.field4), mp25: parseFloat(f.field5),
     })).filter(f => !isNaN(f.t));
-  } catch (e) { console.error("tv:", s.nombre, e); return []; }
+  } catch (e) {
+    console.error("tv:", s.nombre, e);
+    const resp = await cargarRespaldoSupabase(s, ini, fin);   // respaldo Supabase
+    return resp || [];
+  }
 }
 
 async function tvGenerar() {
@@ -2004,18 +2120,12 @@ async function dcCargarFeeds(sitio, ini, fin) {
     + `&start=${encodeURIComponent(fmtFecha(ini))}&end=${encodeURIComponent(fmtFecha(fin))}`
     + `&timezone=America%2FSantiago&average=${resolucionMin(ini, fin)}&round=1`;
   try {
-    const r = await fetch(url);
-    if (!r.ok) throw new Error("HTTP " + r.status);
-    const j = await r.json();
-    return (j.feeds || []).map(f => ({
-      t: new Date(f.created_at),
-      temp: parseFloat(f.field1), pres: parseFloat(f.field2), hum: parseFloat(f.field3),
-      mp10: parseFloat(f.field4), mp25: parseFloat(f.field5),
-    })).filter(f => !isNaN(f.t) && (Number.isFinite(f.mp10) || Number.isFinite(f.mp25)))
-      .sort((a,b) => a.t - b.t);
+    const j = await fetchJSON(url);
+    return mapearFeeds(j.feeds);
   } catch (e) {
     console.error(`Descargas: error en ${sitio.nombre}:`, e);
-    return [];
+    const resp = await cargarRespaldoSupabase(sitio, ini, fin);   // respaldo Supabase
+    return resp || [];
   }
 }
 

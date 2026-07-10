@@ -135,7 +135,10 @@ Deno.serve(async () => {
   for (const s of SITIOS) {
     // Último dato VÁLIDO del canal: solo cuentan entradas con mediciones
     // reales de MP10/MP2,5 — entradas vacías no mantienen el sensor "en línea".
+    // Además, las entradas válidas se ARCHIVAN en la tabla 'mediciones' como
+    // respaldo histórico propio (independiente de ThingSpeak).
     let ultimo: Date | null = null;
+    const filasArchivo: Record<string, unknown>[] = [];
     try {
       const r = await fetch(
         `https://api.thingspeak.com/channels/${s.canal}/feeds.json?api_key=${s.key}&results=24&timezone=America%2FSantiago`,
@@ -146,10 +149,27 @@ Deno.serve(async () => {
           const mp10 = parseFloat(f.field4), mp25 = parseFloat(f.field5);
           if (!f.created_at || (!Number.isFinite(mp10) && !Number.isFinite(mp25))) continue;
           const t = new Date(f.created_at);
-          if (!isNaN(t.getTime()) && (!ultimo || t > ultimo)) ultimo = t;
+          if (isNaN(t.getTime())) continue;
+          if (!ultimo || t > ultimo) ultimo = t;
+          filasArchivo.push({
+            sitio_n: s.n,
+            ts: t.toISOString(),
+            temp: parseFloat(f.field1) || null,
+            pres: parseFloat(f.field2) || null,
+            hum: parseFloat(f.field3) || null,
+            mp10: Number.isFinite(mp10) ? mp10 : null,
+            mp25: Number.isFinite(mp25) ? mp25 : null,
+          });
         }
       }
     } catch (_) { /* se trata como sin datos */ }
+
+    // Archivar (upsert idempotente: no duplica si ya existe la marca de tiempo)
+    if (filasArchivo.length) {
+      const { error: errArch } = await supabase.from("mediciones")
+        .upsert(filasArchivo, { onConflict: "sitio_n,ts" });
+      if (errArch) console.warn("No se pudo archivar mediciones:", errArch.message);
+    }
 
     const horas = ultimo ? (Date.now() - ultimo.getTime()) / 3600000 : Infinity;
 
