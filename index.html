@@ -841,7 +841,7 @@
               <button class="btn" onclick="enviarUltimosDosResumenes()">📤📤 Enviar últimos 2 resúmenes (una semana c/u)</button>
               <button class="btn" onclick="generarInformePDF()">📄 Descargar informe PDF (últimos 7 días)</button>
             </div>
-            <div class="ayuda" style="margin-top:.5rem">El PDF incluye: reporte de funcionamiento (estado y disponibilidad por estación), estadística descriptiva, resumen diario y los gráficos de variación temporal (perfil horario, por día de semana y mensual) de MP2,5 y MP10. El correo automático semanal envía la versión texto; el PDF se genera aquí a demanda.</div>
+            <div class="ayuda" style="margin-top:.5rem">El informe incluye: reporte de funcionamiento (estado y disponibilidad por estación), estadística descriptiva, resumen diario y los gráficos de variación temporal (perfil horario, por día de semana y mensual) de MP2,5 y MP10. <b>El envío automático semanal adjunta el PDF por correo</b> si configuraste el remitente Gmail + secreto GMAIL_APP_PASSWORD (si no, envía la versión texto). El botón "Descargar" genera el mismo informe aquí en el navegador.</div>
             <div class="estado-envio" id="rsResultado"></div>
           </div>
         </div>
@@ -1499,12 +1499,33 @@ async function construirResumenSemanal(ini, fin) {
   return lineas.join("\n");
 }
 
+/* Los envíos con PDF adjunto los hace la función Edge "resumen" de Supabase
+   (QuickChart + pdf-lib + SMTP). Aquí solo se invoca; si la función no está
+   desplegada, se cae al envío de texto simple desde el navegador. */
+async function invocarResumenEdge(semanas) {
+  const r = await fetch(`${SUPA_URL}/functions/v1/resumen?forzar=1&semanas=${semanas}`, {
+    headers: { Authorization: `Bearer ${SUPA_KEY}` },
+  });
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  return await r.json();
+}
+
 async function probarResumen() {
   const el = $("rsResultado");
   guardarResumen();
   const c = configResumen();
   if (!c.correos.length) { el.style.color = "var(--err)"; el.textContent = "✖ Agrega al menos un correo."; return; }
-  el.style.color = "var(--text-2)"; el.textContent = "🔄 Calculando resumen de los últimos 7 días…";
+  if (!c.activo) { el.style.color = "var(--err)"; el.textContent = "✖ Activa el interruptor del resumen semanal primero."; return; }
+  el.style.color = "var(--text-2)"; el.textContent = "🔄 Generando informe en el servidor (PDF, puede tardar ~30 s)…";
+  try {
+    const res = await invocarResumenEdge(1);
+    el.style.color = "var(--ok)";
+    el.textContent = res.via === "smtp-pdf"
+      ? `✔ Informe PDF enviado a ${res.correos} correo(s) desde tu remitente.`
+      : `✔ Enviado como texto a ${res.correos} correo(s). Para el PDF adjunto: configura remitente + secreto GMAIL_APP_PASSWORD.`;
+    return;
+  } catch (e) { console.warn("Función resumen no disponible, usando envío local:", e); }
+  // Respaldo local (texto vía FormSubmit)
   try {
     const texto = await construirResumenSemanal();
     await Promise.allSettled(c.correos.map(m =>
@@ -1513,16 +1534,26 @@ async function probarResumen() {
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
         body: JSON.stringify({ _subject: "📊 Resumen semanal SenFePin (prueba)", resumen: texto }),
       })));
-    el.style.color = "var(--ok)"; el.textContent = `✔ Resumen enviado a ${c.correos.length} correo(s). Recuerda que el primer envío de FormSubmit pide confirmación.`;
+    el.style.color = "var(--ok)"; el.textContent = `✔ Resumen (texto) enviado a ${c.correos.length} correo(s). La función "resumen" de Supabase no respondió — despliégala para recibir el PDF.`;
   } catch (e) { el.style.color = "var(--err)"; el.textContent = "✖ Error: " + e.message; }
 }
 
-/* Envía dos resúmenes: la semana pasada y la antepasada, cada uno en su propio correo */
+/* Envía dos resúmenes: la semana pasada y la antepasada. Primero intenta el
+   PDF vía la función Edge; si no está disponible, texto desde el navegador. */
 async function enviarUltimosDosResumenes() {
   const el = $("rsResultado");
   guardarResumen();
   const c = configResumen();
   if (!c.correos.length) { el.style.color = "var(--err)"; el.textContent = "✖ Agrega al menos un correo."; return; }
+  el.style.color = "var(--text-2)"; el.textContent = "🔄 Generando 2 informes PDF en el servidor (puede tardar ~1 min)…";
+  try {
+    const res = await invocarResumenEdge(2);
+    el.style.color = "var(--ok)";
+    el.textContent = res.via === "smtp-pdf"
+      ? `✔ 2 informes PDF (semana pasada y antepasada) enviados a ${res.correos} correo(s) en un solo correo.`
+      : `✔ Enviado como texto a ${res.correos} correo(s). Para PDFs adjuntos: configura remitente + GMAIL_APP_PASSWORD.`;
+    return;
+  } catch (e) { console.warn("Función resumen no disponible, usando envío local:", e); }
   const ahora = new Date();
   const hace7 = new Date(ahora.getTime() - 7 * 24 * 3600000);
   const hace14 = new Date(ahora.getTime() - 14 * 24 * 3600000);
