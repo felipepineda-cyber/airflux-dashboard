@@ -379,7 +379,21 @@ const json = (o: unknown) => Response.json(o, { headers: CORS });
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
-  const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  try {
+    return await manejar(req);
+  } catch (e) {
+    console.error("Error no controlado:", e);
+    return json({ ok: false, error: String(e) });
+  }
+});
+
+async function manejar(req: Request): Promise<Response> {
+  // Clave de servidor: en proyectos con el sistema de claves nuevo puede no
+  // existir SUPABASE_SERVICE_ROLE_KEY; en ese caso usar el secreto SERVICE_KEY
+  // (crear en Edge Functions → Secrets con la "secret key" sb_secret_...).
+  const claveServidor = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SERVICE_KEY") || "";
+  if (!claveServidor) return json({ ok: false, error: "Falta SERVICE_KEY en los secretos (usa la sb_secret_ de API Keys)" });
+  const supabase = createClient(Deno.env.get("SUPABASE_URL")!, claveServidor);
   const url = new URL(req.url);
   const forzar = url.searchParams.get("forzar") === "1";
   const semanas = Math.min(2, Math.max(1, Number(url.searchParams.get("semanas") || "1")));
@@ -456,4 +470,4 @@ Deno.serve(async (req) => {
     }).catch(console.error)));
   if (!forzar) await supabase.from("config_resumen").update({ last_sent: new Date().toISOString() }).eq("id", 1);
   return json({ ok: true, enviado: true, via: "formsubmit-texto", correos: correos.length });
-});
+}

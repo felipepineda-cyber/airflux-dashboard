@@ -106,10 +106,10 @@ async function enviarAvisos(msg: string, dst: Destinos) {
 }
 
 Deno.serve(async () => {
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
+  // Clave de servidor: fallback al secreto SERVICE_KEY (sb_secret_...) en
+  // proyectos con el sistema de claves nuevo de Supabase.
+  const claveServidor = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SERVICE_KEY") || "";
+  const supabase = createClient(Deno.env.get("SUPABASE_URL")!, claveServidor);
   const resultados: unknown[] = [];
 
   // Configuración compartida (misma que edita la página en "Configuración de alerta")
