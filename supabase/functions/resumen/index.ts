@@ -373,8 +373,10 @@ async function enviarConAdjuntos(remitente: string, pass: string, dest: string[]
   });
   await client.send({
     from: remitente, to: dest, subject: asunto, content: cuerpo,
+    // Adjuntos en base64: el modo "binary" de denomailer corrompe u omite
+    // archivos en algunos entornos; base64 es el modo confiable.
     attachments: adjuntos.map(a => ({
-      filename: a.nombre, content: a.datos, encoding: "binary", contentType: "application/pdf",
+      filename: a.nombre, content: b64(a.datos), encoding: "base64", contentType: "application/pdf",
     })),
   });
   await client.close();
@@ -448,6 +450,7 @@ async function manejar(req: Request): Promise<Response> {
   const asunto = semanas === 1 ? "📊 Resumen semanal SenFePin (PDF adjunto)" : "📊 Resúmenes SenFePin - últimas 2 semanas (PDF adjuntos)";
   const cuerpo = `Se adjunta el informe de calidad del aire de la red AirFlux.\n\nPeríodos: ${nombres.join(" · ")}\n\nContenido: reporte de funcionamiento, estadística descriptiva, resumen diario y gráficos de variación temporal (MP2,5 y MP10).\n\n— Enviado automáticamente por SenFePin.`;
 
+  let ultimoError = "";
   // Prioridad 1: Resend (API HTTPS, la más confiable en serverless)
   const resendKey = Deno.env.get("RESEND_API_KEY") ?? "";
   if (resendKey) {
@@ -457,6 +460,7 @@ async function manejar(req: Request): Promise<Response> {
       return json({ ok: true, enviado: true, via: "resend-pdf", correos: correos.length, adjuntos: adjuntos.length });
     } catch (e) {
       console.error("Resend falló:", e);
+      ultimoError = "Resend: " + String(e);
     }
   }
   // Prioridad 2: SMTP Gmail
@@ -467,6 +471,7 @@ async function manejar(req: Request): Promise<Response> {
       return json({ ok: true, enviado: true, via: "smtp-pdf", correos: correos.length, adjuntos: adjuntos.length });
     } catch (e) {
       console.error("SMTP con adjuntos falló:", e);
+      ultimoError += (ultimoError ? " | " : "") + "SMTP: " + String(e);
     }
   }
   // Respaldo sin SMTP: texto simple vía FormSubmit (sin adjuntos)
@@ -480,5 +485,11 @@ async function manejar(req: Request): Promise<Response> {
       }),
     }).catch(console.error)));
   if (!forzar) await supabase.from("config_resumen").update({ last_sent: new Date().toISOString() }).eq("id", 1);
-  return json({ ok: true, enviado: true, via: "formsubmit-texto", correos: correos.length });
+  return json({
+    ok: true, enviado: true, via: "formsubmit-texto", correos: correos.length,
+    resend_configurado: !!resendKey,
+    remitente_configurado: remitente || "(vacío en config_destinos)",
+    gmail_pass_configurado: !!pass,
+    detalle: ultimoError || (resendKey ? "sin error registrado" : "RESEND_API_KEY no encontrada por la función"),
+  });
 }
