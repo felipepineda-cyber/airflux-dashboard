@@ -1262,11 +1262,13 @@ async function tvCargarHorario(s, ini, fin) {
     + `&timezone=America%2FSantiago&average=60&round=1`;
   try {
     const j = await fetchJSON(url);
+    // Con average=60 ThingSpeak devuelve también horas vacías (campos null):
+    // se descartan para que disponibilidad y "último dato" sean reales.
     return (j.feeds || []).map(f => ({
       t: new Date(f.created_at),
       temp: parseFloat(f.field1), pres: parseFloat(f.field2), hum: parseFloat(f.field3),
       mp10: parseFloat(f.field4), mp25: parseFloat(f.field5),
-    })).filter(f => !isNaN(f.t));
+    })).filter(f => !isNaN(f.t) && (Number.isFinite(f.mp10) || Number.isFinite(f.mp25) || Number.isFinite(f.temp)));
   } catch (e) {
     console.error("tv:", s.nombre, e);
     const resp = await cargarRespaldoSupabase(s, ini, fin);   // respaldo Supabase

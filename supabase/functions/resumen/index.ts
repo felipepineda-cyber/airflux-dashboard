@@ -83,7 +83,9 @@ async function cargarHorario(s: { canal: number; key: string }, ini: Date, fin: 
       t: new Date(f.created_at),
       temp: parseFloat(f.field1), pres: parseFloat(f.field2), hum: parseFloat(f.field3),
       mp10: parseFloat(f.field4), mp25: parseFloat(f.field5),
-    })).filter((f: Fila) => !isNaN(f.t.getTime()));
+      // Solo cuentan filas con mediciones reales: con average=60 ThingSpeak
+      // devuelve también las horas vacías (campos null) y esas NO son datos.
+    })).filter((f: Fila) => !isNaN(f.t.getTime()) && (Number.isFinite(f.mp10) || Number.isFinite(f.mp25)));
   } catch { return []; }
 }
 
@@ -364,22 +366,29 @@ async function enviarResend(apiKey: string, dest: string[], asunto: string, cuer
   if (!r.ok) throw new Error(`Resend HTTP ${r.status}: ${await r.text()}`);
 }
 
-/* Opción B: SMTP Gmail directo (puede estar bloqueado en algunos entornos) */
+/* Opción B: SMTP Gmail con Nodemailer (formato MIME estándar y confiable;
+   denomailer generaba adjuntos que algunos clientes muestran como texto crudo). */
 async function enviarConAdjuntos(remitente: string, pass: string, dest: string[], asunto: string, cuerpo: string,
   adjuntos: { nombre: string; datos: Uint8Array }[]) {
-  const { SMTPClient } = await import("https://deno.land/x/denomailer@1.6.0/mod.ts");
-  const client = new SMTPClient({
-    connection: { hostname: "smtp.gmail.com", port: 465, tls: true, auth: { username: remitente, password: pass } },
+  const { default: nodemailer } = await import("npm:nodemailer@6.9.13");
+  const transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
+    auth: { user: remitente, pass },
   });
-  await client.send({
-    from: remitente, to: dest, subject: asunto, content: cuerpo,
-    // Adjuntos en base64: el modo "binary" de denomailer corrompe u omite
-    // archivos en algunos entornos; base64 es el modo confiable.
+  await transporter.sendMail({
+    from: `"SenFePin" <${remitente}>`,
+    to: dest.join(", "),
+    subject: asunto,
+    text: cuerpo,
     attachments: adjuntos.map(a => ({
-      filename: a.nombre, content: b64(a.datos), encoding: "base64", contentType: "application/pdf",
+      filename: a.nombre,
+      content: b64(a.datos),
+      encoding: "base64",
+      contentType: "application/pdf",
     })),
   });
-  await client.close();
 }
 
 /* ---------- handler principal ---------- */
