@@ -1504,7 +1504,7 @@ async function construirResumenSemanal(ini, fin) {
    desplegada, se cae al envío de texto simple desde el navegador. */
 async function invocarResumenEdge(semanas) {
   const r = await fetch(`${SUPA_URL}/functions/v1/resumen?forzar=1&semanas=${semanas}`, {
-    headers: { Authorization: `Bearer ${SUPA_KEY}` },
+    headers: { Authorization: `Bearer ${SUPA_KEY}`, apikey: SUPA_KEY },
   });
   if (!r.ok) throw new Error("HTTP " + r.status);
   return await r.json();
