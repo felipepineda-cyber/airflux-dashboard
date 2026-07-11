@@ -109,7 +109,7 @@ async function quickFetch(cfg: unknown, w = 860, h = 340): Promise<Uint8Array | 
     const r = await fetch("https://quickchart.io/chart", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chart: cfg, width: w, height: h, format: "png", backgroundColor: "white", version: "4" }),
+      body: JSON.stringify({ chart: cfg, width: w, height: h, format: "jpg", backgroundColor: "white", version: "4" }),
     });
     if (!r.ok) return null;
     return new Uint8Array(await r.arrayBuffer());
@@ -280,7 +280,7 @@ async function construirPDF(ini: Date, fin: Date, d7: Fila[][], hist: Fila[]): P
     ];
     for (const [, png] of graficos) {
       if (!png) { texto("(gráfico no disponible)", M, y - 12, 9, font, GRIS); y -= 24; continue; }
-      const img = await pdf.embedPng(png);
+      const img = await pdf.embedJpg(png);
       const w = W - 2 * M, h = w * 340 / 860;
       page.drawImage(img, { x: M, y: y - h, width: w, height: h });
       y -= h + 14;
@@ -320,7 +320,7 @@ async function construirPDF(ini: Date, fin: Date, d7: Fila[][], hist: Fila[]): P
     y -= 6;
     const png = d.length ? await serieSemanaPNG(d, `Serie semanal - ${s.nombre}`) : null;
     if (png) {
-      const img = await pdf.embedPng(png);
+      const img = await pdf.embedJpg(png);
       const w = W - 2 * M, h = w * 300 / 860;
       page.drawImage(img, { x: M, y: y - h, width: w, height: h });
       y -= h + 6;
