@@ -48,7 +48,8 @@ const fmtParts = new Intl.DateTimeFormat("en-US", {
   hour: "numeric", weekday: "short", month: "numeric", day: "numeric", year: "numeric",
 });
 const DIA_IDX: Record<string, number> = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 };
-function partesChile(t: Date) {
+type Partes = { hora: number; diaSem: number; mes: number; fecha: string };
+function partesChileRaw(t: Date): Partes {
   const o: Record<string, string> = {};
   for (const p of fmtParts.formatToParts(t)) o[p.type] = p.value;
   return {
@@ -58,6 +59,16 @@ function partesChile(t: Date) {
     fecha: `${o.year}-${String(o.month).padStart(2, "0")}-${String(o.day).padStart(2, "0")}`,
   };
 }
+// Memoización por hora: Intl.formatToParts es MUY costoso en CPU y los datos
+// son horarios, así que basta calcular una vez por cada hora distinta.
+const cachePartes = new Map<number, Partes>();
+function partesChile(t: Date): Partes {
+  const k = Math.floor(t.getTime() / 3600000);
+  let v = cachePartes.get(k);
+  if (!v) { v = partesChileRaw(t); cachePartes.set(k, v); }
+  return v;
+}
+const DIAS_ES = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"];
 
 async function cargarHorario(s: { canal: number; key: string }, ini: Date, fin: Date): Promise<Fila[]> {
   const fmt = (d: Date) => d.toISOString().slice(0, 16).replace("T", " ");
@@ -107,7 +118,7 @@ async function quickFetch(cfg: unknown, w = 860, h = 340): Promise<Uint8Array | 
 
 /* Serie temporal semanal de una estación (MP2,5 + MP10) */
 async function serieSemanaPNG(d: Fila[], titulo: string): Promise<Uint8Array | null> {
-  const labels = d.map(f => f.t.toLocaleString("es-CL", { timeZone: "America/Santiago", weekday: "short", hour: "2-digit" }));
+  const labels = d.map(f => { const p = partesChile(f.t); return `${DIAS_ES[p.diaSem]} ${String(p.hora).padStart(2, "0")}h`; });
   return await quickFetch({
     type: "line",
     data: {
