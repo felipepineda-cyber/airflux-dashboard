@@ -1520,9 +1520,9 @@ async function probarResumen() {
   try {
     const res = await invocarResumenEdge(1);
     el.style.color = "var(--ok)";
-    el.textContent = res.via === "smtp-pdf"
-      ? `✔ Informe PDF enviado a ${res.correos} correo(s) desde tu remitente.`
-      : `✔ Enviado como texto a ${res.correos} correo(s). Para el PDF adjunto: configura remitente + secreto GMAIL_APP_PASSWORD.`;
+    el.textContent = (res.via || "").endsWith("-pdf")
+      ? `✔ Informe PDF enviado a ${res.correos} correo(s) (vía ${res.via === "resend-pdf" ? "Resend" : "Gmail"}).`
+      : `✔ Enviado como texto a ${res.correos} correo(s). Para el PDF adjunto: configura RESEND_API_KEY o remitente + GMAIL_APP_PASSWORD.`;
     return;
   } catch (e) { console.warn("Función resumen no disponible, usando envío local:", e); }
   // Respaldo local (texto vía FormSubmit)
@@ -1549,9 +1549,9 @@ async function enviarUltimosDosResumenes() {
   try {
     const res = await invocarResumenEdge(2);
     el.style.color = "var(--ok)";
-    el.textContent = res.via === "smtp-pdf"
+    el.textContent = (res.via || "").endsWith("-pdf")
       ? `✔ 2 informes PDF (semana pasada y antepasada) enviados a ${res.correos} correo(s) en un solo correo.`
-      : `✔ Enviado como texto a ${res.correos} correo(s). Para PDFs adjuntos: configura remitente + GMAIL_APP_PASSWORD.`;
+      : `✔ Enviado como texto a ${res.correos} correo(s). Para PDFs adjuntos: configura RESEND_API_KEY o remitente + GMAIL_APP_PASSWORD.`;
     return;
   } catch (e) { console.warn("Función resumen no disponible, usando envío local:", e); }
   const ahora = new Date();

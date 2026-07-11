@@ -329,6 +329,31 @@ async function construirPDF(ini: Date, fin: Date, d7: Fila[][], hist: Fila[]): P
 }
 
 /* ---------- envío ---------- */
+/* Opción A (recomendada en serverless): Resend — API HTTPS con adjuntos.
+   Secretos: RESEND_API_KEY (obligatorio) y opcional RESEND_FROM
+   (si verificaste un dominio propio en Resend; si no, se usa onboarding@resend.dev,
+   que solo puede enviar al correo dueño de la cuenta Resend). */
+function b64(u8: Uint8Array): string {
+  let s = "";
+  for (let i = 0; i < u8.length; i += 0x8000)
+    s += String.fromCharCode(...u8.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+async function enviarResend(apiKey: string, dest: string[], asunto: string, cuerpo: string,
+  adjuntos: { nombre: string; datos: Uint8Array }[]) {
+  const from = Deno.env.get("RESEND_FROM") || "SenFePin <onboarding@resend.dev>";
+  const r = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from, to: dest, subject: asunto, text: cuerpo,
+      attachments: adjuntos.map(a => ({ filename: a.nombre, content: b64(a.datos) })),
+    }),
+  });
+  if (!r.ok) throw new Error(`Resend HTTP ${r.status}: ${await r.text()}`);
+}
+
+/* Opción B: SMTP Gmail directo (puede estar bloqueado en algunos entornos) */
 async function enviarConAdjuntos(remitente: string, pass: string, dest: string[], asunto: string, cuerpo: string,
   adjuntos: { nombre: string; datos: Uint8Array }[]) {
   const { SMTPClient } = await import("https://deno.land/x/denomailer@1.6.0/mod.ts");
@@ -398,6 +423,18 @@ Deno.serve(async (req) => {
   const asunto = semanas === 1 ? "📊 Resumen semanal SenFePin (PDF adjunto)" : "📊 Resúmenes SenFePin - últimas 2 semanas (PDF adjuntos)";
   const cuerpo = `Se adjunta el informe de calidad del aire de la red AirFlux.\n\nPeríodos: ${nombres.join(" · ")}\n\nContenido: reporte de funcionamiento, estadística descriptiva, resumen diario y gráficos de variación temporal (MP2,5 y MP10).\n\n— Enviado automáticamente por SenFePin.`;
 
+  // Prioridad 1: Resend (API HTTPS, la más confiable en serverless)
+  const resendKey = Deno.env.get("RESEND_API_KEY") ?? "";
+  if (resendKey) {
+    try {
+      await enviarResend(resendKey, correos, asunto, cuerpo, adjuntos);
+      if (!forzar) await supabase.from("config_resumen").update({ last_sent: new Date().toISOString() }).eq("id", 1);
+      return json({ ok: true, enviado: true, via: "resend-pdf", correos: correos.length, adjuntos: adjuntos.length });
+    } catch (e) {
+      console.error("Resend falló:", e);
+    }
+  }
+  // Prioridad 2: SMTP Gmail
   if (remitente && pass) {
     try {
       await enviarConAdjuntos(remitente, pass, correos, asunto, cuerpo, adjuntos);
