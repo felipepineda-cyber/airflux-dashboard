@@ -20,7 +20,9 @@ Calama, La Ligua, Yungay, Copiapó, Pto Montt y Curacaví.
  └───────────────────────┬─────────────────────────────────┘
                           │ config compartida (anon key)
                           ▼
- Supabase ── tablas: config_alertas · config_destinos · config_resumen
+ Supabase ── tabla:  estaciones (fuente única de verdad de la red:
+          ──          canal, key, coordenadas y sensor de cada sitio)
+          ── tablas: config_alertas · config_destinos · config_resumen
           ── tabla:  mediciones  (archivo histórico propio, respaldo)
           ── tabla:  alertas_enviadas (control anti-spam)
           ── Edge Functions (cron):
@@ -37,6 +39,7 @@ Calama, La Ligua, Yungay, Copiapó, Pto Montt y Curacaví.
 | `supabase/setup.sql` | Tablas, políticas y tareas cron (ejecutar en SQL Editor) |
 | `supabase/functions/vigilante/index.ts` | Vigilante 24/7 + archivador de mediciones |
 | `supabase/functions/resumen/index.ts` | Resumen semanal por correo |
+| `deteccion_sensores.mjs` | CLI de diagnóstico y registro de reemplazos de sensores |
 | `vercel.json` | Configuración de despliegue |
 | `GUIA_DESPLIEGUE.md` | Guía paso a paso de instalación |
 
@@ -52,6 +55,27 @@ Calama, La Ligua, Yungay, Copiapó, Pto Montt y Curacaví.
    anti-spam configurable (1 aviso por sensor cada N horas, se rearma al volver).
 4. **Config en la nube**: umbrales, mensajes, destinos y horarios viven en
    Supabase; el navegador solo mantiene una copia local de respaldo.
+
+## Cambio de sensores (sin tocar código)
+
+La red completa vive en la tabla `estaciones` de Supabase (setup.sql, A6):
+canal de ThingSpeak, read key, coordenadas y sensor instalado por sitio.
+La página, el vigilante y el resumen la leen al arrancar (con la lista
+embebida solo como respaldo). Reemplazar un equipo:
+
+1. Instalar el sensor nuevo y esperar ~1 h de datos.
+2. `node deteccion_sensores.mjs` → informe por estación:
+   - **REEMPLAZO** (mismo canal, ID nuevo): confirmar con el comando que
+     imprime, o `--aplicar` para registrar todos de una vez.
+   - **CANAL INACTIVO** (el equipo publica en canal propio): editar
+     `canal_thingspeak` y `read_api_key` de esa fila en Supabase.
+3. Si el equipo no publica su ID: `node deteccion_sensores.mjs --reemplazo <sitio_n> <id>`.
+
+El vigilante escribe además `estado`, `ultima_medicion` y `sensor_detectado`
+en la tabla cada 30 min; el mapa muestra el sensor instalado y avisa si el
+equipo reporta un ID distinto al registrado. `sensor_anterior` guarda la
+trazabilidad y cada fila de `mediciones` queda ligada al sensor con que se
+midió (el histórico por estación no se corta al cambiar el equipo).
 
 ## Limitaciones conocidas (servicios gratuitos)
 

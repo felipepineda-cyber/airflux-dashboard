@@ -15,7 +15,10 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { PDFDocument, StandardFonts, rgb } from "npm:pdf-lib@1.17.1";
 
-const SITIOS = [
+// Red de estaciones: la fuente única de verdad es la tabla `estaciones`
+// (se carga en manejar()); esta lista embebida es solo el respaldo si la
+// tabla no existe o no responde.
+const SITIOS_FALLBACK = [
   { n: 1, nombre: "Calama",    canal: 3295963, key: "FFUP0A4K22HLJOHT" },
   { n: 2, nombre: "La Ligua",  canal: 3295964, key: "URO7G2P6TJH3CDNF" },
   { n: 3, nombre: "Yungay",    canal: 3295965, key: "PYE5M1O5RXTLSILG" },
@@ -23,6 +26,7 @@ const SITIOS = [
   { n: 5, nombre: "Pto Montt", canal: 3295967, key: "93GQ5HLEXVUSWQ88" },
   { n: 6, nombre: "Curacaví",  canal: 3295968, key: "NPEK6DL0ME57ZLWB" },
 ];
+let SITIOS = SITIOS_FALLBACK;
 const HISTORICO_INICIO = new Date("2026-03-19T00:00:00Z");
 const AZUL = rgb(0, 101 / 255, 163 / 255);
 const GRIS = rgb(.35, .42, .5);
@@ -416,6 +420,22 @@ async function manejar(req: Request): Promise<Response> {
   const claveServidor = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SERVICE_KEY") || "";
   if (!claveServidor) return json({ ok: false, error: "Falta SERVICE_KEY en los secretos (usa la sb_secret_ de API Keys)" });
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, claveServidor);
+
+  // Red de estaciones desde la tabla `estaciones` (respaldo: lista embebida)
+  try {
+    const { data, error } = await supabase
+      .from("estaciones")
+      .select("sitio_n, nombre, canal_thingspeak, read_api_key")
+      .eq("activo", true)
+      .order("sitio_n");
+    if (!error && data?.length) {
+      SITIOS = data.map(e => ({
+        n: e.sitio_n, nombre: e.nombre,
+        canal: Number(e.canal_thingspeak), key: e.read_api_key ?? "",
+      }));
+    }
+  } catch (e) { console.warn("Tabla estaciones no disponible, usando fallback:", e); }
+
   const url = new URL(req.url);
   const forzar = url.searchParams.get("forzar") === "1";
   const semanas = Math.min(2, Math.max(1, Number(url.searchParams.get("semanas") || "1")));

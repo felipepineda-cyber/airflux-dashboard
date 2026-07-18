@@ -948,6 +948,9 @@
      30 min por la función Edge 'vigilante'; 2) caché en localStorage con la
      última carga exitosa. Si ThingSpeak falla, la página sigue mostrando datos.
    - CONFIGURACIÓN compartida vía Supabase (la lee también el vigilante 24/7):
+     · estaciones      → red completa: canal, key, coordenadas y sensor
+                         instalado por sitio (fuente única de verdad; los
+                         reemplazos de sensor se registran aquí, sin código)
      · config_alertas  → umbral de horas, reenvío y plantilla del mensaje
      · config_destinos → números CallMeBot, correos y remitente
      · config_resumen  → día/hora y correos del resumen semanal
@@ -962,7 +965,12 @@
    ============================================================================ */
 
 /* ================== 1. CONFIGURACIÓN ================== */
-const SITIOS = [
+/* La red de estaciones vive en la tabla `estaciones` de Supabase (fuente
+   única de verdad): sincronizarEstaciones() la carga al iniciar y la deja
+   en caché local. Esta lista embebida es solo el RESPALDO si la nube no
+   responde en el primer arranque. Cambiar un sensor o canal = editar la
+   fila en Supabase (o correr deteccion_sensores.mjs); no se toca código. */
+const SITIOS_FALLBACK = [
   { n: 1, nombre: "Calama",    canal: 3295963, key: "FFUP0A4K22HLJOHT", lat: -22.4544, lon: -68.9294 },
   { n: 2, nombre: "La Ligua",  canal: 3295964, key: "URO7G2P6TJH3CDNF", lat: -32.4524, lon: -71.2311 },
   { n: 3, nombre: "Yungay",    canal: 3295965, key: "PYE5M1O5RXTLSILG", lat: -37.1212, lon: -72.0170 },
@@ -970,6 +978,13 @@ const SITIOS = [
   { n: 5, nombre: "Pto Montt", canal: 3295967, key: "93GQ5HLEXVUSWQ88", lat: -41.4693, lon: -72.9424 },
   { n: 6, nombre: "Curacaví",  canal: 3295968, key: "NPEK6DL0ME57ZLWB", lat: -33.4011, lon: -71.1443 },
 ];
+let SITIOS = (() => {   // arranque: última copia buena de la nube, o el respaldo
+  try {
+    const c = JSON.parse(localStorage.getItem("airflux_estaciones") || "null");
+    if (Array.isArray(c) && c.length) return c;
+  } catch { /* caché corrupta: se ignora */ }
+  return SITIOS_FALLBACK;
+})();
 // field1=Temperatura(°C) field2=Presión(hPa) field3=Humedad(%) field4=MP10 field5=MP2,5
 const UMBRAL_ALERTA_H = 2;
 const INTERVALO_DATO_H = 1;
@@ -1857,6 +1872,113 @@ function marcarNube(txt, ok) {
   const el = $("acNube");
   if (el) { el.textContent = txt; el.style.color = ok ? "var(--ok)" : "var(--warn)"; }
 }
+
+/* --- Red de estaciones desde la nube (tabla `estaciones`) ---
+   Se llama al inicio, ANTES de construir selects y mapa, con timeout corto:
+   si la nube no responde en 6 s la página arranca igual con la caché o el
+   respaldo embebido (misma filosofía de la cascada de datos). */
+async function sincronizarEstaciones() {
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 6000);
+    const r = await fetch(`${SUPA_URL}/rest/v1/estaciones?activo=eq.true&order=sitio_n&select=*`, {
+      headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` },
+      signal: ctrl.signal,
+    });
+    clearTimeout(t);
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const filas = await r.json();
+    if (!Array.isArray(filas) || !filas.length) throw new Error("tabla vacía");
+    SITIOS = filas.map(e => ({
+      n: e.sitio_n, nombre: e.nombre,
+      canal: Number(e.canal_thingspeak), key: e.read_api_key || "",
+      lat: Number(e.lat), lon: Number(e.lng),
+      sensor_id: e.sensor_id, sensor_detectado: e.sensor_detectado,
+      estadoNube: e.estado, ultimaNube: e.ultima_medicion,
+    }));
+    localStorage.setItem("airflux_estaciones", JSON.stringify(SITIOS));
+    console.info(`Red cargada desde Supabase: ${SITIOS.length} estaciones.`);
+  } catch (e) {
+    console.warn("Tabla estaciones no disponible — usando caché/respaldo local:", e.message || e);
+  }
+}
+
+/* --- Detección y resolución de reemplazo de sensores (consola F12) ---
+   diagnosticarRed()      → informe por estación, no modifica nada
+   diagnosticarRed(true)  → además registra en Supabase los reemplazos
+                            detectados en el mismo canal (escenario A)
+   aplicarReemplazo(n,id) → registra a mano: estación n pasa al sensor id
+   Escenarios que distingue:
+     A) canal vivo con ID reportado ≠ registrado → sensor nuevo en el
+        mismo canal: basta actualizar la fila (sensor_anterior queda guardado)
+     B) canal mudo → el sensor nuevo publica en canal propio: editar
+        canal_thingspeak y read_api_key de la fila en Supabase            */
+async function tsDiagnostico(canal, key) {
+  const r = await fetch(`https://api.thingspeak.com/channels/${canal}/feeds.json?results=10${key ? "&api_key=" + key : ""}`);
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  const { channel, feeds } = await r.json();
+  const ult = feeds.length ? new Date(feeds[feeds.length - 1].created_at) : null;
+  const min = ult ? Math.round((Date.now() - ult) / 60000) : Infinity;
+  let fieldId = null;
+  for (let i = 6; i <= 8; i++)   // fields libres primero (1-5 son mediciones)
+    if (/id|sensor|serie/i.test(String(channel?.[`field${i}`] || ""))) { fieldId = `field${i}`; break; }
+  if (!fieldId) for (let i = 6; i <= 8; i++) {
+    const v = feeds.map(f => f[`field${i}`]).filter(x => x != null && x !== "");
+    if (v.length >= 3 && v.every(x => x === v[0]) && Number.isInteger(Number(v[0]))) { fieldId = `field${i}`; break; }
+  }
+  const idRep = fieldId && feeds.length ? String(Number(feeds[feeds.length - 1][fieldId])) : null;
+  return {
+    vivo: min <= 120, minSinDatos: min, idReportado: idRep,
+    coordsCanal: (channel?.latitude && channel?.longitude)
+      ? { lat: +channel.latitude, lon: +channel.longitude } : null,
+  };
+}
+async function aplicarReemplazo(n, nuevoId) {
+  const s = SITIOS.find(x => x.n === n);
+  const r = await fetch(`${SUPA_URL}/rest/v1/estaciones?sitio_n=eq.${n}`, {
+    method: "PATCH",
+    headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`,
+      "Content-Type": "application/json", Prefer: "return=minimal" },
+    body: JSON.stringify({
+      sensor_anterior: s?.sensor_id ?? null,
+      sensor_id: String(nuevoId),
+      fecha_instalacion: new Date().toISOString().slice(0, 10),
+    }),
+  });
+  if (!r.ok) throw new Error("No se pudo guardar (HTTP " + r.status + ")");
+  console.log(`✔ ${s?.nombre ?? "estación " + n}: sensor ${s?.sensor_id ?? "—"} → ${nuevoId}`);
+  await sincronizarEstaciones();
+  actualizarMapa();
+}
+async function diagnosticarRed(autoAplicar = false) {
+  await sincronizarEstaciones();
+  const informe = [];
+  for (const s of SITIOS) {
+    try {
+      const d = await tsDiagnostico(s.canal, s.key);
+      let escenario, accion;
+      if (d.vivo && (!d.idReportado || d.idReportado === String(s.sensor_id ?? ""))) {
+        escenario = "OK"; accion = "nada que hacer";
+      } else if (d.vivo && d.idReportado) {
+        escenario = `REEMPLAZO: ${s.sensor_id ?? "—"} → ${d.idReportado} (mismo canal)`;
+        if (autoAplicar) { await aplicarReemplazo(s.n, d.idReportado); accion = "registro actualizado"; }
+        else accion = `confirmar con: aplicarReemplazo(${s.n}, '${d.idReportado}')`;
+      } else {
+        escenario = `CANAL INACTIVO (${d.minSinDatos === Infinity ? "sin feeds" : d.minSinDatos + " min sin datos"})`;
+        accion = "sensor con canal propio: editar canal_thingspeak y read_api_key de la fila en Supabase";
+      }
+      if (d.coordsCanal && s.lat && s.lon &&
+          Math.hypot(d.coordsCanal.lat - s.lat, d.coordsCanal.lon - s.lon) > 0.05)
+        escenario += " · ⚠ coords canal ≠ registradas";
+      informe.push({ estacion: s.nombre, escenario, accion });
+    } catch (e) {
+      informe.push({ estacion: s.nombre, escenario: "ERROR DE CONSULTA", accion: String(e.message || e) });
+    }
+    await new Promise(r => setTimeout(r, 1200));   // ~1 req/s (ThingSpeak free)
+  }
+  console.table(informe);
+  return informe;
+}
 async function sincronizarConfigAlerta() {
   if (!supaCfg) return;
   try {
@@ -2033,8 +2155,16 @@ function iconoEstado(estado) {
 function popupHTML(s) {
   const ult = ultimos[s.n];
   const e = estadoSitio(s.n);
+  // Reemplazo detectado por el vigilante: el equipo reporta un ID distinto
+  // al registrado en la tabla `estaciones` → confirmar desde consola o CLI.
+  const reemplazo = s.sensor_detectado && s.sensor_id &&
+    String(s.sensor_detectado) !== String(s.sensor_id);
+  const lineaSensor = s.sensor_id
+    ? `<br><small>Sensor instalado: ${s.sensor_id}${reemplazo
+        ? ` · <span style="color:var(--warn)">⚠ el equipo reporta ID ${s.sensor_detectado} — reemplazo sin registrar</span>` : ""}</small>`
+    : "";
   return `
-    <b style="color:#0065A3">${s.nombre}</b> <small>(ID ${s.n})</small>
+    <b style="color:#0065A3">${s.nombre}</b> <small>(ID ${s.n})</small>${lineaSensor}
     <table class="popup-tabla">
       <tr><td>MP2,5</td><td>${ult ? f1(ult.mp25) : "—"} µg/m³</td></tr>
       <tr><td>MP10</td><td>${ult ? f1(ult.mp10) : "—"} µg/m³</td></tr>
@@ -2750,7 +2880,10 @@ async function simularCaida() {
 }
 
 /* ================== INICIO ================== */
-function init() {
+async function init() {
+  // La red se carga desde la nube ANTES de armar selects y mapa (timeout
+  // 6 s; si falla, sigue con la caché local o el respaldo embebido).
+  await sincronizarEstaciones();
   pintarSubmenu();
   togglePuntos(true);
   initMapa();

@@ -1,10 +1,19 @@
 // ============================================================
 // AirFlux · Vigilante 24/7 de sensores (Supabase Edge Function)
-// Revisa el último dato de cada sensor en ThingSpeak.
-// Si un sensor lleva más de UMBRAL_H horas sin datos, envía el
-// aviso por WhatsApp (CallMeBot) y por correo (FormSubmit) a
-// TODOS los destinos configurados. Máximo 1 aviso por sensor
-// cada REENVIO_H horas (se reinicia cuando el sensor vuelve).
+// Revisa el último dato de cada estación en ThingSpeak.
+// Si una estación lleva más de UMBRAL_H horas sin datos, envía el
+// aviso por WhatsApp (CallMeBot) y por correo a TODOS los destinos
+// configurados. Máximo 1 aviso por estación cada REENVIO_H horas
+// (se reinicia cuando el sensor vuelve).
+//
+// NOVEDADES (gestión de sensores sin tocar código):
+//  · La red se lee de la tabla `estaciones` (setup.sql, sección A6);
+//    la lista embebida SITIOS_FALLBACK queda solo como respaldo.
+//  · En cada corrida escribe en `estaciones`: estado
+//    ('ok'|'retraso'|'caido'), ultima_medicion y sensor_detectado
+//    (si el equipo publica su propio ID en algún field).
+//  · Cada medición archivada en `mediciones` guarda el sensor_id
+//    registrado: el histórico no se corta al reemplazar un equipo.
 //
 // Secretos (Edge Functions → Secrets):
 //   CALLMEBOT_DESTINOS = "+56911111111:apikey1,+56922222222:apikey2"
@@ -13,7 +22,13 @@
 // ============================================================
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const SITIOS = [
+type Sitio = {
+  n: number; nombre: string; canal: number; key: string;
+  sensor_id?: string | null;
+};
+
+// Respaldo si la tabla `estaciones` no existe o no responde.
+const SITIOS_FALLBACK: Sitio[] = [
   { n: 1, nombre: "Calama",    canal: 3295963, key: "FFUP0A4K22HLJOHT" },
   { n: 2, nombre: "La Ligua",  canal: 3295964, key: "URO7G2P6TJH3CDNF" },
   { n: 3, nombre: "Yungay",    canal: 3295965, key: "PYE5M1O5RXTLSILG" },
@@ -21,6 +36,7 @@ const SITIOS = [
   { n: 5, nombre: "Pto Montt", canal: 3295967, key: "93GQ5HLEXVUSWQ88" },
   { n: 6, nombre: "Curacaví",  canal: 3295968, key: "NPEK6DL0ME57ZLWB" },
 ];
+
 // Valores por defecto — se sobreescriben con la tabla config_alertas,
 // editable desde la página SenFePin → "Configuración de alerta".
 const DEFAULTS = {
@@ -105,12 +121,54 @@ async function enviarAvisos(msg: string, dst: Destinos) {
   return n;
 }
 
+/* ---------- Detección del ID que publica el propio equipo ----------
+   1) Busca un field rotulado id/sensor/serie en los metadatos del canal.
+   2) Si no hay rótulo, busca un field con valor entero CONSTANTE en los
+      feeds (una concentración varía; un ID no). Excluye los fields de
+      medición conocidos (1-5: temp/pres/hum/MP10/MP2,5).                */
+function detectarIdSensor(channel: Record<string, unknown>, feeds: Record<string, string>[]): string | null {
+  let fieldId: string | null = null;
+  for (let n = 6; n <= 8; n++) {          // primero los fields libres
+    const rotulo = String(channel?.[`field${n}`] ?? "");
+    if (/id|sensor|serie/i.test(rotulo)) { fieldId = `field${n}`; break; }
+  }
+  if (!fieldId) {
+    for (let n = 6; n <= 8; n++) {
+      const vals = feeds.map(f => f[`field${n}`]).filter(v => v != null && v !== "");
+      if (vals.length >= 3 && vals.every(v => v === vals[0]) &&
+          Number.isInteger(Number(vals[0]))) { fieldId = `field${n}`; break; }
+    }
+  }
+  if (!fieldId || !feeds.length) return null;
+  const v = feeds[feeds.length - 1][fieldId];
+  return (v != null && v !== "") ? String(Number(v)) : null;
+}
+
 Deno.serve(async () => {
   // Clave de servidor: fallback al secreto SERVICE_KEY (sb_secret_...) en
   // proyectos con el sistema de claves nuevo de Supabase.
   const claveServidor = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SERVICE_KEY") || "";
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, claveServidor);
   const resultados: unknown[] = [];
+
+  // Red de estaciones: fuente única de verdad = tabla `estaciones`.
+  let sitios: Sitio[] = SITIOS_FALLBACK;
+  let fuenteRed = "fallback embebido";
+  try {
+    const { data, error } = await supabase
+      .from("estaciones")
+      .select("sitio_n, nombre, canal_thingspeak, read_api_key, sensor_id")
+      .eq("activo", true)
+      .order("sitio_n");
+    if (!error && data?.length) {
+      sitios = data.map(e => ({
+        n: e.sitio_n, nombre: e.nombre,
+        canal: Number(e.canal_thingspeak), key: e.read_api_key ?? "",
+        sensor_id: e.sensor_id,
+      }));
+      fuenteRed = "tabla estaciones";
+    }
+  } catch (e) { console.warn("Tabla estaciones no disponible, usando fallback:", e); }
 
   // Configuración compartida (misma que edita la página en "Configuración de alerta")
   let cfg = { ...DEFAULTS };
@@ -132,12 +190,13 @@ Deno.serve(async () => {
     if (data) dst = parsearDestinos(data);
   } catch (e) { console.warn("config_destinos no disponible, usando secretos:", e); }
 
-  for (const s of SITIOS) {
+  for (const s of sitios) {
     // Último dato VÁLIDO del canal: solo cuentan entradas con mediciones
     // reales de MP10/MP2,5 — entradas vacías no mantienen el sensor "en línea".
     // Además, las entradas válidas se ARCHIVAN en la tabla 'mediciones' como
     // respaldo histórico propio (independiente de ThingSpeak).
     let ultimo: Date | null = null;
+    let idReportado: string | null = null;
     const filasArchivo: Record<string, unknown>[] = [];
     try {
       const r = await fetch(
@@ -145,6 +204,7 @@ Deno.serve(async () => {
       );
       if (r.ok) {
         const j = await r.json().catch(() => null);
+        idReportado = detectarIdSensor(j?.channel ?? {}, j?.feeds ?? []);
         for (const f of (j?.feeds ?? [])) {
           const mp10 = parseFloat(f.field4), mp25 = parseFloat(f.field5);
           if (!f.created_at || (!Number.isFinite(mp10) && !Number.isFinite(mp25))) continue;
@@ -159,6 +219,7 @@ Deno.serve(async () => {
             hum: parseFloat(f.field3) || null,
             mp10: Number.isFinite(mp10) ? mp10 : null,
             mp25: Number.isFinite(mp25) ? mp25 : null,
+            sensor_id: s.sensor_id ?? null,   // continuidad: cada dato queda ligado al equipo
           });
         }
       }
@@ -172,8 +233,22 @@ Deno.serve(async () => {
     }
 
     const horas = ultimo ? (Date.now() - ultimo.getTime()) / 3600000 : Infinity;
+    // Estado con tres niveles, mismo criterio visual que la página:
+    // ok (dato reciente) · retraso (>1.5 h, aún bajo el umbral) · caido (> umbral)
+    const estado = horas > cfg.umbral ? "caido" : horas > 1.5 ? "retraso" : "ok";
+    const reemplazoDetectado = !!(idReportado && s.sensor_id && idReportado !== String(s.sensor_id));
 
-    if (horas > cfg.umbral) {
+    // Publicar diagnóstico en la tabla (la página y la CLI lo leen de aquí)
+    if (fuenteRed === "tabla estaciones") {
+      const { error: errEst } = await supabase.from("estaciones").update({
+        estado,
+        ultima_medicion: ultimo ? ultimo.toISOString() : null,
+        sensor_detectado: idReportado,
+      }).eq("sitio_n", s.n);
+      if (errEst) console.warn("No se pudo actualizar estado de estación:", errEst.message);
+    }
+
+    if (estado === "caido") {
       // ¿Ya avisamos hace poco?
       const { data } = await supabase
         .from("alertas_enviadas")
@@ -211,12 +286,19 @@ Deno.serve(async () => {
     } else {
       // Sensor OK: limpiar registro para que una futura caída vuelva a avisar
       await supabase.from("alertas_enviadas").delete().eq("sitio_n", s.n);
-      resultados.push({ sitio: s.nombre, estado: "OK", horas_desde_ultimo_dato: +horas.toFixed(1) });
+      resultados.push({
+        sitio: s.nombre,
+        estado: estado.toUpperCase(),
+        horas_desde_ultimo_dato: +horas.toFixed(1),
+        ...(reemplazoDetectado
+          ? { aviso: `equipo nuevo detectado (registrado ${s.sensor_id} → reporta ${idReportado}); confirmar en la página o CLI` }
+          : {}),
+      });
     }
   }
 
   return new Response(
-    JSON.stringify({ ok: true, revisado: new Date().toISOString(), resultados }, null, 2),
+    JSON.stringify({ ok: true, revisado: new Date().toISOString(), fuente_red: fuenteRed, resultados }, null, 2),
     { headers: { "Content-Type": "application/json" } },
   );
 });
