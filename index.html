@@ -985,7 +985,7 @@ let SITIOS = (() => {   // arranque: última copia buena de la nube, o el respal
   } catch { /* caché corrupta: se ignora */ }
   return SITIOS_FALLBACK;
 })();
-// field1=Temperatura(°C) field2=Presión(hPa) field3=Humedad(%) field4=MP10 field5=MP2,5
+// field1=Temperatura(°C) field2=Presión(mmHg) field3=Humedad(%) field4=MP10 field5=MP2,5
 const UMBRAL_ALERTA_H = 2;
 const INTERVALO_DATO_H = 1;
 const REFRESCO_MS = 5 * 60 * 1000;
@@ -2169,8 +2169,8 @@ function popupHTML(s) {
       <tr><td>MP2,5</td><td>${ult ? f1(ult.mp25) : "—"} µg/m³</td></tr>
       <tr><td>MP10</td><td>${ult ? f1(ult.mp10) : "—"} µg/m³</td></tr>
       <tr><td>Temperatura</td><td>${ult ? f1(ult.temp) : "—"} °C</td></tr>
-      <tr><td>Humedad</td><td>${ult ? f0(ult.hum) : "—"} %</td></tr>
-      <tr><td>Presión</td><td>${ult ? f0(ult.pres) : "—"} hPa</td></tr>
+      <tr><td>Humedad</td><td>${ult ? f0(ult.hum) : "—"} %${ult && Number.isFinite(ult.hum) && ult.hum >= 0 && ult.hum <= 10 ? ' <span title="Valor sospechoso (0–10 %). El sensor podría estar reportando en décimas; valor real podría ser ×10." style="color:var(--warn);cursor:help">⚠</span>' : ""}</td></tr>
+      <tr><td>Presión</td><td>${ult ? f0(ult.pres) : "—"} mmHg</td></tr>
     </table>
     <small>Último dato: ${e.ultimo ? fmtFecha(e.ultimo) : "—"} (${haceCuanto(e.ultimo)})</small><br>
     <a href="#" onclick="irA('punto', ${s.n}); return false;">Ver detalle →</a>`;
@@ -2201,7 +2201,7 @@ const VAR_DEF = {
   mp10: { campo: "mp10", nombre: "MP10", unidad: "µg/m³", color: "#FF5733" },
   temp: { campo: "temp", nombre: "Temperatura", unidad: "°C", color: "#e67e22" },
   hum:  { campo: "hum",  nombre: "Humedad", unidad: "%", color: "#17a2b8" },
-  pres: { campo: "pres", nombre: "Presión", unidad: "hPa", color: "#6f42c1" },
+  pres: { campo: "pres", nombre: "Presión", unidad: "mmHg", color: "#6f42c1" },
 };
 const PILL_TXT = { on: "● En línea", warn: "● Con retraso", off: "● Sin datos" };
 
@@ -2260,8 +2260,8 @@ function pintarPunto() {
     <div class="medida"><div class="m-val">${ult ? f1(ult.mp25) : "—"}</div><div class="m-lab">MP2,5 (µg/m³)</div></div>
     <div class="medida"><div class="m-val">${ult ? f1(ult.mp10) : "—"}</div><div class="m-lab">MP10 (µg/m³)</div></div>
     <div class="medida"><div class="m-val">${ult ? f1(ult.temp) : "—"}</div><div class="m-lab">Temperatura (°C)</div></div>
-    <div class="medida"><div class="m-val">${ult ? f0(ult.hum) : "—"}</div><div class="m-lab">Humedad (%)</div></div>
-    <div class="medida"><div class="m-val">${ult ? f0(ult.pres) : "—"}</div><div class="m-lab">Presión (hPa)</div></div>`;
+    <div class="medida"><div class="m-val">${ult ? f0(ult.hum) : "—"}${ult && Number.isFinite(ult.hum) && ult.hum >= 0 && ult.hum <= 10 ? '<span title="Valor sospechoso (0–10 %). El sensor podría estar reportando en décimas; valor real podría ser ×10." style="font-size:.7rem;color:var(--warn);cursor:help"> ⚠</span>' : ""}</div><div class="m-lab">Humedad (%)</div></div>
+    <div class="medida"><div class="m-val">${ult ? f0(ult.pres) : "—"}</div><div class="m-lab">Presión (mmHg)</div></div>`;
   dibujarSerie();
   const tb = document.querySelector("#tablaPunto tbody");
   tb.innerHTML = "";
@@ -2407,7 +2407,7 @@ function dibujarDisponibilidad() {
 /* ================== CSV ORDENADO ================== */
 function descargarCSV(modo) {
   const lista = modo === "all" ? SITIOS : SITIOS.filter(s => s.n === puntoActual);
-  const cab = ["Fecha/Hora", "Temperatura (°C)", "Presión (hPa)", "Humedad (%)", "MP10 (µg/m³)", "MP2.5 (µg/m³)"];
+  const cab = ["Fecha/Hora", "Temperatura (°C)", "Presión (mmHg)", "Humedad (%)", "MP10 (µg/m³)", "MP2.5 (µg/m³)"];
   if (modo === "all") cab.unshift("Sitio");
   const filas = [cab];
   const todo = [];
