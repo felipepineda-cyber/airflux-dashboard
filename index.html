@@ -972,7 +972,7 @@
    fila en Supabase (o correr deteccion_sensores.mjs); no se toca código. */
 const SITIOS_FALLBACK = [
   { n: 1, nombre: "Calama",    canal: 3295963, key: "FFUP0A4K22HLJOHT", lat: -22.4544, lon: -68.9294 },
-  { n: 2, nombre: "La Ligua",  canal: 3295964, key: "URO7G2P6TJH3CDNF", lat: -32.4524, lon: -71.2311 },
+  { n: 2, nombre: "Olmué",     canal: 3295964, key: "URO7G2P6TJH3CDNF", lat: -32.981380, lon: -71.162949 },
   { n: 3, nombre: "Yungay",    canal: 3295965, key: "PYE5M1O5RXTLSILG", lat: -37.1212, lon: -72.0170 },
   { n: 4, nombre: "Copiapó",   canal: 3295966, key: "W6RRU2RSFLMNV0CU", lat: -27.3665, lon: -70.3323 },
   { n: 5, nombre: "Pto Montt", canal: 3295967, key: "93GQ5HLEXVUSWQ88", lat: -41.4693, lon: -72.9424 },
@@ -1903,6 +1903,49 @@ async function sincronizarEstaciones() {
   }
 }
 
+/* ── Enriquecimiento automático desde metadatos ThingSpeak ────────────────
+   Lee nombre, latitud y longitud de cada canal vía la API de ThingSpeak.
+   Si el dueño actualiza la ubicación o el nombre del canal en ThingSpeak,
+   el dashboard lo refleja automáticamente sin tocar el código.            */
+async function enriquecerDesdeMeta() {
+  let actualizado = false;
+  await Promise.allSettled(SITIOS.map(async s => {
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 5000);
+      const r = await fetch(
+        `https://api.thingspeak.com/channels/${s.canal}.json?api_key=${s.key}`,
+        { signal: ctrl.signal }
+      );
+      clearTimeout(t);
+      if (!r.ok) return;
+      const m = await r.json();
+      const nuevoNombre = (m.name || "").trim();
+      if (nuevoNombre && nuevoNombre !== s.nombre) {
+        console.info(`[meta] ${s.n}: nombre "${s.nombre}" → "${nuevoNombre}"`);
+        s.nombre = nuevoNombre;
+        actualizado = true;
+      }
+      const lat = parseFloat(m.latitude);
+      const lon = parseFloat(m.longitude);
+      if (
+        Number.isFinite(lat) && Number.isFinite(lon) &&
+        (lat !== 0 || lon !== 0) &&
+        lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180 &&
+        (Math.abs(lat - s.lat) > 0.0001 || Math.abs(lon - s.lon) > 0.0001)
+      ) {
+        console.info(`[meta] ${s.n} (${s.nombre}): coords (${s.lat},${s.lon}) → (${lat},${lon})`);
+        s.lat = lat; s.lon = lon;
+        actualizado = true;
+      }
+    } catch { /* red caída o canal privado: se ignora */ }
+  }));
+  if (actualizado) {
+    localStorage.setItem("airflux_estaciones", JSON.stringify(SITIOS));
+    console.info("[meta] SITIOS actualizado desde metadatos ThingSpeak.");
+  }
+}
+
 /* --- Detección y resolución de reemplazo de sensores (consola F12) ---
    diagnosticarRed()      → informe por estación, no modifica nada
    diagnosticarRed(true)  → además registra en Supabase los reemplazos
@@ -2500,7 +2543,7 @@ function dcSitiosSel() {
 }
 function dcVarsSel() {
   const v = $("dcVariable").value;
-  return v === "all" ? ["mp25","mp10","temp","hum","pres"] : [v];
+  return v === "all" ? ["temp","pres","hum","mp10","mp25"] : [v];
 }
 function dcValidar() {
   const ini = new Date($("dcDesde").value), fin = new Date($("dcHasta").value);
@@ -2884,6 +2927,7 @@ async function init() {
   // La red se carga desde la nube ANTES de armar selects y mapa (timeout
   // 6 s; si falla, sigue con la caché local o el respaldo embebido).
   await sincronizarEstaciones();
+  await enriquecerDesdeMeta();
   pintarSubmenu();
   togglePuntos(true);
   initMapa();
