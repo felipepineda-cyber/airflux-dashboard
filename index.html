@@ -6,6 +6,7 @@
 <title>SenFePin · Monitoreo Ambiental</title>
 <link rel="preconnect" href="https://fonts.gstatic.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
   integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin="" />
@@ -95,7 +96,16 @@
     text-align: left;
   }
   .nav-item:hover { background: rgba(255,255,255,.06); color: #dbe7ef; }
-  .nav-item.active { background: var(--sidebar-active); color: #fff; font-weight: 600; }
+  .nav-item.active { background: var(--sidebar-active); color: #fff; font-weight: 600; position: relative; }
+  .nav-item.active::before {
+    content: '';
+    position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+    width: 3px; height: 18px;
+    background: #0ea5e9;
+    border-radius: 0 3px 3px 0;
+    transition: height .2s;
+  }
+  .nav-item i.ti { font-size: 1rem; flex-shrink: 0; width: 18px; text-align: center; }
   .nav-item .ico { width: 20px; text-align: center; font-size: .95rem; }
   .nav-item .chev { margin-left: auto; font-size: .7rem; transition: transform .2s; }
   .nav-item.open .chev { transform: rotate(90deg); }
@@ -146,9 +156,12 @@
   .top-right { margin-left: auto; display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
 
   .content { padding: 1.5rem 1.6rem 2.5rem; max-width: 1250px; width: 100%; }
-  .view { display: none; animation: aparecer .25s ease; }
-  .view.visible { display: block; }
-  @keyframes aparecer { from { opacity: 0; transform: translateY(6px); } }
+  .view { display: none; }
+  .view.visible { display: block; animation: slideIn .22s cubic-bezier(.25,.46,.45,.94) both; }
+  
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @keyframes slideIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: none; } }
 
   /* ============ COMPONENTES ============ */
   select, input[type=text], input[type=tel], input[type=number] {
@@ -331,6 +344,26 @@
     .content { padding: 1rem .9rem 2rem; }
     #mapa { height: 340px; }
   }
+
+  /* ── Mejoras visuales ── */
+  .k-val { font-variant-numeric: tabular-nums; }
+  .norm-bar-wrap {
+    margin-top: 6px; height: 4px; background: var(--bg);
+    border-radius: 2px; overflow: hidden;
+  }
+  .norm-bar { height: 100%; border-radius: 2px; transition: width .6s cubic-bezier(.34,1.56,.64,1); }
+  .norm-pct { font-size: .7rem; color: var(--text-3); display: block; margin-top: 3px; }
+  .kpi.k-exc-warn { border-left: 3px solid var(--warn); }
+  .kpi.k-exc-err  { border-left: 3px solid var(--err);  }
+  .aqi-strip {
+    height: 3px;
+    background: linear-gradient(90deg, #22c55e 0%, #eab308 30%, #f97316 55%, #ef4444 75%, #7c3aed 100%);
+    flex-shrink: 0;
+  }
+  .topbar-breadcrumb { display: flex; align-items: center; gap: 6px; }
+  .topbar-breadcrumb .bc-sep { color: var(--text-3); font-weight: 400; margin: 0 2px; }
+  .topbar-breadcrumb .bc-parent { color: var(--text-3); font-weight: 500; font-size: 1rem; }
+  .topbar-breadcrumb .bc-current { color: var(--text); font-weight: 700; font-size: 1.12rem; }
 </style>
 </head>
 <body>
@@ -339,7 +372,7 @@
   <!-- ============ SIDEBAR ============ -->
   <aside id="sidebar">
     <div class="brand">
-      <div class="logo">🌫️</div>
+      <div class="logo"><i class="ti ti-wind" aria-hidden="true" style="color:#fff;font-size:1.1rem"></i></div>
       <div>
         <b>SenFePin</b>
         <small>Monitoreo Ambiental</small>
@@ -348,40 +381,40 @@
     <nav>
       <div class="nav-label">General</div>
       <button class="nav-item active" data-view="resumen" onclick="irA('resumen')">
-        <span class="ico">🏠</span> Resumen
+        <i class="ti ti-layout-dashboard" aria-hidden="true"></i> Resumen
       </button>
 
       <div class="nav-label">Monitoreo</div>
       <button class="nav-item" id="menuPuntos" onclick="togglePuntos()">
-        <span class="ico">📍</span> Puntos de monitoreo <span class="chev">▶</span>
+        <i class="ti ti-map-pin" aria-hidden="true"></i> Puntos de monitoreo <i class="ti ti-chevron-right chev" aria-hidden="true" style="font-size:.8rem"></i>
       </button>
       <div class="submenu" id="submenuPuntos"></div>
 
       <div class="nav-label">Análisis</div>
       <button class="nav-item" data-view="estadisticas" onclick="irA('estadisticas')">
-        <span class="ico">📊</span> Estadísticas generales
+        <i class="ti ti-chart-bar" aria-hidden="true"></i> Estadísticas generales
       </button>
       <button class="nav-item" data-view="variacion" onclick="irA('variacion')">
-        <span class="ico">🕒</span> Variación temporal
+        <i class="ti ti-clock" aria-hidden="true"></i> Variación temporal
       </button>
       <button class="nav-item" data-view="descargas" onclick="irA('descargas')">
-        <span class="ico">⬇️</span> Centro de descargas
+        <i class="ti ti-download" aria-hidden="true"></i> Centro de descargas
       </button>
       <button class="nav-item" data-view="powerbi" onclick="irA('powerbi')">
-        <span class="ico">📈</span> Análisis Power BI
+        <i class="ti ti-chart-area" aria-hidden="true"></i> Análisis Power BI
       </button>
 
       <div class="nav-label">Aplicaciones</div>
       <button class="nav-item" onclick="window.open('norma.html', '_blank')">
-        <span class="ico">📋</span> Norma Background <span style="margin-left:auto;font-size:.75rem">↗</span>
+        <i class="ti ti-clipboard-data" aria-hidden="true"></i> Norma Background <i class="ti ti-external-link" aria-hidden="true" style="margin-left:auto;font-size:.75rem;opacity:.6"></i>
       </button>
 
       <div class="nav-label">Sistema</div>
       <button class="nav-item" data-view="whatsapp" onclick="irA('whatsapp')">
-        <span class="ico">💬</span> Alertas WhatsApp
+        <i class="ti ti-brand-whatsapp" aria-hidden="true"></i> Alertas WhatsApp
       </button>
       <button class="nav-item" data-view="alertconf" onclick="irA('alertconf')">
-        <span class="ico">⚙️</span> Configuración de alerta
+        <i class="ti ti-settings" aria-hidden="true"></i> Configuración de alerta
       </button>
     </nav>
     <div class="side-foot">
@@ -394,10 +427,11 @@
 
   <!-- ============ MAIN ============ -->
   <main>
+    <div class="aqi-strip" id="aqiStrip"></div>
     <div class="topbar">
-      <button id="btnMenu" onclick="abrirSidebar()">☰</button>
-      <div>
-        <h1 id="tituloVista">Resumen</h1>
+      <button id="btnMenu" onclick="abrirSidebar()" aria-label="Abrir menú"><i class="ti ti-menu-2" style="font-size:1.1rem" aria-hidden="true"></i></button>
+      <div id="tituloWrap">
+        <h1 id="tituloVista" class="topbar-breadcrumb">Resumen</h1>
         <div class="sub" id="reloj">Cargando…</div>
       </div>
       <div class="top-right">
@@ -412,8 +446,8 @@
             <option value="hist">📚 Todo el histórico</option>
           </select>
         </label>
-        <button class="btn ghost" onclick="refrescar()">🔄 Actualizar</button>
-        <button class="btn ghost" id="btnNotif" onclick="activarNotificaciones()">🔔</button>
+        <button class="btn ghost" onclick="refrescar()" id="btnRefrescar"><i class="ti ti-reload" id="icoRefrescar" aria-hidden="true"></i> Actualizar</button>
+        <button class="btn ghost" id="btnNotif" onclick="activarNotificaciones()" aria-label="Notificaciones"><i class="ti ti-bell" aria-hidden="true"></i></button>
       </div>
     </div>
 
@@ -427,17 +461,17 @@
 
         <div class="panel">
           <div class="panel-head">
-            <h2>🗺️ Mapa de puntos de monitoreo</h2>
+            <h2><i class="ti ti-map" aria-hidden="true" style="vertical-align:-2px;margin-right:6px;font-size:1rem;color:var(--text-3)"></i>Mapa de puntos de monitoreo</h2>
             <span class="hint">Los marcadores se actualizan con cada refresco · clic para ver detalle</span>
           </div>
           <div id="mapa"></div>
         </div>
 
         <div class="panel">
-          <div class="panel-head"><h2>🏙️ Comparación entre sitios</h2><span class="hint">Promedios del período seleccionado</span>
+          <div class="panel-head"><h2><i class="ti ti-building-community" aria-hidden="true" style="vertical-align:-2px;margin-right:6px;font-size:1rem;color:var(--text-3)"></i>Comparación entre sitios</h2><span class="hint">Promedios del período seleccionado</span>
             <div style="margin-left:auto;display:flex;gap:.4rem">
               <button class="btn ghost" onclick="descargarPNG('chartComparacion','comparacion_sitios')">🖼️ PNG</button>
-              <button class="btn ghost" onclick="csvComparacion()">⬇️ CSV</button>
+              <button class="btn ghost" onclick="csvComparacion()"><i class="ti ti-download" aria-hidden="true"></i> CSV</button>
             </div>
           </div>
           <div class="panel-body"><div id="chartComparacion" class="chart"></div></div>
@@ -471,7 +505,7 @@
               <label style="font-size:.8rem;font-weight:600;color:var(--text-2)">Fecha final
                 <input type="datetime-local" id="ptHasta">
               </label>
-              <button class="btn" onclick="aplicarRangoPunto()">📊 Visualizar</button>
+              <button class="btn" onclick="aplicarRangoPunto()"><i class="ti ti-chart-line" aria-hidden="true"></i> Visualizar</button>
               <button class="btn success" onclick="descargarCSV('one')">⬇️ Descargar CSV del rango</button>
               <button class="btn ghost" onclick="resetRangoPunto()">↺ Restablecer</button>
             </div>
@@ -481,7 +515,7 @@
 
         <div class="panel">
           <div class="panel-head">
-            <h2>📈 Serie temporal</h2>
+            <h2><i class="ti ti-chart-line" aria-hidden="true" style="vertical-align:-2px;margin-right:6px;font-size:1rem;color:var(--text-3)"></i>Serie temporal</h2>
             <button class="btn ghost" style="margin-left:auto" onclick="descargarPNG('chartSerie','serie_'+SITIOS.find(x=>x.n===puntoActual).nombre.replace(/\s/g,'_'))">🖼️ PNG</button>
             <label style="font-size:.8rem;font-weight:600;color:var(--text-2)">Variable
               <select id="varSerie" onchange="dibujarSerie()">
@@ -498,7 +532,7 @@
         </div>
 
         <div class="panel">
-          <div class="panel-head"><h2>📋 Estadísticas del punto</h2><span class="hint">Período seleccionado</span>
+          <div class="panel-head"><h2><i class="ti ti-chart-dots" aria-hidden="true" style="vertical-align:-2px;margin-right:6px;font-size:1rem;color:var(--text-3)"></i>Estadísticas del punto</h2><span class="hint">Período seleccionado</span>
             <button class="btn ghost" style="margin-left:auto" onclick="csvTabla('tablaPunto','estadisticas_punto')">⬇️ CSV</button>
           </div>
           <div class="panel-body tabla-wrap">
@@ -587,7 +621,7 @@
       <div class="view" id="vista-variacion">
         <div class="panel">
           <div class="panel-head">
-            <h2>🕒 Variación temporal</h2>
+            <h2><i class="ti ti-clock" aria-hidden="true"></i> Variación temporal</h2>
             <span class="hint">Análisis estilo openair (timeVariation) · promedios horarios con IC 95% de la media</span>
           </div>
           <div class="panel-body">
@@ -851,7 +885,7 @@
       <div class="view" id="vista-whatsapp">
         <div class="panel">
           <div class="panel-head">
-            <h2>💬 Avisos de no funcionamiento — WhatsApp y correo</h2>
+            <h2><i class="ti ti-brand-whatsapp" aria-hidden="true"></i> Avisos de no funcionamiento — WhatsApp y correo</h2>
             <span id="waEstadoPill"></span>
             <span class="hint" id="waNube"></span>
           </div>
@@ -1053,12 +1087,15 @@ function irA(vista, n) {
     b.classList.toggle("active", b.dataset.view === vista));
   document.querySelectorAll(".sub-item").forEach(b =>
     b.classList.toggle("active", vista === "punto" && parseInt(b.dataset.n) === puntoActual));
+  const tv = $("tituloVista");
   if (vista === "punto") {
     const s = SITIOS.find(x => x.n === puntoActual);
-    $("tituloVista").textContent = "📍 " + s.nombre;
+    tv.className = "topbar-breadcrumb";
+    tv.innerHTML = `<span class="bc-parent">Puntos de monitoreo</span><span class="bc-sep">›</span><span class="bc-current">${s.nombre}</span>`;
     if (!$("submenuPuntos").classList.contains("open")) togglePuntos(true);
   } else {
-    $("tituloVista").textContent = TITULOS[vista] || vista;
+    tv.className = "topbar-breadcrumb";
+    tv.innerHTML = `<span class="bc-current">${TITULOS[vista] || vista}</span>`;
   }
   cerrarSidebar();
   pintarVista();
@@ -1203,6 +1240,8 @@ async function cargarUltimo(sitio) {
 }
 
 async function refrescar() {
+  const ico = $("icoRefrescar");
+  if (ico) { ico.style.animation = "none"; void ico.offsetWidth; ico.style.animation = "spin .7s linear"; }
   const { ini, fin } = rangoSeleccionado();
   resActualMin = resolucionMin(ini, fin);
   $("spinner").classList.add("on");
@@ -2141,7 +2180,7 @@ const notificados = new Set();
 function activarNotificaciones() {
   if (!("Notification" in window)) { alert("Este navegador no soporta notificaciones."); return; }
   Notification.requestPermission().then(p => {
-    $("btnNotif").textContent = p === "granted" ? "🔔 ✓" : "🔕";
+    $("btnNotif").textContent = p === "granted" ? "<i class="ti ti-bell" aria-hidden="true"></i> ✓" : "🔕";
   });
 }
 function notificar(titulo, cuerpo) {
@@ -2175,15 +2214,34 @@ function pintarKPIs() {
     g10.push(...(datos[s.n]||[]).map(x=>x.mp10).filter(Number.isFinite));
   }
   const s25 = stats(g25), s10 = stats(g10);
+  const pct25 = Number.isFinite(s25.prom) ? Math.min(100, Math.round(s25.prom / 50 * 100)) : 0;
+  const pct10 = Number.isFinite(s10.prom) ? Math.min(100, Math.round(s10.prom / 130 * 100)) : 0;
+  const colBar = p => p > 90 ? "#ef4444" : p > 70 ? "#f97316" : p > 50 ? "#eab308" : "#22c55e";
   $("kpis").innerHTML = `
-    <div class="kpi ${caidos ? "" : "k-ok"}"><div class="k-label">Sensores activos</div>
-      <div class="k-val">${activos}/${SITIOS.length}</div><div class="k-sub">registrando datos</div></div>
-    <div class="kpi ${caidos ? "k-err" : ""}"><div class="k-label">Sensores caídos</div>
-      <div class="k-val">${caidos}</div><div class="k-sub">sin datos &gt; ${configAlerta().umbral} h</div></div>
-    <div class="kpi"><div class="k-label">MP2,5 promedio</div>
-      <div class="k-val">${f1(s25.prom)}</div><div class="k-sub">µg/m³ · red completa</div></div>
-    <div class="kpi"><div class="k-label">MP10 promedio</div>
-      <div class="k-val">${f1(s10.prom)}</div><div class="k-sub">µg/m³ · red completa</div></div>`;
+    <div class="kpi ${caidos ? "" : "k-ok"}">
+      <div class="k-label">Sensores activos</div>
+      <div class="k-val">${activos}/${SITIOS.length}</div>
+      <div class="k-sub">registrando datos</div>
+    </div>
+    <div class="kpi ${caidos ? "k-err" : ""}">
+      <div class="k-label">Sensores caídos</div>
+      <div class="k-val">${caidos}</div>
+      <div class="k-sub">sin datos &gt; ${configAlerta().umbral} h</div>
+    </div>
+    <div class="kpi ${pct25 > 80 ? "k-exc-warn" : ""}">
+      <div class="k-label">MP2,5 promedio red</div>
+      <div class="k-val">${f1(s25.prom)}</div>
+      <div class="k-sub">µg/m³ · norma 24h = 50</div>
+      <div class="norm-bar-wrap"><div class="norm-bar" style="width:${pct25}%;background:${colBar(pct25)}"></div></div>
+      <span class="norm-pct">${pct25}% de la norma</span>
+    </div>
+    <div class="kpi ${pct10 > 80 ? "k-exc-warn" : ""}">
+      <div class="k-label">MP10 promedio red</div>
+      <div class="k-val">${f1(s10.prom)}</div>
+      <div class="k-sub">µg/m³ · norma 24h = 130</div>
+      <div class="norm-bar-wrap"><div class="norm-bar" style="width:${pct10}%;background:${colBar(pct10)}"></div></div>
+      <span class="norm-pct">${pct10}% de la norma</span>
+    </div>`;
 }
 
 /* ================== MAPA ================== */
