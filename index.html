@@ -1116,15 +1116,14 @@ function cerrarSidebar() { $("sidebar").classList.remove("open"); $("backdrop").
 async function fetchJSON(url, intentos = 2, timeoutMs = 15000) {
   let ultimoError;
   for (let i = 0; i < intentos; i++) {
-    const ctl = new AbortController();
-    const timer = setTimeout(() => ctl.abort(), timeoutMs);
     try {
-      const r = await fetch(url, { signal: ctl.signal });
-      clearTimeout(timer);
+      const r = await Promise.race([
+        fetch(url),
+        new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), timeoutMs)),
+      ]);
       if (!r.ok) throw new Error("HTTP " + r.status);
       return await r.json();
     } catch (e) {
-      clearTimeout(timer);
       ultimoError = e;
       if (i < intentos - 1) await new Promise(res => setTimeout(res, 1500 * (i + 1)));
     }
@@ -1918,13 +1917,14 @@ function marcarNube(txt, ok) {
    respaldo embebido (misma filosofía de la cascada de datos). */
 async function sincronizarEstaciones() {
   try {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 6000);
-    const r = await fetch(`${SUPA_URL}/rest/v1/estaciones?activo=eq.true&order=sitio_n&select=*`, {
-      headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` },
-      signal: ctrl.signal,
-    });
-    clearTimeout(t);
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("timeout")), 6000));
+    const r = await Promise.race([
+      fetch(`${SUPA_URL}/rest/v1/estaciones?activo=eq.true&order=sitio_n&select=*`, {
+        headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` },
+      }),
+      timeout,
+    ]);
     if (!r.ok) throw new Error("HTTP " + r.status);
     const filas = await r.json();
     if (!Array.isArray(filas) || !filas.length) throw new Error("tabla vacía");
@@ -1950,13 +1950,10 @@ async function enriquecerDesdeMeta() {
   let actualizado = false;
   await Promise.allSettled(SITIOS.map(async s => {
     try {
-      const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), 5000);
-      const r = await fetch(
-        `https://api.thingspeak.com/channels/${s.canal}.json?api_key=${s.key}`,
-        { signal: ctrl.signal }
-      );
-      clearTimeout(t);
+      const r = await Promise.race([
+        fetch(`https://api.thingspeak.com/channels/${s.canal}.json?api_key=${s.key}`),
+        new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 5000)),
+      ]);
       if (!r.ok) return;
       const m = await r.json();
       const nuevoNombre = (m.name || "").trim();
@@ -2180,7 +2177,7 @@ const notificados = new Set();
 function activarNotificaciones() {
   if (!("Notification" in window)) { alert("Este navegador no soporta notificaciones."); return; }
   Notification.requestPermission().then(p => {
-    $("btnNotif").textContent = p === "granted" ? "<i class="ti ti-bell" aria-hidden="true"></i> ✓" : "🔕";
+    $("btnNotif").innerHTML = p === "granted" ? '<i class="ti ti-bell-ringing" aria-hidden="true"></i>' : '<i class="ti ti-bell-off" aria-hidden="true"></i>';
   });
 }
 function notificar(titulo, cuerpo) {
