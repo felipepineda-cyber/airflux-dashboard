@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://airflux-dashboard.vercel.app/sitemap.xml
