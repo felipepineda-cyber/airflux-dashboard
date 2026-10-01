@@ -23,6 +23,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
   :root {
+    /* ── Motion tokens (filosofía Emil Kowalski) ── */
+    --ease-out: cubic-bezier(0.32, 0.72, 0, 1);      /* curva Vaul */
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1); /* rebote sutil */
+    --dur-micro: 150ms;   /* hover, press, focus */
+    --dur-view: 220ms;    /* transición entre vistas */
+    --dur-data: 500ms;    /* norm-bars, count-up */
     --primary: #0065A3;
     --primary-dark: #004d7a;
     --primary-light: #e8f3f9;
@@ -162,7 +168,7 @@
 
   .content { padding: 1.5rem 1.6rem 2.5rem; max-width: 1250px; width: 100%; }
   .view { display: none; }
-  .view.visible { display: block; animation: slideIn .22s cubic-bezier(.25,.46,.45,.94) both; }
+  .view.visible { display: block; animation: slideIn var(--dur-view) var(--ease-out) both; }
   
   @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -181,7 +187,12 @@
     outline: none; border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(0,101,163,.14);
   }
+  .btn:active { transform: scale(0.97); }
   .btn {
+    transition: transform var(--dur-micro) var(--ease-out),
+                background var(--dur-micro) var(--ease-out),
+                border-color var(--dur-micro) var(--ease-out),
+                box-shadow var(--dur-micro) var(--ease-out);
     display: inline-flex; align-items: center; gap: .45rem;
     padding: .55rem 1rem;
     border: none; border-radius: 9px;
@@ -221,11 +232,17 @@
     gap: .9rem; margin-bottom: 1.3rem;
   }
   .kpi {
+    transition: transform var(--dur-micro) var(--ease-out),
+                box-shadow var(--dur-micro) var(--ease-out);
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     box-shadow: var(--shadow);
     padding: 1rem 1.15rem;
+  }
+  .kpi:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, .07);
   }
   .kpi .k-label { font-size: .74rem; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: .05em; }
   .kpi .k-val { font-size: 1.65rem; font-weight: 800; margin: .2rem 0 .1rem; }
@@ -369,6 +386,30 @@
   .topbar-breadcrumb .bc-sep { color: var(--text-3); font-weight: 400; margin: 0 2px; }
   .topbar-breadcrumb .bc-parent { color: var(--text-3); font-weight: 500; font-size: 1rem; }
   .topbar-breadcrumb .bc-current { color: var(--text); font-weight: 700; font-size: 1.12rem; }
+
+  /* ── Stagger de entrada en KPI cards (Kowalski) ── */
+  .view.visible .kpi { animation: kpiIn var(--dur-view) var(--ease-out) both; }
+  .view.visible .kpi:nth-child(1) { animation-delay: 0ms; }
+  .view.visible .kpi:nth-child(2) { animation-delay: 40ms; }
+  .view.visible .kpi:nth-child(3) { animation-delay: 80ms; }
+  .view.visible .kpi:nth-child(4) { animation-delay: 120ms; }
+  @keyframes kpiIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  /* ── Norm-bars con spring ── */
+  .norm-bar { transition: width var(--dur-data) var(--ease-spring); }
+
+  /* ── Nav items: micro-transición ── */
+  .nav-item { transition: background var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out); }
+  .sub-item { transition: background var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out); }
+
+  /* ── Accesibilidad: respetar reduced motion ── */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 </style>
 </head>
 <body>
@@ -2206,6 +2247,35 @@ function pintarSubmenu() {
   }
 }
 
+
+/* ── Count-up animado en valores KPI (Kowalski: los datos cobran vida) ──
+   Anima el número desde 0 hasta su valor en --dur-data con ease-out.
+   Respeta prefers-reduced-motion mostrando el valor final de inmediato. */
+function countUp(el, valorFinal, decimales) {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    el.textContent = valorFinal.toFixed(decimales);
+    return;
+  }
+  const dur = 500;
+  const t0 = performance.now();
+  function frame(t) {
+    const p = Math.min(1, (t - t0) / dur);
+    const eased = 1 - Math.pow(1 - p, 3);   // ease-out cúbico
+    el.textContent = (valorFinal * eased).toFixed(decimales);
+    if (p < 1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+function animarKPIs() {
+  document.querySelectorAll("#kpis .k-val, #puntoMedidas .m-val").forEach(el => {
+    const raw = el.textContent.replace(",", ".").trim();
+    const num = parseFloat(raw);
+    if (!Number.isFinite(num)) return;           // "—" o texto: no animar
+    if (raw.includes("/")) return;               // "5/6" sensores: no animar
+    const dec = raw.includes(".") ? raw.split(".")[1].length : 0;
+    countUp(el, num, dec);
+  });
+}
 function pintarKPIs() {
   const estados = SITIOS.map(s => estadoSitio(s.n));
   const activos = estados.filter(e => e.estado !== "off").length;
@@ -2244,6 +2314,7 @@ function pintarKPIs() {
       <div class="norm-bar-wrap"><div class="norm-bar" style="width:${pct10}%;background:${colBar(pct10)}"></div></div>
       <span class="norm-pct">${pct10}% de la norma</span>
     </div>`;
+  animarKPIs();   // count-up Kowalski
 }
 
 /* ================== MAPA ================== */
