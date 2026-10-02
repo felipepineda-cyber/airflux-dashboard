@@ -72,6 +72,82 @@ textarea{resize:vertical;min-height:60px}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style id="theme-pro">
+  /* ═══════════ TEMA PRO · mismo lenguaje visual que SenFePin ═══════════ */
+  :root{--grad-brand:linear-gradient(135deg,#06b6d4 0%,#3b82f6 50%,#6366f1 100%);--grad-side:linear-gradient(180deg,#0b1630 0%,#0d2444 55%,#0b3a55 100%);
+    --ease-out:cubic-bezier(.32,.72,0,1);--ease-spring:cubic-bezier(.34,1.56,.64,1);--border:#e3e8f2}
+  body{background:radial-gradient(1100px 480px at 90% -10%,rgba(99,102,241,.10),transparent 60%),radial-gradient(900px 480px at 15% 5%,rgba(6,182,212,.10),transparent 60%),#f2f5fb;color:#0f172a}
+  .sidebar{width:236px;background:var(--grad-side);position:relative;overflow:hidden;box-shadow:4px 0 24px rgba(11,22,48,.18)}
+  .sidebar::after{content:"";position:absolute;right:-50px;bottom:-60px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(6,182,212,.28),transparent 70%);pointer-events:none;animation:flotar 9s ease-in-out infinite}
+  .sidebar-header{padding:20px 16px 14px;display:flex;flex-direction:column;gap:2px}
+  .sidebar-header h1{font-size:13.5px;font-weight:800;letter-spacing:.06em;background:linear-gradient(90deg,#fff,#7dd3fc);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sidebar-header p{color:#7dd3fc;font-weight:500}
+  .nav-section{color:#64748b;font-weight:600;font-size:10px;letter-spacing:.1em}
+  .nav-btn{margin:2px 10px;width:calc(100% - 20px);border-radius:10px;padding:9px 12px;color:#cbd5e1;font-weight:500;transition:background .2s var(--ease-out),color .2s,transform .2s var(--ease-out);position:relative}
+  .nav-btn:hover{background:rgba(255,255,255,.07);color:#fff;transform:translateX(3px)}
+  .nav-btn.active{background:linear-gradient(90deg,rgba(6,182,212,.22),rgba(99,102,241,.12));color:#fff;box-shadow:inset 0 0 0 1px rgba(125,211,252,.18)}
+  .nav-btn.active::before{content:"";position:absolute;left:-10px;top:50%;transform:translateY(-50%);width:3px;height:18px;border-radius:0 3px 3px 0;background:linear-gradient(180deg,#22d3ee,#6366f1);box-shadow:0 0 10px #22d3ee}
+  .nav-icon{font-size:17px;color:#7c8db0;width:20px;text-align:center;transition:color .2s}
+  .nav-btn:hover .nav-icon{color:#7dd3fc}.nav-btn.active .nav-icon{color:#67e8f9}
+  .nav-badge{background:linear-gradient(135deg,#f43f5e,#ef4444);font-weight:700;box-shadow:0 2px 8px rgba(239,68,68,.45)}
+  .sidebar-footer{border-top:1px solid rgba(255,255,255,.08);position:relative;z-index:1}
+  .drive-pill{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);color:#cbd5e1;border-radius:10px}
+  main{padding:26px 32px 40px}
+  .tab.active{animation:entrar .4s var(--ease-out) both}
+
+  .form-header{position:relative;overflow:hidden;border:none;border-radius:18px;padding:18px 22px;margin-bottom:22px;color:#fff;
+    background:linear-gradient(120deg,#0b3a55,#1d4ed8 45%,#6366f1 75%,#06b6d4);background-size:240% 240%;animation:fluir 16s ease-in-out infinite alternate;box-shadow:0 18px 40px -16px rgba(29,78,216,.55)}
+  .form-header::after{content:"";position:absolute;width:240px;height:240px;right:-60px;top:-100px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.22),transparent 65%);animation:flotar 10s ease-in-out infinite;pointer-events:none}
+  .form-header img{border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.25);position:relative;z-index:1}
+  .form-header h2{font-size:20px;font-weight:800;letter-spacing:-.02em;color:#fff}
+  .form-header p{color:rgba(255,255,255,.82)!important;position:relative;z-index:1}
+  .form-header>div{position:relative;z-index:1}
+
+  .form-section{background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px 18px 14px;box-shadow:0 1px 2px rgba(15,23,42,.04),0 2px 6px rgba(15,23,42,.04);
+    transition:box-shadow .3s var(--ease-out),transform .3s var(--ease-out);animation:subir .5s var(--ease-out) both}
+  .form-section:nth-of-type(2){animation-delay:70ms}.form-section:nth-of-type(3){animation-delay:140ms}.form-section:nth-of-type(4){animation-delay:210ms}.form-section:nth-of-type(5){animation-delay:280ms}
+  .form-section:hover{box-shadow:0 10px 24px -6px rgba(30,64,175,.14),0 2px 6px rgba(15,23,42,.05)}
+  .form-section h3{display:flex;align-items:center;gap:8px;color:#1e3a8a;font-size:12.5px;letter-spacing:.08em;margin-bottom:12px}
+  .form-section h3::before{content:"";width:8px;height:8px;border-radius:3px;background:var(--grad-brand);box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+  table.form-table{border-collapse:separate;border-spacing:0;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  table.form-table td{border:none;border-bottom:1px solid #eef2f8;border-right:1px solid #eef2f8}
+  table.form-table tr:last-child td{border-bottom:none}
+  table.form-table td:last-child{border-right:none}
+  table.form-table td:first-child{background:#f6f8fc;color:#334155;font-weight:600}
+  table.form-table tr{transition:background .2s}
+  table.form-table tr:focus-within td:first-child{background:#eff6ff;color:#1d4ed8;box-shadow:inset 3px 0 0 #3b82f6}
+  input[type="text"],input[type="number"],input[type="date"],select,textarea{border-radius:8px;background:#fff;transition:box-shadow .2s var(--ease-out),background .2s}
+  input:hover,select:hover,textarea:hover{background:#fafcff}
+  input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px rgba(59,130,246,.22);background:#fff}
+
+  .btn{border-radius:10px;font-weight:600;transition:transform .18s var(--ease-out),box-shadow .25s var(--ease-out),opacity .2s}
+  .btn:hover{opacity:1;transform:translateY(-1px)}.btn:active{transform:scale(.97)}
+  .btn-primary{background:var(--grad-brand);box-shadow:0 4px 14px -4px rgba(59,130,246,.55)}
+  .btn-primary:hover{box-shadow:0 8px 22px -6px rgba(59,130,246,.65)}
+  .btn-success{background:linear-gradient(135deg,#10b981,#059669);box-shadow:0 4px 14px -4px rgba(16,185,129,.55)}
+  .btn-ghost{background:#fff;border-color:var(--border)}.btn-ghost:hover{color:#2563eb;border-color:#bfdbfe;box-shadow:0 6px 16px -6px rgba(59,130,246,.35)}
+  .btn-danger:hover{box-shadow:0 6px 16px -6px rgba(239,68,68,.35)}
+  .card,.accordion{border-radius:14px;border-color:var(--border);transition:transform .3s var(--ease-spring),box-shadow .3s;animation:subir .45s var(--ease-out) both}
+  .card:hover{transform:translateY(-3px);box-shadow:0 10px 24px -6px rgba(30,64,175,.14)}
+  .accordion-head{background:linear-gradient(180deg,#fbfcff,#f6f8fc)}
+  .stat-card{background:#fff;border:1px solid var(--border);border-radius:14px;position:relative;overflow:hidden;transition:transform .3s var(--ease-spring),box-shadow .3s}
+  .stat-card::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:var(--grad-brand)}
+  .stat-card:hover{transform:translateY(-3px);box-shadow:0 10px 24px -6px rgba(30,64,175,.14)}
+  .stat-card .num{background:var(--grad-brand);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800}
+  .chip{transition:all .2s var(--ease-out)}.chip:hover{border-color:#bfdbfe;color:#2563eb}
+  .chip.active{background:var(--grad-brand);border-color:transparent;box-shadow:0 4px 12px -4px rgba(59,130,246,.55)}
+  .toast{background:linear-gradient(135deg,#0d2444,#1d4ed8);box-shadow:0 10px 28px -8px rgba(29,78,216,.55);border-radius:12px}
+  .keep-data-bar{background:linear-gradient(135deg,#0b1630,#0d2444)}
+  .modal{box-shadow:0 30px 60px -20px rgba(15,23,42,.45);animation:subir .3s var(--ease-spring) both}
+  .icon-btn{transition:all .2s var(--ease-out)}.icon-btn:hover{background:#eff6ff;border-color:#bfdbfe;transform:translateY(-1px)}
+
+  @keyframes fluir{0%{background-position:0% 50%}100%{background-position:100% 50%}}
+  @keyframes flotar{0%,100%{transform:translate(0,0)}50%{transform:translate(-14px,12px)}}
+  @keyframes subir{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  @keyframes entrar{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+</style>
 </head>
 <body>
 
@@ -82,26 +158,26 @@ textarea{resize:vertical;min-height:60px}
   </div>
   <div class="nav-section">Navegación</div>
   <button class="nav-btn" onclick="window.location.href='index.html'">
-    <span class="nav-icon">🏠</span> Volver a SenFePin
+    <i class="nav-icon ti ti-arrow-back-up" aria-hidden="true"></i> Volver a SenFePin
   </button>
   <div class="nav-section">Formulario</div>
   <button class="nav-btn active" onclick="showTab('form',this)">
-    <span class="nav-icon">📝</span> Nuevo registro
+    <i class="nav-icon ti ti-file-plus" aria-hidden="true"></i> Nuevo registro
   </button>
   <div class="nav-section">Gestión</div>
   <button class="nav-btn" onclick="showTab('records',this)">
-    <span class="nav-icon">📂</span> Mis registros
+    <i class="nav-icon ti ti-folders" aria-hidden="true"></i> Mis registros
     <span class="nav-badge" id="badge">0</span>
   </button>
   <button class="nav-btn" onclick="showTab('report',this)">
-    <span class="nav-icon">📊</span> Informe general
+    <i class="nav-icon ti ti-chart-bar" aria-hidden="true"></i> Informe general
   </button>
   <div class="nav-section">Herramientas</div>
   <button class="nav-btn" onclick="openImportModal()">
-    <span class="nav-icon">📥</span> Importar registros
+    <i class="nav-icon ti ti-file-import" aria-hidden="true"></i> Importar registros
   </button>
   <button class="nav-btn" onclick="exportAll()">
-    <span class="nav-icon">💾</span> Exportar todo (JSON)
+    <i class="nav-icon ti ti-device-floppy" aria-hidden="true"></i> Exportar todo (JSON)
   </button>
   <input type="file" id="import-input" accept=".json,.html,.htm,.pdf" multiple style="display:none">
   <div class="sidebar-footer">
