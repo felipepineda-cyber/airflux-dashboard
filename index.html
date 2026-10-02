@@ -9,7 +9,7 @@
 <meta property="og:description" content="Calidad del aire en tiempo real: MP2.5 y MP10 en 6 estaciones de Chile.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://airflux-dashboard.vercel.app/">
-<meta property="og:image" content="https://airflux-dashboard.vercel.app/og-image.png">
+<meta property="og:image" content="https://airflux-dashboard.vercel.app/og-image.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:site_name" content="SenFePin">
@@ -17,13 +17,15 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="SenFePin · Calidad del Aire en Chile">
 <meta name="twitter:description" content="Calidad del aire en tiempo real: MP2.5 y MP10 en 6 estaciones de Chile.">
-<meta name="twitter:image" content="https://airflux-dashboard.vercel.app/og-image.png">
+<meta name="twitter:image" content="https://airflux-dashboard.vercel.app/og-image.jpg">
 <link rel="canonical" href="https://airflux-dashboard.vercel.app/">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-48.png" type="image/png" sizes="48x48">
+<link rel="icon" href="/favicon-96.png" type="image/png" sizes="96x96">
 <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta name="theme-color" content="#1d4ed8">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"SenFePin","alternateName":"SenFePin · Calidad del Aire en Chile","url":"https://airflux-dashboard.vercel.app/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"SenFePin","url":"https://airflux-dashboard.vercel.app/","logo":"https://airflux-dashboard.vercel.app/icon-192.png","slogan":"Calidad de aire para un mejor mañana"}</script>
 <link rel="preconnect" href="https://fonts.gstatic.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
@@ -628,6 +630,13 @@
   @keyframes entrarVista { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
   @keyframes onda { 0% { transform: scale(1); opacity: .55; } 100% { transform: scale(2.4); opacity: 0; } }
 
+  .brand .logo { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; background: none; padding: 0; box-shadow: 0 0 0 2px rgba(125,211,252,.35), 0 6px 18px rgba(34,197,94,.30); animation: respirar 4s ease-in-out infinite; }
+  .brand small { font-size: .62rem; line-height: 1.3; display: block; max-width: 150px; }
+  .hero { padding-right: 190px; }
+  .hero-logo { position: absolute; right: 1.6rem; top: 50%; width: 132px; height: 132px; margin-top: -66px; border-radius: 50%; object-fit: cover; z-index: 1;
+    box-shadow: 0 0 0 3px rgba(255,255,255,.25), 0 14px 40px rgba(0,0,0,.35), 0 0 40px rgba(34,197,94,.35); animation: flotarLogo 6s ease-in-out infinite; }
+  @keyframes flotarLogo { 0%,100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-8px) rotate(3deg); } }
+  @media (max-width: 900px) { .hero { padding-right: 1.2rem; } .hero-logo { display: none; } }
   @media (max-width: 900px) { .hero { padding: 1.2rem; } .hero h2 { font-size: 1.1rem; } .hero .ondas { display: none; } }
   @media (prefers-reduced-motion: reduce) { .hero, .aqi-strip, aside::after, .brand .logo { animation: none !important; } }
 </style>
@@ -638,10 +647,10 @@
   <!-- ============ SIDEBAR ============ -->
   <aside id="sidebar">
     <div class="brand">
-      <div class="logo"><i class="ti ti-wind" aria-hidden="true" style="color:#fff;font-size:1.1rem"></i></div>
+      <img class="logo" src="/icon-192.png" alt="Logo SenFePin" width="42" height="42">
       <div>
         <b>SenFePin</b>
-        <small>Monitoreo Ambiental</small>
+        <small>Calidad de aire para un mejor mañana</small>
       </div>
     </div>
     <nav>
@@ -725,7 +734,7 @@
           <span class="live"><i></i> En vivo · red SenFePin</span>
           <h2>Calidad del aire en Chile, en tiempo real</h2>
           <p>MP2,5, MP10 y variables meteorológicas de las estaciones de la red, actualizadas automáticamente cada 5 minutos.</p>
-          <i class="ti ti-wind ondas" aria-hidden="true"></i>
+          <img class="hero-logo" src="/icon-192.png" alt="" aria-hidden="true">
         </div>
         <div id="avisoFuente"></div>
         <div id="alertas"></div>
