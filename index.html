@@ -351,6 +351,13 @@
   .popup-tabla { font-size: .8rem; border-collapse: collapse; }
   .popup-tabla td { padding: 1px 6px; border: none; white-space: nowrap; }
   .popup-tabla td:last-child { text-align: right; font-weight: 600; }
+  .popup-estado { margin: .3rem 0 .45rem; }
+  .popup-graf { margin: .2rem 0 .35rem; }
+  .popup-graf-tit { font-size: .72rem; color: var(--text-2); display: flex; justify-content: space-between; gap: .5rem; }
+  .popup-graf-ley { display: inline-flex; gap: .6rem; }
+  .popup-graf-ley i { display: inline-block; width: 10px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 3px; }
+  .popup-graf svg { display: block; }
+  .popup-graf-vacio { font-size: .75rem; color: var(--text-2); padding: .4rem 0; }
 
   /* Detalle punto */
   .det-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .8rem; }
@@ -2594,6 +2601,66 @@ function iconoEstado(estado) {
     iconSize: [22, 22], iconAnchor: [11, 11],
   });
 }
+/* Etiqueta de estado para el popup: usa la misma lógica que el color del marcador */
+const ESTADO_POPUP = {
+  on:   { cls: "on",   txt: "✓ En línea" },
+  warn: { cls: "warn", txt: "⚠ Con retraso" },
+  off:  { cls: "off",  txt: "✕ Sin conexión" },
+};
+function etiquetaEstado(e) {
+  const x = ESTADO_POPUP[e.estado] || ESTADO_POPUP.off;
+  return `<div class="popup-estado"><span class="pill ${x.cls}">${x.txt}</span></div>`;
+}
+
+/* Mini gráfico SVG con los promedios horarios de las últimas 24 horas (MP2,5 y MP10).
+   Usa los datos ya cargados para el período (promedios horarios hasta 45 días). */
+const COLOR_MP25 = "#0065A3", COLOR_MP10 = "#d97706";
+function graficoMP24h(n) {
+  const desde = Date.now() - 24 * 3600000;
+  const serie = (datos[n] || []).filter(x => x.t && x.t.getTime() >= desde);
+  const pts25 = serie.filter(x => Number.isFinite(x.mp25));
+  const pts10 = serie.filter(x => Number.isFinite(x.mp10));
+  if (pts25.length < 2 && pts10.length < 2) {
+    return `<div class="popup-graf-vacio">Sin datos suficientes en las últimas 24 h para graficar.</div>`;
+  }
+  // Dimensiones del gráfico y márgenes para los ejes
+  const W = 260, H = 110, mI = 26, mD = 6, mS = 6, mInf = 16;
+  const ancho = W - mI - mD, alto = H - mS - mInf;
+  const t0 = desde, t1 = Date.now();
+  const vmax = Math.max(1, ...pts25.map(x => x.mp25), ...pts10.map(x => x.mp10));
+  const techo = Math.ceil(vmax / 10) * 10;          // eje Y redondeado a decenas
+  const X = t => mI + ((t - t0) / (t1 - t0)) * ancho;
+  const Y = v => mS + alto - (v / techo) * alto;
+  const linea = (pts, campo) => pts.map((p, i) => `${i ? "L" : "M"}${X(p.t.getTime()).toFixed(1)},${Y(p[campo]).toFixed(1)}`).join(" ");
+  // Puntos con tooltip (hora y valor) al pasar el mouse
+  const puntos = (pts, campo, color, nombre) => pts.map(p =>
+    `<circle cx="${X(p.t.getTime()).toFixed(1)}" cy="${Y(p[campo]).toFixed(1)}" r="2" fill="${color}"><title>${nombre}: ${f1(p[campo])} µg/m³ · ${p.t.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })}</title></circle>`).join("");
+  // Marcas del eje X cada 6 horas
+  let marcas = "";
+  for (let h = 0; h <= 24; h += 6) {
+    const t = t0 + h * 3600000;
+    const etiqueta = h === 24 ? "ahora" : `-${24 - h}h`;
+    marcas += `<line x1="${X(t)}" x2="${X(t)}" y1="${mS}" y2="${mS + alto}" stroke="#e5e7eb" stroke-width="1"/>
+      <text x="${X(t)}" y="${H - 4}" font-size="9" fill="#6b7280" text-anchor="${h === 24 ? "end" : "middle"}">${etiqueta}</text>`;
+  }
+  // Marcas del eje Y: 0, mitad y techo
+  let ejeY = "";
+  for (const v of [0, techo / 2, techo]) {
+    ejeY += `<text x="${mI - 4}" y="${Y(v) + 3}" font-size="9" fill="#6b7280" text-anchor="end">${v}</text>`;
+  }
+  return `
+    <div class="popup-graf">
+      <div class="popup-graf-tit"><span>Últimas 24 h (µg/m³)</span>
+        <span class="popup-graf-ley"><span><i style="background:${COLOR_MP25}"></i>MP2,5</span><span><i style="background:${COLOR_MP10}"></i>MP10</span></span></div>
+      <svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Gráfico de MP2,5 y MP10 de las últimas 24 horas">
+        ${marcas}${ejeY}
+        <line x1="${mI}" x2="${mI + ancho}" y1="${mS + alto}" y2="${mS + alto}" stroke="#9ca3af" stroke-width="1"/>
+        ${pts10.length > 1 ? `<path d="${linea(pts10, "mp10")}" fill="none" stroke="${COLOR_MP10}" stroke-width="1.6"/>` : ""}
+        ${pts25.length > 1 ? `<path d="${linea(pts25, "mp25")}" fill="none" stroke="${COLOR_MP25}" stroke-width="1.6"/>` : ""}
+        ${puntos(pts10, "mp10", COLOR_MP10, "MP10")}${puntos(pts25, "mp25", COLOR_MP25, "MP2,5")}
+      </svg>
+    </div>`;
+}
 function popupHTML(s) {
   const ult = ultimos[s.n];
   const e = estadoSitio(s.n);
@@ -2614,6 +2681,8 @@ function popupHTML(s) {
       <tr><td>Humedad</td><td>${ult ? f0(ult.hum) : "—"} %${ult && Number.isFinite(ult.hum) && ult.hum >= 0 && ult.hum <= 10 ? ' <span title="Valor sospechoso (0–10 %). El sensor podría estar reportando en décimas; valor real podría ser ×10." style="color:var(--warn);cursor:help">⚠</span>' : ""}</td></tr>
       <tr><td>Presión</td><td>${ult ? f0(ult.pres) : "—"} mmHg</td></tr>
     </table>
+    ${etiquetaEstado(e)}
+    ${graficoMP24h(s.n)}
     <small>Último dato: ${e.ultimo ? fmtFecha(e.ultimo) : "—"} (${haceCuanto(e.ultimo)})</small><br>
     <a href="#" onclick="irA('punto', ${s.n}); return false;">Ver detalle →</a>`;
 }
@@ -2624,7 +2693,7 @@ function initMapa() {
   }).addTo(mapa);
   for (const s of SITIOS) {
     marcadores[s.n] = L.marker([s.lat, s.lon], { icon: iconoEstado("off") })
-      .addTo(mapa).bindPopup(popupHTML(s)).bindTooltip(s.nombre);
+      .addTo(mapa).bindPopup(popupHTML(s), { minWidth: 270 }).bindTooltip(s.nombre);
   }
   mapa.fitBounds(SITIOS.map(s => [s.lat, s.lon]), { padding: [40, 40] });
 }
