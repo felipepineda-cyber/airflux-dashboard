@@ -23,7 +23,7 @@
 <link rel="icon" href="/favicon-96.png" type="image/png" sizes="96x96">
 <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<meta name="theme-color" content="#1d4ed8">
+<meta name="theme-color" content="#0f766e">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"SenFePin","alternateName":"SenFePin · Calidad del Aire en Chile","url":"senfepin.vercel.app"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"SenFePin","url":"https://airflux-dashboard.vercel.app/","logo":"senfepin.vercel.app","slogan":"Calidad de aire para un mejor mañana"}</script>
 <link rel="preconnect" href="https://fonts.gstatic.com">
@@ -35,6 +35,7 @@
 <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
   integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <!-- jsPDF + autotable: generación del informe PDF semanal en el navegador -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -478,174 +479,207 @@
   }
 </style>
 <style id="theme-pro">
-  /* ═══════════ TEMA PRO · color + movimiento ═══════════ */
+  /* ═══════════ TEMA TURQUESA · color + movimiento ═══════════
+     Paleta: verde turquesa (teal) como primario, grises con tinte verdoso.
+     Movimiento: transiciones cortas con GSAP (ver "MOVIMIENTO" en el script);
+     nada se anima en bucle salvo lo que pide atención (sensor caído, "en vivo"). */
   :root {
-    --bg: #f2f5fb;
+    --bg: #f2f7f6;
     --surface: #ffffff;
-    --border: #e3e8f2;
-    --border-strong: #cdd6e6;
-    --text: #0f172a;
-    --text-2: #475569;
-    --text-3: #94a3b8;
-    --primary: #2563eb;
-    --primary-dark: #1d4ed8;
-    --primary-light: #eff6ff;
-    --accent: #06b6d4;
-    --grad-brand: linear-gradient(135deg, #06b6d4 0%, #3b82f6 50%, #6366f1 100%);
-    --grad-side: linear-gradient(180deg, #0b1630 0%, #0d2444 55%, #0b3a55 100%);
+    --border: #dce8e6;
+    --border-strong: #c4d6d3;
+    --text: #0c1c1b;
+    --text-2: #415a57;
+    --text-3: #8aa29e;
+    --primary: #0f766e;          /* turquesa oscuro: texto y botones (contraste AA) */
+    --primary-dark: #115e59;
+    --primary-light: #f0fdfa;
+    --accent: #14b8a6;           /* turquesa vivo: rellenos y detalles */
+    --accent-soft: #ccfbf1;
+    --grad-brand: linear-gradient(135deg, #2dd4bf 0%, #14b8a6 45%, #0f766e 100%);
+    --grad-texto: linear-gradient(135deg, #0d9488, #115e59);
+    --grad-side: linear-gradient(180deg, #032624 0%, #053a36 55%, #075049 100%);
     --radius: 14px;
     --radius-sm: 10px;
-    --shadow: 0 1px 2px rgba(15,23,42,.04), 0 2px 6px rgba(15,23,42,.04);
-    --shadow-md: 0 10px 24px -6px rgba(30,64,175,.14), 0 2px 6px rgba(15,23,42,.05);
-    --shadow-lg: 0 24px 48px -12px rgba(15,23,42,.30);
-    --ring: 0 0 0 3px rgba(59,130,246,.25);
-    --dur-view: 360ms;
+    --shadow: 0 1px 2px rgba(12,28,27,.04), 0 2px 6px rgba(12,28,27,.04);
+    --shadow-md: 0 10px 24px -8px rgba(15,118,110,.18), 0 2px 6px rgba(12,28,27,.05);
+    --shadow-lg: 0 24px 48px -12px rgba(12,28,27,.28);
+    --ring: 0 0 0 3px rgba(20,184,166,.28);
+    --dur-view: 280ms;
   }
   body {
     background:
-      radial-gradient(1200px 500px at 85% -10%, rgba(99,102,241,.10), transparent 60%),
-      radial-gradient(900px 500px at 10% 10%, rgba(6,182,212,.10), transparent 60%),
+      radial-gradient(1100px 480px at 88% -12%, rgba(45,212,191,.12), transparent 60%),
+      radial-gradient(800px 460px at 8% 6%, rgba(13,148,136,.08), transparent 60%),
       var(--bg);
     background-attachment: fixed;
   }
+  :focus-visible { outline: none; box-shadow: var(--ring); }
 
-  /* ── Sidebar oscuro con degradado ── */
-  aside { background: var(--grad-side); border-right: none; color: #cbd5e1; box-shadow: 4px 0 24px rgba(11,22,48,.18); }
+  /* ── Sidebar oscuro turquesa ── */
+  aside { background: var(--grad-side); border-right: none; color: #c7dcd9; box-shadow: 4px 0 24px rgba(3,38,36,.20); }
   aside::after {
     content: ""; position: absolute; inset: auto -40px -60px auto; width: 220px; height: 220px;
-    background: radial-gradient(circle, rgba(6,182,212,.28), transparent 70%);
-    pointer-events: none; animation: flotar 9s ease-in-out infinite;
+    background: radial-gradient(circle, rgba(45,212,191,.22), transparent 70%); pointer-events: none;
   }
   .brand { border-bottom: 1px solid rgba(255,255,255,.08); }
-  .brand .logo { background: var(--grad-brand); box-shadow: 0 6px 18px rgba(59,130,246,.45); animation: respirar 4s ease-in-out infinite; }
   .brand b { color: #fff; font-size: 1.02rem; }
-  .brand small { color: #7dd3fc; }
-  .nav-label { color: #64748b; }
-  .nav-item, .sub-item { color: #cbd5e1; transition: background .2s var(--ease-out), color .2s var(--ease-out), transform .2s var(--ease-out); }
-  .nav-item i.ti { color: #7c8db0; }
-  .nav-item:hover, .sub-item:hover { background: rgba(255,255,255,.07); color: #fff; transform: translateX(3px); }
-  .nav-item:hover i.ti { color: #7dd3fc; }
+  .brand small { color: #5eead4; }
+  .nav-label { color: #6b8f8a; }
+  .nav-item, .sub-item { color: #c7dcd9; transition: background .16s var(--ease-out), color .16s var(--ease-out); }
+  .nav-item i.ti { color: #7fa39e; transition: color .16s var(--ease-out); }
+  .nav-item:hover, .sub-item:hover { background: rgba(255,255,255,.07); color: #fff; }
+  .nav-item:hover i.ti { color: #5eead4; }
+  .nav-item:active, .sub-item:active { transform: scale(.98); }
   .nav-item.active, .sub-item.active {
-    background: linear-gradient(90deg, rgba(6,182,212,.22), rgba(99,102,241,.12));
-    color: #fff; box-shadow: inset 0 0 0 1px rgba(125,211,252,.18);
+    background: rgba(45,212,191,.16); color: #fff; box-shadow: inset 0 0 0 1px rgba(94,234,212,.18);
   }
-  .nav-item.active i.ti { color: #67e8f9; }
-  .nav-item.active::before, .sub-item.active::before { background: linear-gradient(180deg, #22d3ee, #6366f1); width: 3px; box-shadow: 0 0 10px #22d3ee; }
-  .nav-item .chev { color: #64748b; }
-  .side-foot { border-top: 1px solid rgba(255,255,255,.08); color: #64748b; position: relative; z-index: 1; }
-  .side-foot b { color: #7dd3fc !important; }
-  .sdot.on { background: #22c55e; box-shadow: 0 0 0 0 rgba(34,197,94,.6); animation: latido 2.2s infinite; }
+  .nav-item.active i.ti { color: #5eead4; }
+  .nav-item.active::before, .sub-item.active::before { background: #2dd4bf; width: 3px; box-shadow: 0 0 8px rgba(45,212,191,.6); }
+  .nav-item .chev { color: #6b8f8a; }
+  .side-foot { border-top: 1px solid rgba(255,255,255,.08); color: #6b8f8a; position: relative; z-index: 1; }
+  .side-foot b { color: #5eead4 !important; }
+  .sdot.on { background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,.18); animation: none; }
 
   /* ── Topbar ── */
-  .aqi-strip { height: 4px; background-size: 200% 100%; animation: fluir 8s linear infinite;
-    background-image: linear-gradient(90deg, #22c55e, #eab308, #f97316, #ef4444, #7c3aed, #ef4444, #f97316, #eab308, #22c55e); }
-  .topbar { background: rgba(255,255,255,.72); backdrop-filter: blur(14px) saturate(160%); -webkit-backdrop-filter: blur(14px) saturate(160%); }
-  .topbar-breadcrumb .bc-current { background: var(--grad-brand); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 800; font-size: 1.15rem; }
+  .aqi-strip { height: 4px; background-image: linear-gradient(90deg, #22c55e, #eab308, #f97316, #ef4444, #7c3aed); animation: none; }
+  .topbar { background: rgba(255,255,255,.76); backdrop-filter: blur(14px) saturate(160%); -webkit-backdrop-filter: blur(14px) saturate(160%); }
+  .topbar-breadcrumb .bc-current { background: var(--grad-texto); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 800; font-size: 1.15rem; }
 
-  /* ── Botones ── */
-  .btn { background: var(--grad-brand); background-size: 160% 160%; color: #fff; box-shadow: 0 4px 14px -4px rgba(59,130,246,.55); transition: transform .18s var(--ease-out), box-shadow .25s var(--ease-out), background-position .5s var(--ease-out); }
-  .btn:hover { background: var(--grad-brand); background-size: 160% 160%; background-position: 100% 0; box-shadow: 0 8px 22px -6px rgba(59,130,246,.65); transform: translateY(-1px); }
-  .btn:active { transform: translateY(0) scale(.97); }
+  /* ── Botones: turquesa sólido (texto blanco con contraste AA) ── */
+  .btn { background: var(--primary); color: #fff; border-color: transparent; box-shadow: 0 4px 12px -4px rgba(15,118,110,.5);
+    transition: background-color .16s var(--ease-out), box-shadow .2s var(--ease-out), transform .12s var(--ease-out); }
+  .btn:hover { background: var(--primary-dark); box-shadow: 0 6px 16px -6px rgba(15,118,110,.6); }
+  .btn:active { transform: scale(.97); }
   .btn.ghost { background: #fff; color: var(--text-2); border-color: var(--border); box-shadow: var(--shadow); }
-  .btn.ghost:hover { background: #fff; color: var(--primary); border-color: #bfdbfe; box-shadow: 0 6px 16px -6px rgba(59,130,246,.35); }
-  .btn.success { background: linear-gradient(135deg, #10b981, #059669); }
-  #btnRefrescar:hover #icoRefrescar { transform: rotate(180deg); transition: transform .5s var(--ease-out); }
+  .btn.ghost:hover { background: var(--primary-light); color: var(--primary); border-color: #99f6e4; box-shadow: var(--shadow); }
+  .btn.success { background: linear-gradient(135deg, #16a34a, #15803d); }
+  #icoRefrescar { transition: transform .45s var(--ease-out); }
+  #btnRefrescar:hover #icoRefrescar { transform: rotate(180deg); }
 
   /* ── Hero ── */
   .hero {
     position: relative; overflow: hidden; border-radius: 18px; margin-bottom: 1.2rem;
     padding: 1.5rem 1.6rem; color: #fff;
-    background: linear-gradient(120deg, #0b3a55, #1d4ed8 45%, #6366f1 75%, #06b6d4);
-    background-size: 240% 240%; animation: fluir 16s ease-in-out infinite alternate;
-    box-shadow: 0 18px 40px -16px rgba(29,78,216,.55);
+    background: linear-gradient(120deg, #053a36 0%, #0f766e 48%, #14b8a6 82%, #5eead4 120%);
+    box-shadow: 0 18px 40px -18px rgba(15,118,110,.55);
   }
   .hero::before, .hero::after {
-    content: ""; position: absolute; border-radius: 50%; filter: blur(2px); pointer-events: none;
-    background: radial-gradient(circle, rgba(255,255,255,.22), transparent 65%);
+    content: ""; position: absolute; border-radius: 50%; pointer-events: none;
+    background: radial-gradient(circle, rgba(255,255,255,.18), transparent 65%);
   }
-  .hero::before { width: 260px; height: 260px; right: -60px; top: -90px; animation: flotar 10s ease-in-out infinite; }
-  .hero::after { width: 180px; height: 180px; right: 22%; bottom: -100px; animation: flotar 13s ease-in-out infinite reverse; }
+  .hero::before { width: 260px; height: 260px; right: -60px; top: -90px; }
+  .hero::after { width: 180px; height: 180px; right: 22%; bottom: -100px; }
   .hero h2 { font-size: 1.35rem; font-weight: 800; letter-spacing: -.02em; position: relative; z-index: 1; }
-  .hero p { font-size: .86rem; opacity: .85; margin-top: .3rem; max-width: 640px; position: relative; z-index: 1; }
+  .hero p { font-size: .9rem; opacity: .9; margin-top: .3rem; max-width: 640px; position: relative; z-index: 1; }
   .hero .live { display: inline-flex; align-items: center; gap: .45rem; font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
-    background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.22); padding: .28rem .7rem; border-radius: 999px; margin-bottom: .7rem; position: relative; z-index: 1; backdrop-filter: blur(6px); }
-  .hero .live i { width: 8px; height: 8px; border-radius: 50%; background: #4ade80; animation: latido 2s infinite; }
-  .hero .ondas { position: absolute; right: 1.4rem; bottom: .8rem; font-size: 4.2rem; opacity: .16; z-index: 0; animation: flotar 7s ease-in-out infinite; }
+    background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.24); padding: .28rem .7rem; border-radius: 999px; margin-bottom: .7rem; position: relative; z-index: 1; }
+  .hero .live i { width: 8px; height: 8px; border-radius: 50%; background: #86efac; animation: latido 2.4s infinite; }
+  .hero .ondas { position: absolute; right: 1.4rem; bottom: .8rem; font-size: 4.2rem; opacity: .14; z-index: 0; }
 
-  /* ── KPI cards con color ── */
+  /* ── KPI cards: MP2,5 turquesa y MP10 ámbar, igual que en los gráficos ── */
   .kpis { gap: 1rem; }
   .kpi { position: relative; overflow: hidden; border-radius: var(--radius); padding: 1.1rem 1.2rem 1rem; border: 1px solid var(--border);
-    transition: transform .3s var(--ease-spring), box-shadow .3s var(--ease-out), border-color .3s; }
+    transition: transform .2s var(--ease-out), box-shadow .2s var(--ease-out), border-color .2s var(--ease-out); }
   .kpi::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 3px; background: var(--kc, var(--grad-brand)); }
   .kpi::after { content: ""; position: absolute; width: 140px; height: 140px; right: -50px; top: -50px; border-radius: 50%;
-    background: var(--kc, var(--grad-brand)); opacity: .08; transition: transform .5s var(--ease-out), opacity .3s; }
-  .kpi:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); border-color: transparent; }
-  .kpi:hover::after { transform: scale(1.5); opacity: .14; }
+    background: var(--kc, var(--grad-brand)); opacity: .07; transition: transform .35s var(--ease-out), opacity .2s; }
+  .kpi:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--border-strong); }
+  .kpi:hover::after { transform: scale(1.25); opacity: .11; }
   .kpi .k-ico { position: absolute; right: 1rem; top: 1rem; width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center;
-    background: var(--kc, var(--grad-brand)); color: #fff; font-size: 1.15rem; box-shadow: 0 6px 14px -4px var(--ks, rgba(59,130,246,.5)); z-index: 1;
-    transition: transform .4s var(--ease-spring); }
-  .kpi:hover .k-ico { transform: rotate(-8deg) scale(1.08); }
+    background: var(--kc, var(--grad-brand)); color: #fff; font-size: 1.15rem; box-shadow: 0 6px 14px -4px var(--ks, rgba(20,184,166,.5)); z-index: 1; }
   .kpi .k-label { padding-right: 46px; }
-  .kpi .k-val { font-size: 2rem; font-weight: 800; }
-  .kpi.c-ok   { --kc: linear-gradient(135deg, #10b981, #22c55e); --ks: rgba(16,185,129,.5); }
-  .kpi.c-err  { --kc: linear-gradient(135deg, #f43f5e, #ef4444); --ks: rgba(239,68,68,.5); }
-  .kpi.c-mp25 { --kc: linear-gradient(135deg, #06b6d4, #3b82f6); --ks: rgba(6,182,212,.5); }
-  .kpi.c-mp10 { --kc: linear-gradient(135deg, #8b5cf6, #6366f1); --ks: rgba(139,92,246,.5); }
-  .kpi.k-ok .k-val { color: #059669; }
-  .norm-bar-wrap { height: 6px; border-radius: 99px; background: #eef2f8; }
-  .norm-bar { border-radius: 99px; position: relative; overflow: hidden; }
-  .norm-bar::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent); transform: translateX(-100%); animation: brillo 2.6s ease-in-out infinite; }
+  .kpi .k-val { font-size: 2rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .kpi.c-ok   { --kc: linear-gradient(135deg, #22c55e, #16a34a); --ks: rgba(22,163,74,.45); }
+  .kpi.c-err  { --kc: linear-gradient(135deg, #f43f5e, #dc2626); --ks: rgba(220,38,38,.45); }
+  .kpi.c-mp25 { --kc: linear-gradient(135deg, #2dd4bf, #0d9488); --ks: rgba(13,148,136,.45); }
+  .kpi.c-mp10 { --kc: linear-gradient(135deg, #fbbf24, #d97706); --ks: rgba(217,119,6,.45); }
+  .kpi.k-ok .k-val { color: #15803d; }
+  .norm-bar-wrap { height: 6px; border-radius: 99px; background: #e6efed; }
+  .norm-bar { border-radius: 99px; transition: none; }   /* el ancho lo anima GSAP */
 
   /* ── Paneles ── */
-  .panel { border-radius: var(--radius); border-color: var(--border); transition: box-shadow .3s var(--ease-out), transform .3s var(--ease-out); }
+  .panel { border-radius: var(--radius); border-color: var(--border); transition: box-shadow .2s var(--ease-out); }
   .panel:hover { box-shadow: var(--shadow-md); }
-  .panel-head { background: linear-gradient(180deg, #fbfcff, #fff); }
-  .panel-head h2 i.ti { color: #3b82f6 !important; }
-  .view.visible .panel { animation: subir .5s var(--ease-out) both; }
-  .view.visible .panel:nth-of-type(2) { animation-delay: 80ms; }
-  .view.visible .panel:nth-of-type(3) { animation-delay: 160ms; }
-  .view.visible .panel:nth-of-type(4) { animation-delay: 240ms; }
-  .view.visible .kpi { animation: subir .5s var(--ease-spring) both; }
-  .view.visible .kpi:nth-child(2) { animation-delay: 70ms; }
-  .view.visible .kpi:nth-child(3) { animation-delay: 140ms; }
-  .view.visible .kpi:nth-child(4) { animation-delay: 210ms; }
-  .view.visible { animation: entrarVista var(--dur-view) var(--ease-out) both; }
+  .panel-head { background: linear-gradient(180deg, #f7fcfb, #fff); }
+  .panel-head h2 i.ti { color: var(--accent) !important; }
 
-  .alerta { border-radius: 12px; animation: subir .45s var(--ease-out) both; }
-  .alerta.ok { background: linear-gradient(90deg, #ecfdf5, #f0fdfa); }
+  /* Las entradas de vista y tarjetas las hace GSAP: se apagan las de CSS para no duplicar */
+  .view.visible, .view.visible .panel, .view.visible .kpi, .view.visible .medida { animation: none; }
 
-  thead th { background: #f6f8fc; }
-  tbody tr:hover { background: #f0f7ff; }
-  .medida { border-radius: 14px; }
-  .medida:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: #bfdbfe; }
-  .medida .m-val { background: var(--grad-brand); -webkit-background-clip: text; background-clip: text; color: transparent; }
-  .switch input:checked + .slider { background: linear-gradient(135deg, #10b981, #22c55e); }
-  .paso .num { background: var(--grad-brand); color: #fff; }
+  .alerta { border-radius: 12px; }
+  .alerta.ok { background: linear-gradient(90deg, #f0fdf4, #f0fdfa); }
 
-  /* ── Marcadores del mapa con pulso ── */
-  .marker-pin { position: relative; }
-  .marker-pin::after { content: ""; position: absolute; inset: -3px; border-radius: 50%; border: 2px solid currentColor; color: inherit;
-    background: inherit; opacity: .5; animation: onda 2.2s ease-out infinite; z-index: -1; }
-  .marker-pin:hover { transform: scale(1.15); }
+  thead th { background: #f4f9f8; }
+  tbody tr { transition: background-color .12s var(--ease-out); }
+  tbody tr:hover { background: #effbf9; }
+  .medida { border-radius: 14px; transition: transform .2s var(--ease-out), box-shadow .2s var(--ease-out), border-color .2s var(--ease-out); }
+  .medida:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: #99f6e4; }
+  .medida .m-val { background: var(--grad-texto); -webkit-background-clip: text; background-clip: text; color: transparent; font-variant-numeric: tabular-nums; }
+  .switch input:checked + .slider { background: var(--primary); }
+  .paso .num { background: var(--primary); color: #fff; }
 
-  @keyframes fluir { 0% { background-position: 0% 50%; } 100% { background-position: 100% 50%; } }
-  @keyframes flotar { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-14px, 12px); } }
-  @keyframes respirar { 0%,100% { box-shadow: 0 6px 18px rgba(59,130,246,.40); } 50% { box-shadow: 0 6px 26px rgba(6,182,212,.70); } }
-  @keyframes latido { 0% { box-shadow: 0 0 0 0 rgba(74,222,128,.6); } 70% { box-shadow: 0 0 0 7px rgba(74,222,128,0); } 100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); } }
-  @keyframes brillo { 0% { transform: translateX(-100%); } 60%,100% { transform: translateX(100%); } }
-  @keyframes subir { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-  @keyframes entrarVista { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  /* ── Marcadores del mapa: solo late el que necesita atención (sin conexión) ── */
+  .marker-pin { position: relative; transition: transform .15s var(--ease-out); }
+  .marker-pin.est-off::after { content: ""; position: absolute; inset: -3px; border-radius: 50%; border: 2px solid currentColor;
+    opacity: .5; animation: onda 2.4s ease-out infinite; z-index: -1; }
+  .marker-pin:hover { transform: scale(1.12); }
+  .leaflet-popup-content-wrapper { border-radius: 14px; box-shadow: var(--shadow-lg); }
+
+  @keyframes latido { 0% { box-shadow: 0 0 0 0 rgba(134,239,172,.6); } 70% { box-shadow: 0 0 0 7px rgba(134,239,172,0); } 100% { box-shadow: 0 0 0 0 rgba(134,239,172,0); } }
   @keyframes onda { 0% { transform: scale(1); opacity: .55; } 100% { transform: scale(2.4); opacity: 0; } }
 
-  .brand .logo { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; background: none; padding: 0; box-shadow: 0 0 0 2px rgba(125,211,252,.35), 0 6px 18px rgba(34,197,94,.30); animation: respirar 4s ease-in-out infinite; }
+  .brand .logo { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; background: none; padding: 0; box-shadow: 0 0 0 2px rgba(94,234,212,.35), 0 6px 18px rgba(20,184,166,.28); animation: none; }
   .brand small { font-size: .62rem; line-height: 1.3; display: block; max-width: 150px; }
   .hero { padding-right: 190px; }
   .hero-logo { position: absolute; right: 1.6rem; top: 50%; width: 132px; height: 132px; margin-top: -66px; border-radius: 50%; object-fit: cover; z-index: 1;
-    box-shadow: 0 0 0 3px rgba(255,255,255,.25), 0 14px 40px rgba(0,0,0,.35), 0 0 40px rgba(34,197,94,.35); animation: flotarLogo 6s ease-in-out infinite; }
-  @keyframes flotarLogo { 0%,100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-8px) rotate(3deg); } }
-  @media (max-width: 900px) { .hero { padding-right: 1.2rem; } .hero-logo { display: none; } }
-  @media (max-width: 900px) { .hero { padding: 1.2rem; } .hero h2 { font-size: 1.1rem; } .hero .ondas { display: none; } }
-  @media (prefers-reduced-motion: reduce) { .hero, .aqi-strip, aside::after, .brand .logo { animation: none !important; } }
+    box-shadow: 0 0 0 3px rgba(255,255,255,.25), 0 14px 40px rgba(0,0,0,.30), 0 0 40px rgba(94,234,212,.35); }
+
+  /* ── Menú lateral contraíble (clic en el logo) ── */
+  .brand-toggle { border: none; background: none; padding: 0; cursor: pointer; border-radius: 50%; flex-shrink: 0; display: grid; place-items: center;
+    transition: transform .15s var(--ease-out); }
+  .brand-toggle:hover { transform: scale(1.06); }
+  .brand-toggle:active { transform: scale(.95); }
+  .brand-toggle:focus-visible { box-shadow: 0 0 0 3px rgba(94,234,212,.55); }
+  .brand-txt { min-width: 0; transition: opacity .18s var(--ease-out); }
+  aside { transition: width .28s var(--ease-out), transform var(--dur-view) var(--ease-out); overflow: hidden; }
+  aside nav, .side-foot { transition: opacity .18s var(--ease-out), visibility .18s; }
+  main { transition: margin-left .28s var(--ease-out); }
+  @media (min-width: 901px) {
+    body.menu-contraido aside { width: 76px; }
+    body.menu-contraido main { margin-left: 76px; }
+    body.menu-contraido .brand { justify-content: center; padding-left: 0; padding-right: 0; }
+    body.menu-contraido .brand-txt,
+    body.menu-contraido aside nav,
+    body.menu-contraido .side-foot { opacity: 0; visibility: hidden; pointer-events: none; }
+    body.menu-contraido .brand-txt { position: absolute; }
+  }
+
+  /* ── Grupos del menú desplegables ── */
+  .nav-grupo-btn { display: flex; align-items: center; justify-content: space-between; width: 100%; border: none; background: none;
+    font: inherit; font-size: .64rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; cursor: pointer;
+    border-radius: 6px; transition: color .16s var(--ease-out); }
+  .nav-grupo-btn:hover { color: #c7dcd9; }
+  .nav-grupo-btn i { font-size: .8rem; transition: transform .25s var(--ease-out); }
+  .nav-grupo-btn[aria-expanded="false"] i { transform: rotate(-90deg); }
+  .nav-grupo { display: grid; grid-template-rows: 1fr; transition: grid-template-rows .28s var(--ease-out), opacity .2s var(--ease-out); }
+  .nav-grupo.cerrado { grid-template-rows: 0fr; opacity: 0; }
+  .nav-grupo-in { overflow: hidden; min-height: 0; }
+  .nav-grupo.cerrado .nav-grupo-in { visibility: hidden; transition: visibility 0s .28s; }   /* sin foco con teclado cuando está cerrado */
+
+  /* ── Alertas de sensor caído ── */
+  .alerta { align-items: center; }
+  .alerta .ti { font-size: 1.15rem; color: var(--err); flex-shrink: 0; }
+  .alerta .al-txt b { font-weight: 700; }
+  .alerta .al-sub { display: block; font-size: .78rem; color: var(--text-2); margin-top: .1rem; }
+  .avisos { position: fixed; bottom: 1rem; right: 1rem; z-index: 2000; display: flex; flex-direction: column; gap: .6rem; max-width: min(380px, calc(100vw - 2rem)); pointer-events: none; }
+  .aviso { pointer-events: auto; display: flex; gap: .7rem; align-items: flex-start; background: #fff; border: 1px solid #fecaca; border-left: 4px solid var(--err);
+    border-radius: 12px; padding: .8rem .9rem; box-shadow: var(--shadow-lg); font-size: .86rem; color: var(--text); }
+  .aviso .ti-alert-triangle { color: var(--err); font-size: 1.2rem; flex-shrink: 0; margin-top: .05rem; }
+  .aviso button { margin-left: auto; border: none; background: none; color: var(--text-3); cursor: pointer; font-size: 1rem; padding: 0 .1rem; border-radius: 6px; }
+  .aviso button:hover { color: var(--text); }
+  @media (max-width: 900px) { .hero { padding: 1.2rem; } .hero-logo { display: none; } .hero h2 { font-size: 1.1rem; } .hero .ondas { display: none; } }
+  @media (prefers-reduced-motion: reduce) { .hero .live i, .marker-pin.est-off::after { animation: none !important; } }
 </style>
 </head>
 <body>
@@ -654,8 +688,10 @@
   <!-- ============ SIDEBAR ============ -->
   <aside id="sidebar">
     <div class="brand">
-      <img class="logo" src="/icon-192.png" alt="Logo SenFePin" width="42" height="42">
-      <div>
+      <button class="brand-toggle" id="btnColapsar" onclick="alternarMenu()" aria-label="Contraer menú lateral" aria-expanded="true" title="Contraer menú">
+        <img class="logo" src="/icon-192.png" alt="Logo SenFePin" width="42" height="42">
+      </button>
+      <div class="brand-txt">
         <b>SenFePin</b>
         <small>Calidad de aire para un mejor mañana</small>
       </div>
@@ -666,13 +702,20 @@
         <i class="ti ti-layout-dashboard" aria-hidden="true"></i> Resumen
       </button>
 
-      <div class="nav-label">Monitoreo</div>
+      <button class="nav-label nav-grupo-btn" aria-expanded="true" aria-controls="grupo-monitoreo" onclick="alternarGrupo('monitoreo')">
+        <span>Monitoreo</span><i class="ti ti-chevron-down" aria-hidden="true"></i>
+      </button>
+      <div class="nav-grupo" id="grupo-monitoreo"><div class="nav-grupo-in">
       <button class="nav-item" id="menuPuntos" onclick="togglePuntos()">
         <i class="ti ti-map-pin" aria-hidden="true"></i> Puntos de monitoreo <i class="ti ti-chevron-right chev" aria-hidden="true" style="font-size:.8rem"></i>
       </button>
       <div class="submenu" id="submenuPuntos"></div>
+      </div></div>
 
-      <div class="nav-label">Análisis</div>
+      <button class="nav-label nav-grupo-btn" aria-expanded="true" aria-controls="grupo-analisis" onclick="alternarGrupo('analisis')">
+        <span>Análisis</span><i class="ti ti-chevron-down" aria-hidden="true"></i>
+      </button>
+      <div class="nav-grupo" id="grupo-analisis"><div class="nav-grupo-in">
       <button class="nav-item" data-view="estadisticas" onclick="irA('estadisticas')">
         <i class="ti ti-chart-bar" aria-hidden="true"></i> Estadísticas generales
       </button>
@@ -685,19 +728,28 @@
       <button class="nav-item" data-view="powerbi" onclick="irA('powerbi')">
         <i class="ti ti-chart-area" aria-hidden="true"></i> Análisis Power BI
       </button>
+      </div></div>
 
-      <div class="nav-label">Aplicaciones</div>
+      <button class="nav-label nav-grupo-btn" aria-expanded="true" aria-controls="grupo-aplicaciones" onclick="alternarGrupo('aplicaciones')">
+        <span>Aplicaciones</span><i class="ti ti-chevron-down" aria-hidden="true"></i>
+      </button>
+      <div class="nav-grupo" id="grupo-aplicaciones"><div class="nav-grupo-in">
       <button class="nav-item" onclick="window.open('norma.html', '_blank')">
         <i class="ti ti-clipboard-data" aria-hidden="true"></i> Norma Background <i class="ti ti-external-link" aria-hidden="true" style="margin-left:auto;font-size:.75rem;opacity:.6"></i>
       </button>
+      </div></div>
 
-      <div class="nav-label">Sistema</div>
+      <button class="nav-label nav-grupo-btn" aria-expanded="true" aria-controls="grupo-sistema" onclick="alternarGrupo('sistema')">
+        <span>Sistema</span><i class="ti ti-chevron-down" aria-hidden="true"></i>
+      </button>
+      <div class="nav-grupo" id="grupo-sistema"><div class="nav-grupo-in">
       <button class="nav-item" data-view="whatsapp" onclick="irA('whatsapp')">
         <i class="ti ti-brand-whatsapp" aria-hidden="true"></i> Alertas WhatsApp
       </button>
       <button class="nav-item" data-view="alertconf" onclick="irA('alertconf')">
         <i class="ti ti-settings" aria-hidden="true"></i> Configuración de alerta
       </button>
+      </div></div>
     </nav>
     <div class="side-foot">
       Auto-actualización cada 5 min<br>
@@ -706,6 +758,7 @@
     </div>
   </aside>
   <div class="backdrop" id="backdrop" onclick="cerrarSidebar()"></div>
+  <div class="avisos" id="avisos" role="status" aria-live="polite"></div>
 
   <!-- ============ MAIN ============ -->
   <main>
@@ -1358,9 +1411,9 @@ const f1 = x => Number.isFinite(x) ? x.toFixed(1) : "—";
 const f0 = x => Number.isFinite(x) ? x.toFixed(0) : "—";
 
 const LAYOUT_BASE = {
-  font: { family: "Inter, sans-serif", size: 12, color: "#475569" },
+  font: { family: "Inter, sans-serif", size: 12, color: "#415a57" },
   plot_bgcolor: "rgba(0,0,0,0)", paper_bgcolor: "rgba(0,0,0,0)",
-  colorway: ["#3b82f6","#06b6d4","#8b5cf6","#10b981","#f59e0b","#ef4444"],
+  colorway: ["#0d9488","#2563eb","#7c3aed","#d97706","#db2777","#65a30d"],
   margin: { t: 30, b: 70, l: 55, r: 15 },
 };
 
@@ -1372,6 +1425,7 @@ function irA(vista, n) {
   if (vista === "punto") puntoActual = n;
   document.querySelectorAll(".view").forEach(v => v.classList.remove("visible"));
   $("vista-" + vista).classList.add("visible");
+  animarEntradaVista($("vista-" + vista));
   document.querySelectorAll(".nav-item[data-view]").forEach(b =>
     b.classList.toggle("active", b.dataset.view === vista));
   document.querySelectorAll(".sub-item").forEach(b =>
@@ -2124,7 +2178,7 @@ async function generarInformePDF() {
       doc.setTextColor(90);
       if (d.length) {
         const png = await chartPNG([
-          { x: d.map(f => f.t), y: d.map(f => f.mp25), name: "MP2,5", mode: "lines", line: { color: "#0065A3", width: 1.8 } },
+          { x: d.map(f => f.t), y: d.map(f => f.mp25), name: "MP2,5", mode: "lines", line: { color: "#0d9488", width: 1.8 } },
           { x: d.map(f => f.t), y: d.map(f => f.mp10), name: "MP10", mode: "lines", line: { color: "#FF5733", width: 1.8 } },
         ], {
           ...LAYOUT_BASE,
@@ -2179,7 +2233,7 @@ function pintarPBI() {
 const ALERT_DEFAULTS = {
   umbral: UMBRAL_ALERTA_H,
   reenvio: 24,
-  plantilla: "🚨 SenFePin: {sitio} (ID {id}) no registra datos desde {fecha} ({tiempo}).",
+  plantilla: "🚨 SenFePin: El sensor ({sitio}, ID {id}) ha dejado de mandar datos. Último dato: {fecha} ({tiempo}).",
 };
 function configAlerta() {
   try { return { ...ALERT_DEFAULTS, ...JSON.parse(localStorage.getItem("airflux_alertcfg") || "{}") }; }
@@ -2473,20 +2527,85 @@ function estadoSitio(n) {
   return { estado: "on", ultimo, horas };
 }
 
+/* Alerta solo cuando un sensor deja de mandar datos.
+   - El aviso fijo lista los sensores que hoy están sin conexión.
+   - El aviso emergente y la notificación salen una sola vez, en el momento en
+     que un sensor pasa de "registrando" a "sin conexión" (se recuerda entre visitas). */
+const textoAlerta = s => `El sensor (${s.nombre}, ID ${s.n}) ha dejado de mandar datos`;
 function procesarAlertas() {
   const cont = $("alertas");
   cont.innerHTML = "";
   const caidos = SITIOS.map(s => ({ s, e: estadoSitio(s.n) })).filter(x => x.e.estado === "off");
-  if (!caidos.length) {
-    cont.innerHTML = `<div class="alerta ok">✅ <span>Todos los sensores están registrando datos con normalidad.</span></div>`;
-    return;
-  }
   for (const { s, e } of caidos) {
-    const msg = mensajeAlerta(s, e);
-    cont.insertAdjacentHTML("beforeend", `<div class="alerta">${msg}</div>`);
-    notificar(`Sensor ${s.nombre} sin datos`, msg);
-    enviarWhatsAppAlerta(s, e, msg);
+    const ultimo = e.ultimo ? `Último dato: ${fmtFecha(e.ultimo)} (${haceCuanto(e.ultimo)})` : "Sin datos registrados en el período";
+    cont.insertAdjacentHTML("beforeend",
+      `<div class="alerta"><i class="ti ti-alert-triangle" aria-hidden="true"></i><span class="al-txt"><b>${textoAlerta(s)}</b><span class="al-sub">${ultimo}</span></span></div>`);
+    enviarWhatsAppAlerta(s, e, mensajeAlerta(s, e));
   }
+  avisarCaidasNuevas(caidos.map(x => x.s));
+}
+// Compara con el estado guardado: avisa solo los sensores que se cayeron desde la última revisión
+function avisarCaidasNuevas(caidos) {
+  let previos = null;
+  try { previos = JSON.parse(localStorage.getItem("senfepin_caidos") || "null"); } catch (e) { /* sin almacenamiento */ }
+  const ids = caidos.map(s => s.n);
+  try { localStorage.setItem("senfepin_caidos", JSON.stringify(ids)); } catch (e) { /* sin almacenamiento */ }
+  if (previos === null) return;          // primera visita: no hay con qué comparar
+  for (const s of caidos) {
+    if (previos.includes(s.n)) continue; // ya estaba caído: no repetir
+    mostrarAviso(textoAlerta(s));
+    notificar(`Sensor ${s.nombre} sin conexión`, textoAlerta(s));
+  }
+}
+// Aviso emergente arriba a la derecha (se cierra solo a los 12 s o con la ×)
+function mostrarAviso(texto) {
+  const caja = $("avisos");
+  const el = document.createElement("div");
+  el.className = "aviso";
+  el.innerHTML = `<i class="ti ti-alert-triangle" aria-hidden="true"></i><span>${texto}</span><button aria-label="Cerrar aviso">×</button>`;
+  caja.appendChild(el);
+  const cerrar = () => {
+    if (!el.isConnected) return;
+    if (sinMovimiento()) { el.remove(); return; }
+    gsap.to(el, { autoAlpha: 0, x: 24, duration: 0.2, ease: "power2.in", onComplete: () => el.remove() });
+  };
+  el.querySelector("button").onclick = cerrar;
+  if (!sinMovimiento()) gsap.fromTo(el, { autoAlpha: 0, x: 24 }, { autoAlpha: 1, x: 0, duration: 0.3, ease: "power3.out" });
+  setTimeout(cerrar, 12000);
+}
+
+/* ── Menú lateral: contraer con el logo y grupos desplegables (se recuerdan) ── */
+function leerPref(clave, porDefecto) { try { const v = localStorage.getItem(clave); return v === null ? porDefecto : JSON.parse(v); } catch (e) { return porDefecto; } }
+function guardarPref(clave, valor) { try { localStorage.setItem(clave, JSON.stringify(valor)); } catch (e) { /* sin almacenamiento */ } }
+function alternarMenu(forzar) {
+  // En pantallas chicas el menú es un panel que se abre y cierra: el logo lo cierra
+  if (window.matchMedia("(max-width: 900px)").matches && forzar === undefined) { cerrarSidebar(); return; }
+  const contraer = forzar !== undefined ? forzar : !document.body.classList.contains("menu-contraido");
+  document.body.classList.toggle("menu-contraido", contraer);
+  const btn = $("btnColapsar");
+  btn.setAttribute("aria-expanded", String(!contraer));
+  btn.setAttribute("aria-label", contraer ? "Mostrar menú lateral" : "Contraer menú lateral");
+  btn.title = contraer ? "Mostrar menú" : "Contraer menú";
+  guardarPref("senfepin_menu_contraido", contraer);
+  // El mapa y los gráficos se reajustan al nuevo ancho cuando termina la transición
+  setTimeout(() => {
+    if (typeof mapa !== "undefined" && mapa) mapa.invalidateSize();
+    if (window.Plotly) document.querySelectorAll(".js-plotly-plot").forEach(g => { if (g.offsetParent) Plotly.Plots.resize(g); });
+  }, 320);
+}
+function alternarGrupo(clave, forzarAbierto) {
+  const grupo = $("grupo-" + clave);
+  const btn = document.querySelector(`[aria-controls="grupo-${clave}"]`);
+  const abrir = forzarAbierto !== undefined ? forzarAbierto : grupo.classList.contains("cerrado");
+  grupo.classList.toggle("cerrado", !abrir);
+  btn.setAttribute("aria-expanded", String(abrir));
+  const cerrados = new Set(leerPref("senfepin_grupos_cerrados", []));
+  abrir ? cerrados.delete(clave) : cerrados.add(clave);
+  guardarPref("senfepin_grupos_cerrados", [...cerrados]);
+}
+function restaurarMenu() {
+  if (leerPref("senfepin_menu_contraido", false) && !window.matchMedia("(max-width: 900px)").matches) alternarMenu(true);
+  for (const clave of leerPref("senfepin_grupos_cerrados", [])) if ($("grupo-" + clave)) alternarGrupo(clave, false);
 }
 
 /* ================== NOTIFICACIONES NAVEGADOR ================== */
@@ -2519,33 +2638,63 @@ function pintarSubmenu() {
 }
 
 
-/* ── Count-up animado en valores KPI (Kowalski: los datos cobran vida) ──
-   Anima el número desde 0 hasta su valor en --dur-data con ease-out.
-   Respeta prefers-reduced-motion mostrando el valor final de inmediato. */
-function countUp(el, valorFinal, decimales) {
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    el.textContent = valorFinal.toFixed(decimales);
-    return;
-  }
-  const dur = 500;
-  const t0 = performance.now();
-  function frame(t) {
-    const p = Math.min(1, (t - t0) / dur);
-    const eased = 1 - Math.pow(1 - p, 3);   // ease-out cúbico
-    el.textContent = (valorFinal * eased).toFixed(decimales);
-    if (p < 1) requestAnimationFrame(frame);
-  }
-  requestAnimationFrame(frame);
+/* ================== MOVIMIENTO (GSAP) ==================
+   Reglas: transiciones cortas (≤ 0,35 s) con salida suave, nada en bucle,
+   los números cambian desde su valor anterior (no desde 0 en cada refresco)
+   y con "reducir movimiento" activado todo aparece directo, sin animar. */
+const sinMovimiento = () => !window.gsap || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const valoresPrevios = new Map();   // último valor mostrado por cada número o barra
+
+// Anima un número desde su valor anterior hasta el nuevo
+function countUp(el, valorFinal, decimales, clave) {
+  const previo = valoresPrevios.has(clave) ? valoresPrevios.get(clave) : 0;
+  valoresPrevios.set(clave, valorFinal);
+  if (sinMovimiento() || previo === valorFinal) { el.textContent = valorFinal.toFixed(decimales); return; }
+  const o = { v: previo };
+  el.textContent = previo.toFixed(decimales);
+  gsap.to(o, { v: valorFinal, duration: 0.6, ease: "power2.out",
+    onUpdate: () => { el.textContent = o.v.toFixed(decimales); } });
 }
 function animarKPIs() {
-  document.querySelectorAll("#kpis .k-val, #puntoMedidas .m-val").forEach(el => {
+  document.querySelectorAll("#kpis .k-val, #puntoMedidas .m-val").forEach((el, i) => {
     const raw = el.textContent.replace(",", ".").trim();
     const num = parseFloat(raw);
     if (!Number.isFinite(num)) return;           // "—" o texto: no animar
     if (raw.includes("/")) return;               // "5/6" sensores: no animar
     const dec = raw.includes(".") ? raw.split(".")[1].length : 0;
-    countUp(el, num, dec);
+    const clave = el.closest("#kpis") ? `kpi-${i}` : `punto-${puntoActual}-${i}`;
+    countUp(el, num, dec, clave);
   });
+}
+// Barras de "% de la norma": crecen desde su ancho anterior
+function animarBarras() {
+  document.querySelectorAll("#kpis .norm-bar").forEach((b, i) => {
+    const fin = parseFloat(b.style.width) || 0;
+    const clave = `barra-${i}`;
+    const previo = valoresPrevios.has(clave) ? valoresPrevios.get(clave) : 0;
+    valoresPrevios.set(clave, fin);
+    if (sinMovimiento() || previo === fin) return;
+    gsap.fromTo(b, { width: previo + "%" }, { width: fin + "%", duration: 0.7, ease: "power3.out" });
+  });
+}
+// Entrada de una vista: sube 10 px y aparece, bloque por bloque
+function animarEntradaVista(vista) {
+  if (sinMovimiento()) return;
+  const bloques = Array.from(vista.children);
+  gsap.killTweensOf(bloques);
+  gsap.fromTo(bloques, { autoAlpha: 0, y: 10 },
+    { autoAlpha: 1, y: 0, duration: 0.34, ease: "power3.out", stagger: 0.045,
+      clearProps: "opacity,visibility,transform" });
+}
+// Popup del mapa: aparece desde el punto, con una leve escala
+function animarPopup(e) {
+  if (sinMovimiento()) return;
+  const el = e.popup.getElement();
+  if (!el) return;
+  const partes = el.querySelectorAll(".leaflet-popup-content-wrapper, .leaflet-popup-tip-container");
+  gsap.fromTo(partes, { autoAlpha: 0, y: 6, scale: 0.97 },
+    { autoAlpha: 1, y: 0, scale: 1, duration: 0.22, ease: "power2.out",
+      transformOrigin: "50% 100%", clearProps: "opacity,visibility,transform" });
 }
 function pintarKPIs() {
   const estados = SITIOS.map(s => estadoSitio(s.n));
@@ -2589,7 +2738,8 @@ function pintarKPIs() {
       <div class="norm-bar-wrap"><div class="norm-bar" style="width:${pct10}%;background:${colBar(pct10)}"></div></div>
       <span class="norm-pct">${pct10}% de la norma</span>
     </div>`;
-  animarKPIs();   // count-up Kowalski
+  animarKPIs();   // números desde su valor anterior
+  animarBarras();
 }
 
 /* ================== MAPA ================== */
@@ -2597,7 +2747,7 @@ const COLOR_ESTADO = { on: "#16a34a", warn: "#d97706", off: "#dc2626" };
 function iconoEstado(estado) {
   return L.divIcon({
     className: "",
-    html: `<div class="marker-pin" style="background:${COLOR_ESTADO[estado] || "#94a3b8"};color:${COLOR_ESTADO[estado] || "#94a3b8"}"></div>`,
+    html: `<div class="marker-pin est-${estado}" style="background:${COLOR_ESTADO[estado] || "#94a3b8"};color:${COLOR_ESTADO[estado] || "#94a3b8"}"></div>`,
     iconSize: [22, 22], iconAnchor: [11, 11],
   });
 }
@@ -2614,7 +2764,7 @@ function etiquetaEstado(e) {
 
 /* Mini gráfico SVG con los promedios horarios de las últimas 24 horas (MP2,5 y MP10).
    Usa los datos ya cargados para el período (promedios horarios hasta 45 días). */
-const COLOR_MP25 = "#0065A3", COLOR_MP10 = "#d97706";
+const COLOR_MP25 = "#0d9488", COLOR_MP10 = "#d97706";
 function graficoMP24h(n) {
   const desde = Date.now() - 24 * 3600000;
   const serie = (datos[n] || []).filter(x => x.t && x.t.getTime() >= desde);
@@ -2673,7 +2823,7 @@ function popupHTML(s) {
         ? ` · <span style="color:var(--warn)">⚠ el equipo reporta ID ${s.sensor_detectado} — reemplazo sin registrar</span>` : ""}</small>`
     : "";
   return `
-    <b style="color:#0065A3">${s.nombre}</b> <small>(ID ${s.n})</small>${lineaSensor}
+    <b style="color:var(--primary-dark)">${s.nombre}</b> <small>(ID ${s.n})</small>${lineaSensor}
     <table class="popup-tabla">
       <tr><td>MP2,5</td><td>${ult ? f1(ult.mp25) : "—"} µg/m³</td></tr>
       <tr><td>MP10</td><td>${ult ? f1(ult.mp10) : "—"} µg/m³</td></tr>
@@ -2696,6 +2846,7 @@ function initMapa() {
       .addTo(mapa).bindPopup(popupHTML(s), { minWidth: 270 }).bindTooltip(s.nombre);
   }
   mapa.fitBounds(SITIOS.map(s => [s.lat, s.lon]), { padding: [40, 40] });
+  mapa.on("popupopen", animarPopup);
 }
 function actualizarMapa() {
   if (!mapa) return;
@@ -2708,7 +2859,7 @@ function actualizarMapa() {
 
 /* ================== VISTA PUNTO ================== */
 const VAR_DEF = {
-  mp25: { campo: "mp25", nombre: "MP2,5", unidad: "µg/m³", color: "#0065A3" },
+  mp25: { campo: "mp25", nombre: "MP2,5", unidad: "µg/m³", color: "#0d9488" },
   mp10: { campo: "mp10", nombre: "MP10", unidad: "µg/m³", color: "#FF5733" },
   temp: { campo: "temp", nombre: "Temperatura", unidad: "°C", color: "#e67e22" },
   hum:  { campo: "hum",  nombre: "Humedad", unidad: "%", color: "#17a2b8" },
@@ -2826,7 +2977,7 @@ function dibujarSerie() {
           { count: 1, label: "1m", step: "month", stepmode: "backward" },
           { step: "all", label: "Todo" },
         ],
-        font: { size: 11 }, bgcolor: "#f1f5f9", activecolor: "#dbeafe",
+        font: { size: 11 }, bgcolor: "#f1f5f9", activecolor: "#ccfbf1",
       },
     },
     yaxis: { title: { text: VAR_DEF[claves[0]].unidad }, gridcolor: "#eef2f7", zeroline: false, rangemode: "tozero" },
@@ -2886,7 +3037,7 @@ function dibujarComparacion(divId) {
   const max10 = SITIOS.map(s => stats((datos[s.n]||[]).map(x=>x.mp10)).max);
   Plotly.newPlot(divId, [
     { x: nombres, y: prom25, name: "MP2,5", type: "bar",
-      marker: { color: "#0065A3", cornerradius: 6, line: { color: "#004d7a", width: 1 } },
+      marker: { color: "#0d9488", cornerradius: 6, line: { color: "#115e59", width: 1 } },
       text: prom25.map(f1), textposition: "outside", textfont: { size: 11 },
       customdata: max25, hovertemplate: "Promedio: %{y:.1f} µg/m³<br>Máximo: %{customdata:.1f} µg/m³<extra>MP2,5</extra>" },
     { x: nombres, y: prom10, name: "MP10", type: "bar",
@@ -3098,7 +3249,7 @@ async function dcGenerar() {
     }
     const nombres = lista.map(s => s.nombre);
     traces = [
-      { x: nombres, y: prom, name: "Promedio", type: "bar", marker: { color: "#0065A3", cornerradius: 6 } },
+      { x: nombres, y: prom, name: "Promedio", type: "bar", marker: { color: "#0d9488", cornerradius: 6 } },
       { x: nombres, y: min, name: "Mínimo", type: "bar", marker: { color: "#94a3b8", cornerradius: 6 } },
       { x: nombres, y: max, name: "Máximo", type: "bar", marker: { color: "#FF5733", cornerradius: 6 } },
     ];
@@ -3409,6 +3560,7 @@ async function init() {
   refrescar();
   setInterval(refrescar, REFRESCO_MS);
 }
+restaurarMenu();
 init();
 </script>
 </body>
