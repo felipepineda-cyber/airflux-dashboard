@@ -478,6 +478,32 @@
       transition-duration: 0.01ms !important;
     }
   }
+
+  /* ===== Acceso de administrador ===== */
+  .nav-lock { margin-left: auto; font-size: .8rem; opacity: .55; }
+  body.es-admin .nav-lock { display: none; }
+  #btnSalirAdmin { display: none; }
+  body.es-admin #btnSalirAdmin { display: flex; }
+  .adm-overlay { position: fixed; inset: 0; z-index: 3000; display: none; place-items: center; padding: 16px; background: rgba(3,38,36,.5); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+  .adm-overlay.open { display: grid; animation: admFondo .2s ease-out; }
+  .adm-card { width: min(100%, 400px); background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 1.6rem 1.5rem 1.3rem; box-shadow: var(--shadow-lg); animation: admTarjeta .28s var(--ease-out); }
+  .adm-icono { width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; font-size: 1.5rem; background: var(--accent-soft); color: var(--primary); margin-bottom: .8rem; }
+  .adm-card h2 { margin: 0 0 .3rem; font-size: 1.15rem; letter-spacing: -.01em; }
+  .adm-card p { margin: 0 0 1rem; font-size: .84rem; color: var(--text-2); line-height: 1.45; }
+  .adm-card label { display: block; font-size: .78rem; font-weight: 600; color: var(--text-2); margin-bottom: .7rem; }
+  .adm-card input { display: block; width: 100%; margin-top: .3rem; padding: .62rem .75rem; font: inherit; font-size: .92rem; color: var(--text); background: var(--bg); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); }
+  .adm-card input:focus-visible { outline: none; border-color: var(--accent); box-shadow: var(--ring); }
+  .adm-pass { position: relative; }
+  .adm-pass input { padding-right: 2.6rem; }
+  .adm-pass button { position: absolute; right: .25rem; bottom: .25rem; width: 34px; height: 34px; border: 0; background: transparent; color: var(--text-3); border-radius: 8px; cursor: pointer; display: grid; place-items: center; }
+  .adm-pass button:hover { color: var(--text); }
+  .adm-msg { min-height: 1.2rem; font-size: .8rem; color: var(--err); margin: -.1rem 0 .6rem; }
+  .adm-acc { display: flex; gap: .6rem; justify-content: flex-end; }
+  .adm-acc .btn { min-width: 96px; justify-content: center; }
+  .adm-acc .btn[disabled] { opacity: .6; cursor: wait; }
+  @keyframes admFondo { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes admTarjeta { from { opacity: 0; transform: translateY(10px) scale(.97); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .adm-overlay.open, .adm-card { animation: none; } }
 </style>
 <style id="theme-pro">
   /* ═══════════ TEMA TURQUESA · color + movimiento ═══════════
@@ -836,10 +862,13 @@
       </div></div>
       <div class="nav-grupo" id="grupo-sistema" data-grupo="sistema" role="group"><div class="nav-grupo-in">
       <button type="button" class="nav-item" data-view="whatsapp" onclick="irA('whatsapp')">
-        <i class="ti ti-brand-whatsapp" aria-hidden="true"></i> Alertas WhatsApp
+        <i class="ti ti-brand-whatsapp" aria-hidden="true"></i> Alertas WhatsApp <i class="ti ti-lock nav-lock" aria-hidden="true"></i>
       </button>
       <button type="button" class="nav-item" data-view="alertconf" onclick="irA('alertconf')">
-        <i class="ti ti-settings" aria-hidden="true"></i> Configuración de alerta
+        <i class="ti ti-settings" aria-hidden="true"></i> Configuración de alerta <i class="ti ti-lock nav-lock" aria-hidden="true"></i>
+      </button>
+      <button type="button" class="nav-item" id="btnSalirAdmin" onclick="salirAdmin()">
+        <i class="ti ti-logout" aria-hidden="true"></i> Cerrar sesión de administrador
       </button>
       <div class="side-foot">
       Auto-actualización cada 5 min<br>
@@ -851,6 +880,27 @@
   </aside>
   <div class="backdrop" id="backdrop" onclick="cerrarSidebar()"></div>
   <div class="avisos" id="avisos" role="status" aria-live="polite"></div>
+  <div class="adm-overlay" id="admOverlay" onclick="if(event.target===this)cerrarLoginAdmin()">
+    <form class="adm-card" id="admForm" role="dialog" aria-modal="true" aria-labelledby="admTitulo" onsubmit="entrarAdmin(event)">
+      <div class="adm-icono"><i class="ti ti-shield-lock" aria-hidden="true"></i></div>
+      <h2 id="admTitulo">Acceso de administrador</h2>
+      <p>Esta sección cambia los avisos por WhatsApp y correo. Solo pueden entrar las personas autorizadas.</p>
+      <label>Correo
+        <input id="admEmail" type="email" autocomplete="username" required inputmode="email" autocapitalize="off" spellcheck="false">
+      </label>
+      <label>Contraseña
+        <span class="adm-pass">
+          <input id="admPass" type="password" autocomplete="current-password" required>
+          <button type="button" onclick="verPassAdmin()" aria-label="Mostrar u ocultar contraseña"><i class="ti ti-eye" id="admOjo" aria-hidden="true"></i></button>
+        </span>
+      </label>
+      <div class="adm-msg" id="admMsg" role="alert"></div>
+      <div class="adm-acc">
+        <button type="button" class="btn ghost" onclick="cerrarLoginAdmin()">Cancelar</button>
+        <button type="submit" class="btn" id="admBtn">Entrar</button>
+      </div>
+    </form>
+  </div>
 
   <!-- ============ MAIN ============ -->
   <main>
@@ -1546,6 +1596,7 @@ const LAYOUT_BASE = {
 const TITULOS = { resumen: "Resumen", estadisticas: "Estadísticas generales", variacion: "Variación temporal", descargas: "Centro de descargas", powerbi: "Análisis Power BI", whatsapp: "Alertas WhatsApp", alertconf: "Configuración de alerta" };
 
 function irA(vista, n) {
+  if (VISTAS_ADMIN.includes(vista) && !adminSesion) { abrirLoginAdmin(vista); return; }
   vistaActual = vista;
   if (vista === "punto") puntoActual = n;
   document.querySelectorAll(".view").forEach(v => v.classList.remove("visible"));
@@ -3767,6 +3818,105 @@ async function simularCaida() {
   }
 }
 
+/* ================== ACCESO DE ADMINISTRADOR ==================
+   La ventana de login es la puerta visible; la protección real está en la base
+   de datos (supabase/proteger_configuracion.sql): sin una sesión de administrador,
+   Supabase rechaza leer destinos/resumen y rechaza cambiar cualquier configuración. */
+const VISTAS_ADMIN = ["whatsapp", "alertconf"];
+let adminSesion = null;
+let vistaPendiente = null;
+let admFoco = null;
+
+async function esAdminConfirmado() {
+  if (!supaCfg) return false;
+  try { const { data, error } = await supaCfg.rpc("es_admin"); return !error && data === true; }
+  catch { return false; }
+}
+function pintarAdminUI() { document.body.classList.toggle("es-admin", !!adminSesion); }
+function sincronizarPrivado() { sincronizarConfigResumen(); sincronizarDestinos(); }
+function limpiarDatosPrivados() {
+  ["airflux_wa", "airflux_resumen", "airflux_wa_envmap"].forEach(k => { try { localStorage.removeItem(k); } catch {} });
+}
+async function iniciarAdmin() {
+  if (!supaCfg) return;
+  try {
+    const { data } = await supaCfg.auth.getSession();
+    if (data && data.session && await esAdminConfirmado()) {
+      adminSesion = data.session; pintarAdminUI(); sincronizarPrivado();
+    } else {
+      if (data && data.session) await supaCfg.auth.signOut();
+      limpiarDatosPrivados();
+    }
+  } catch (e) { console.warn("admin:", e); }
+  supaCfg.auth.onAuthStateChange((ev, ses) => {
+    if (ev === "SIGNED_OUT") { adminSesion = null; pintarAdminUI(); }
+    else if (ev === "TOKEN_REFRESHED" && ses && adminSesion) adminSesion = ses;
+  });
+}
+function abrirLoginAdmin(vista) {
+  vistaPendiente = vista || null;
+  admFoco = document.activeElement;
+  $("admMsg").textContent = ""; $("admPass").value = "";
+  $("admOverlay").classList.add("open");
+  setTimeout(() => $("admEmail").focus(), 30);
+}
+function cerrarLoginAdmin() {
+  $("admOverlay").classList.remove("open");
+  $("admPass").value = ""; vistaPendiente = null;
+  if (admFoco && admFoco.focus) { try { admFoco.focus(); } catch {} }
+}
+function verPassAdmin() {
+  const i = $("admPass"), ver = i.type === "password";
+  i.type = ver ? "text" : "password";
+  $("admOjo").className = "ti " + (ver ? "ti-eye-off" : "ti-eye");
+}
+async function entrarAdmin(ev) {
+  ev.preventDefault();
+  if (!supaCfg) { $("admMsg").textContent = "No hay conexión con el servidor. Intenta de nuevo."; return; }
+  const btn = $("admBtn"), msg = $("admMsg");
+  btn.disabled = true; btn.textContent = "Entrando…"; msg.textContent = "";
+  try {
+    const { data, error } = await supaCfg.auth.signInWithPassword({
+      email: $("admEmail").value.trim(), password: $("admPass").value });
+    if (error) {
+      msg.textContent = error.status === 429
+        ? "Demasiados intentos. Espera unos minutos y vuelve a probar."
+        : "Correo o contraseña incorrectos.";
+      return;
+    }
+    if (!(await esAdminConfirmado())) {
+      await supaCfg.auth.signOut();
+      msg.textContent = "Esta cuenta no tiene permisos de administrador.";
+      return;
+    }
+    adminSesion = data.session; pintarAdminUI(); sincronizarPrivado();
+    const destino = vistaPendiente;
+    $("admOverlay").classList.remove("open"); vistaPendiente = null;
+    if (destino) irA(destino);
+  } catch (e) {
+    msg.textContent = "No se pudo iniciar sesión. Revisa tu conexión.";
+  } finally {
+    $("admPass").value = ""; btn.disabled = false; btn.textContent = "Entrar";
+  }
+}
+async function salirAdmin() {
+  try { await supaCfg.auth.signOut(); } catch {}
+  adminSesion = null; pintarAdminUI(); limpiarDatosPrivados();
+  if (VISTAS_ADMIN.includes(vistaActual)) irA("resumen");
+  mostrarAviso("Sesión de administrador cerrada.");
+}
+document.addEventListener("keydown", ev => {
+  const ov = $("admOverlay");
+  if (!ov || !ov.classList.contains("open")) return;
+  if (ev.key === "Escape") { cerrarLoginAdmin(); return; }
+  if (ev.key === "Tab") {   // el foco no sale de la ventana
+    const els = [...ov.querySelectorAll("input, button")].filter(e => !e.disabled);
+    const a = els[0], z = els[els.length - 1];
+    if (ev.shiftKey && document.activeElement === a) { ev.preventDefault(); z.focus(); }
+    else if (!ev.shiftKey && document.activeElement === z) { ev.preventDefault(); a.focus(); }
+  }
+});
+
 /* ================== INICIO ================== */
 async function init() {
   // La red se carga desde la nube ANTES de armar selects y mapa (timeout
@@ -3781,8 +3931,7 @@ async function init() {
   for (const s of SITIOS) agS.insertAdjacentHTML("beforeend", `<option value="${s.n}">${s.nombre}</option>`);
   $("footUmbral").textContent = `${configAlerta().umbral} h sin datos`;
   sincronizarConfigAlerta();
-  sincronizarConfigResumen();
-  sincronizarDestinos();
+  iniciarAdmin();
   refrescar();
   setInterval(refrescar, REFRESCO_MS);
 }
