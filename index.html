@@ -8,8 +8,8 @@
 <meta property="og:title" content="SenFePin · Calidad del Aire en Chile — MP2.5 y MP10">
 <meta property="og:description" content="Calidad del aire en tiempo real: MP2.5 y MP10 en 6 estaciones de Chile.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="senfepin.vercel.app">
-<meta property="og:image" content="senfepin.vercel.app">
+<meta property="og:url" content="https://senfepin.vercel.app/">
+<meta property="og:image" content="https://senfepin.vercel.app/og-image.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:site_name" content="SenFePin">
@@ -17,15 +17,15 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="SenFePin · Calidad del Aire en Chile">
 <meta name="twitter:description" content="Calidad del aire en tiempo real: MP2.5 y MP10 en 6 estaciones de Chile.">
-<meta name="twitter:image" content="senfepin.vercel.app">
-<link rel="canonical" href="senfepin.vercel.app">
+<meta name="twitter:image" content="https://senfepin.vercel.app/og-image.jpg">
+<link rel="canonical" href="https://senfepin.vercel.app/">
 <link rel="icon" href="/favicon-48.png" type="image/png" sizes="48x48">
 <link rel="icon" href="/favicon-96.png" type="image/png" sizes="96x96">
 <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta name="theme-color" content="#0f766e">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"SenFePin","alternateName":"SenFePin · Calidad del Aire en Chile","url":"senfepin.vercel.app"}</script>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"SenFePin","url":"https://airflux-dashboard.vercel.app/","logo":"senfepin.vercel.app","slogan":"Calidad de aire para un mejor mañana"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"SenFePin","alternateName":"SenFePin · Calidad del Aire en Chile","url":"https://senfepin.vercel.app/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"SenFePin","url":"https://senfepin.vercel.app/","logo":"https://senfepin.vercel.app/icon-192.png","slogan":"Calidad de aire para un mejor mañana"}</script>
 <link rel="preconnect" href="https://fonts.gstatic.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
@@ -34,7 +34,7 @@
   integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin="" />
 <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
   integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <!-- jsPDF + autotable: generación del informe PDF semanal en el navegador -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -680,6 +680,20 @@
   .aviso button:hover { color: var(--text); }
   @media (max-width: 900px) { .hero { padding: 1.2rem; } .hero-logo { display: none; } .hero h2 { font-size: 1.1rem; } .hero .ondas { display: none; } }
   @media (prefers-reduced-motion: reduce) { .hero .live i, .marker-pin.est-off::after { animation: none !important; } }
+
+  /* ── Pulido (nov 2026): foco visible, títulos equilibrados, cabecera móvil compacta ── */
+  h1, h2, h3 { text-wrap: balance; }
+  .btn:focus-visible, select:focus-visible, .nav-item:focus-visible, #btnMenu:focus-visible {
+    outline: 2px solid var(--primary); outline-offset: 2px;
+  }
+  @media (max-width: 600px) {
+    .topbar { padding: .55rem .75rem; gap: .6rem; flex-wrap: wrap; }
+    .top-right { flex: 1 1 100%; margin-left: 0; flex-wrap: nowrap; gap: .45rem; }
+    .top-right label { flex: 1; min-width: 0; display: flex; align-items: center; gap: .4rem; }
+    .top-right label select { flex: 1; min-width: 0; }
+    #btnRefrescar { font-size: 0; padding: .5rem .65rem; }
+    #btnRefrescar i { font-size: 1.05rem; }
+  }
 </style>
 </head>
 <body>
@@ -688,7 +702,7 @@
   <!-- ============ SIDEBAR ============ -->
   <aside id="sidebar">
     <div class="brand">
-      <button class="brand-toggle" id="btnColapsar" onclick="alternarMenu()" aria-label="Contraer menú lateral" aria-expanded="true" title="Contraer menú">
+      <button type="button" class="brand-toggle" id="btnColapsar" onclick="alternarMenu()" aria-label="Contraer menú lateral" aria-expanded="true" title="Contraer menú">
         <img class="logo" src="/icon-192.png" alt="Logo SenFePin" width="42" height="42">
       </button>
       <div class="brand-txt">
@@ -698,55 +712,55 @@
     </div>
     <nav>
       <div class="nav-label">General</div>
-      <button class="nav-item active" data-view="resumen" onclick="irA('resumen')">
+      <button type="button" class="nav-item active" data-view="resumen" onclick="irA('resumen')">
         <i class="ti ti-layout-dashboard" aria-hidden="true"></i> Resumen
       </button>
 
-      <button class="nav-label nav-grupo-btn" aria-expanded="true" aria-controls="grupo-monitoreo" onclick="alternarGrupo('monitoreo')">
+      <button type="button" class="nav-label nav-grupo-btn" aria-expanded="true" aria-controls="grupo-monitoreo" onclick="alternarGrupo('monitoreo')">
         <span>Monitoreo</span><i class="ti ti-chevron-down" aria-hidden="true"></i>
       </button>
       <div class="nav-grupo" id="grupo-monitoreo"><div class="nav-grupo-in">
-      <button class="nav-item" id="menuPuntos" onclick="togglePuntos()">
+      <button type="button" class="nav-item" id="menuPuntos" onclick="togglePuntos()">
         <i class="ti ti-map-pin" aria-hidden="true"></i> Puntos de monitoreo <i class="ti ti-chevron-right chev" aria-hidden="true" style="font-size:.8rem"></i>
       </button>
       <div class="submenu" id="submenuPuntos"></div>
       </div></div>
 
-      <button class="nav-label nav-grupo-btn" aria-expanded="true" aria-controls="grupo-analisis" onclick="alternarGrupo('analisis')">
+      <button type="button" class="nav-label nav-grupo-btn" aria-expanded="true" aria-controls="grupo-analisis" onclick="alternarGrupo('analisis')">
         <span>Análisis</span><i class="ti ti-chevron-down" aria-hidden="true"></i>
       </button>
       <div class="nav-grupo" id="grupo-analisis"><div class="nav-grupo-in">
-      <button class="nav-item" data-view="estadisticas" onclick="irA('estadisticas')">
+      <button type="button" class="nav-item" data-view="estadisticas" onclick="irA('estadisticas')">
         <i class="ti ti-chart-bar" aria-hidden="true"></i> Estadísticas generales
       </button>
-      <button class="nav-item" data-view="variacion" onclick="irA('variacion')">
+      <button type="button" class="nav-item" data-view="variacion" onclick="irA('variacion')">
         <i class="ti ti-clock" aria-hidden="true"></i> Variación temporal
       </button>
-      <button class="nav-item" data-view="descargas" onclick="irA('descargas')">
+      <button type="button" class="nav-item" data-view="descargas" onclick="irA('descargas')">
         <i class="ti ti-download" aria-hidden="true"></i> Centro de descargas
       </button>
-      <button class="nav-item" data-view="powerbi" onclick="irA('powerbi')">
+      <button type="button" class="nav-item" data-view="powerbi" onclick="irA('powerbi')">
         <i class="ti ti-chart-area" aria-hidden="true"></i> Análisis Power BI
       </button>
       </div></div>
 
-      <button class="nav-label nav-grupo-btn" aria-expanded="true" aria-controls="grupo-aplicaciones" onclick="alternarGrupo('aplicaciones')">
+      <button type="button" class="nav-label nav-grupo-btn" aria-expanded="true" aria-controls="grupo-aplicaciones" onclick="alternarGrupo('aplicaciones')">
         <span>Aplicaciones</span><i class="ti ti-chevron-down" aria-hidden="true"></i>
       </button>
       <div class="nav-grupo" id="grupo-aplicaciones"><div class="nav-grupo-in">
-      <button class="nav-item" onclick="window.open('norma.html', '_blank')">
+      <button type="button" class="nav-item" onclick="window.open('norma.html', '_blank')">
         <i class="ti ti-clipboard-data" aria-hidden="true"></i> Norma Background <i class="ti ti-external-link" aria-hidden="true" style="margin-left:auto;font-size:.75rem;opacity:.6"></i>
       </button>
       </div></div>
 
-      <button class="nav-label nav-grupo-btn" aria-expanded="true" aria-controls="grupo-sistema" onclick="alternarGrupo('sistema')">
+      <button type="button" class="nav-label nav-grupo-btn" aria-expanded="true" aria-controls="grupo-sistema" onclick="alternarGrupo('sistema')">
         <span>Sistema</span><i class="ti ti-chevron-down" aria-hidden="true"></i>
       </button>
       <div class="nav-grupo" id="grupo-sistema"><div class="nav-grupo-in">
-      <button class="nav-item" data-view="whatsapp" onclick="irA('whatsapp')">
+      <button type="button" class="nav-item" data-view="whatsapp" onclick="irA('whatsapp')">
         <i class="ti ti-brand-whatsapp" aria-hidden="true"></i> Alertas WhatsApp
       </button>
-      <button class="nav-item" data-view="alertconf" onclick="irA('alertconf')">
+      <button type="button" class="nav-item" data-view="alertconf" onclick="irA('alertconf')">
         <i class="ti ti-settings" aria-hidden="true"></i> Configuración de alerta
       </button>
       </div></div>
@@ -764,7 +778,7 @@
   <main>
     <div class="aqi-strip" id="aqiStrip"></div>
     <div class="topbar">
-      <button id="btnMenu" onclick="abrirSidebar()" aria-label="Abrir menú"><i class="ti ti-menu-2" style="font-size:1.1rem" aria-hidden="true"></i></button>
+      <button type="button" id="btnMenu" onclick="abrirSidebar()" aria-label="Abrir menú"><i class="ti ti-menu-2" style="font-size:1.1rem" aria-hidden="true"></i></button>
       <div id="tituloWrap">
         <h1 id="tituloVista" class="topbar-breadcrumb">Resumen</h1>
         <div class="sub" id="reloj">Cargando…</div>
@@ -781,8 +795,8 @@
             <option value="hist">📚 Todo el histórico</option>
           </select>
         </label>
-        <button class="btn ghost" onclick="refrescar()" id="btnRefrescar"><i class="ti ti-reload" id="icoRefrescar" aria-hidden="true"></i> Actualizar</button>
-        <button class="btn ghost" id="btnNotif" onclick="activarNotificaciones()" aria-label="Notificaciones"><i class="ti ti-bell" aria-hidden="true"></i></button>
+        <button type="button" class="btn ghost" onclick="refrescar()" id="btnRefrescar"><i class="ti ti-reload" id="icoRefrescar" aria-hidden="true"></i> Actualizar</button>
+        <button type="button" class="btn ghost" id="btnNotif" onclick="activarNotificaciones()" aria-label="Notificaciones"><i class="ti ti-bell" aria-hidden="true"></i></button>
       </div>
     </div>
 
@@ -811,8 +825,8 @@
         <div class="panel">
           <div class="panel-head"><h2><i class="ti ti-building-community" aria-hidden="true" style="vertical-align:-2px;margin-right:6px;font-size:1rem;color:var(--text-3)"></i>Comparación entre sitios</h2><span class="hint">Promedios del período seleccionado</span>
             <div style="margin-left:auto;display:flex;gap:.4rem">
-              <button class="btn ghost" onclick="descargarPNG('chartComparacion','comparacion_sitios')">🖼️ PNG</button>
-              <button class="btn ghost" onclick="csvComparacion()"><i class="ti ti-download" aria-hidden="true"></i> CSV</button>
+              <button type="button" class="btn ghost" onclick="descargarPNG('chartComparacion','comparacion_sitios')">🖼️ PNG</button>
+              <button type="button" class="btn ghost" onclick="csvComparacion()"><i class="ti ti-download" aria-hidden="true"></i> CSV</button>
             </div>
           </div>
           <div class="panel-body"><div id="chartComparacion" class="chart"></div></div>
@@ -826,7 +840,7 @@
             <h2 id="puntoNombre">—</h2>
             <span id="puntoPill"></span>
             <span class="hint" id="puntoUltimo"></span>
-            <div style="margin-left:auto"><button class="btn" onclick="descargarCSV('one')">⬇️ Descargar CSV</button></div>
+            <div style="margin-left:auto"><button type="button" class="btn" onclick="descargarCSV('one')">⬇️ Descargar CSV</button></div>
           </div>
           <div class="panel-body">
             <div class="det-grid" id="puntoMedidas"></div>
@@ -846,9 +860,9 @@
               <label style="font-size:.8rem;font-weight:600;color:var(--text-2)">Fecha final
                 <input type="datetime-local" id="ptHasta">
               </label>
-              <button class="btn" onclick="aplicarRangoPunto()"><i class="ti ti-chart-line" aria-hidden="true"></i> Visualizar</button>
-              <button class="btn success" onclick="descargarCSV('one')">⬇️ Descargar CSV del rango</button>
-              <button class="btn ghost" onclick="resetRangoPunto()">↺ Restablecer</button>
+              <button type="button" class="btn" onclick="aplicarRangoPunto()"><i class="ti ti-chart-line" aria-hidden="true"></i> Visualizar</button>
+              <button type="button" class="btn success" onclick="descargarCSV('one')">⬇️ Descargar CSV del rango</button>
+              <button type="button" class="btn ghost" onclick="resetRangoPunto()">↺ Restablecer</button>
             </div>
             <div class="estado-envio" id="ptEstado"></div>
           </div>
@@ -857,7 +871,7 @@
         <div class="panel">
           <div class="panel-head">
             <h2><i class="ti ti-chart-line" aria-hidden="true" style="vertical-align:-2px;margin-right:6px;font-size:1rem;color:var(--text-3)"></i>Serie temporal</h2>
-            <button class="btn ghost" style="margin-left:auto" onclick="descargarPNG('chartSerie','serie_'+SITIOS.find(x=>x.n===puntoActual).nombre.replace(/\s/g,'_'))">🖼️ PNG</button>
+            <button type="button" class="btn ghost" style="margin-left:auto" onclick="descargarPNG('chartSerie','serie_'+SITIOS.find(x=>x.n===puntoActual).nombre.replace(/\s/g,'_'))">🖼️ PNG</button>
             <label style="font-size:.8rem;font-weight:600;color:var(--text-2)">Variable
               <select id="varSerie" onchange="dibujarSerie()">
                 <option value="mp" selected>MP2,5 + MP10</option>
@@ -874,7 +888,7 @@
 
         <div class="panel">
           <div class="panel-head"><h2><i class="ti ti-chart-dots" aria-hidden="true" style="vertical-align:-2px;margin-right:6px;font-size:1rem;color:var(--text-3)"></i>Estadísticas del punto</h2><span class="hint">Período seleccionado</span>
-            <button class="btn ghost" style="margin-left:auto" onclick="csvTabla('tablaPunto','estadisticas_punto')">⬇️ CSV</button>
+            <button type="button" class="btn ghost" style="margin-left:auto" onclick="csvTabla('tablaPunto','estadisticas_punto')">⬇️ CSV</button>
           </div>
           <div class="panel-body tabla-wrap">
             <table id="tablaPunto">
@@ -891,8 +905,8 @@
           <div class="panel-head">
             <h2>📊 Resumen por punto</h2>
             <div style="margin-left:auto;display:flex;gap:.5rem;flex-wrap:wrap">
-              <button class="btn ghost" onclick="csvTabla('tablaStats','resumen_por_punto')">⬇️ CSV de esta tabla</button>
-              <button class="btn" onclick="descargarCSV('all')">⬇️ CSV datos (todos)</button>
+              <button type="button" class="btn ghost" onclick="csvTabla('tablaStats','resumen_por_punto')">⬇️ CSV de esta tabla</button>
+              <button type="button" class="btn" onclick="descargarCSV('all')">⬇️ CSV datos (todos)</button>
             </div>
           </div>
           <div class="panel-body tabla-wrap">
@@ -920,7 +934,7 @@
                 <option value="semana">Por semana</option>
                 <option value="mes">Por mes</option>
               </select>
-              <button class="btn ghost" onclick="csvTabla('tablaAgregados','resumen_periodo')">⬇️ CSV</button>
+              <button type="button" class="btn ghost" onclick="csvTabla('tablaAgregados','resumen_periodo')">⬇️ CSV</button>
             </div>
           </div>
           <div class="panel-body tabla-wrap" style="max-height:430px;overflow-y:auto">
@@ -940,8 +954,8 @@
         <div class="panel">
           <div class="panel-head"><h2>🏙️ Comparación entre sitios</h2>
             <div style="margin-left:auto;display:flex;gap:.4rem">
-              <button class="btn ghost" onclick="descargarPNG('chartComparacion2','comparacion_sitios')">🖼️ PNG</button>
-              <button class="btn ghost" onclick="csvComparacion()">⬇️ CSV</button>
+              <button type="button" class="btn ghost" onclick="descargarPNG('chartComparacion2','comparacion_sitios')">🖼️ PNG</button>
+              <button type="button" class="btn ghost" onclick="csvComparacion()">⬇️ CSV</button>
             </div>
           </div>
           <div class="panel-body"><div id="chartComparacion2" class="chart"></div></div>
@@ -950,8 +964,8 @@
         <div class="panel">
           <div class="panel-head"><h2>🟢 Disponibilidad de datos</h2><span class="hint">% de datos recibidos vs esperados</span>
             <div style="margin-left:auto;display:flex;gap:.4rem">
-              <button class="btn ghost" onclick="descargarPNG('chartDisp','disponibilidad')">🖼️ PNG</button>
-              <button class="btn ghost" onclick="csvDisponibilidad()">⬇️ CSV</button>
+              <button type="button" class="btn ghost" onclick="descargarPNG('chartDisp','disponibilidad')">🖼️ PNG</button>
+              <button type="button" class="btn ghost" onclick="csvDisponibilidad()">⬇️ CSV</button>
             </div>
           </div>
           <div class="panel-body"><div id="chartDisp" class="chart" style="height:320px"></div></div>
@@ -986,7 +1000,7 @@
                   <option value="hist" selected>Todo el histórico</option>
                 </select>
               </label>
-              <button class="btn" onclick="tvGenerar()">📊 Generar análisis</button>
+              <button type="button" class="btn" onclick="tvGenerar()">📊 Generar análisis</button>
             </div>
             <div class="estado-envio" id="tvEstado"></div>
           </div>
@@ -995,7 +1009,7 @@
         <div class="panel">
           <div class="panel-head">
             <h2>Perfil horario por día de la semana</h2>
-            <button class="btn ghost" style="margin-left:auto" onclick="descargarPNG('tvSemanaHora','variacion_semana_hora')">🖼️ PNG</button>
+            <button type="button" class="btn ghost" style="margin-left:auto" onclick="descargarPNG('tvSemanaHora','variacion_semana_hora')">🖼️ PNG</button>
           </div>
           <div class="panel-body"><div id="tvSemanaHora" style="width:100%;height:360px"></div></div>
         </div>
@@ -1003,17 +1017,17 @@
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.3rem;margin-bottom:1.3rem">
           <div class="panel" style="margin-bottom:0">
             <div class="panel-head"><h2>Perfil horario (todos los días)</h2>
-              <button class="btn ghost" style="margin-left:auto" onclick="descargarPNG('tvHora','variacion_hora')">🖼️</button></div>
+              <button type="button" class="btn ghost" style="margin-left:auto" onclick="descargarPNG('tvHora','variacion_hora')">🖼️</button></div>
             <div class="panel-body"><div id="tvHora" style="width:100%;height:300px"></div></div>
           </div>
           <div class="panel" style="margin-bottom:0">
             <div class="panel-head"><h2>Perfil mensual</h2>
-              <button class="btn ghost" style="margin-left:auto" onclick="descargarPNG('tvMes','variacion_mes')">🖼️</button></div>
+              <button type="button" class="btn ghost" style="margin-left:auto" onclick="descargarPNG('tvMes','variacion_mes')">🖼️</button></div>
             <div class="panel-body"><div id="tvMes" style="width:100%;height:300px"></div></div>
           </div>
           <div class="panel" style="margin-bottom:0">
             <div class="panel-head"><h2>Por día de la semana</h2>
-              <button class="btn ghost" style="margin-left:auto" onclick="descargarPNG('tvDia','variacion_dia')">🖼️</button></div>
+              <button type="button" class="btn ghost" style="margin-left:auto" onclick="descargarPNG('tvDia','variacion_dia')">🖼️</button></div>
             <div class="panel-body"><div id="tvDia" style="width:100%;height:300px"></div></div>
           </div>
         </div>
@@ -1067,11 +1081,11 @@
             </div>
             <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.9rem">
               <span style="font-size:.78rem;color:var(--text-3);font-weight:600;align-self:center">Rápido:</span>
-              <button class="btn ghost" onclick="dcRapido(24)">24 h</button>
-              <button class="btn ghost" onclick="dcRapido(168)">7 días</button>
-              <button class="btn ghost" onclick="dcRapido(720)">30 días</button>
-              <button class="btn ghost" onclick="dcRapido(2160)">90 días</button>
-              <button class="btn ghost" onclick="dcRapido('hist')">📚 Todo el histórico</button>
+              <button type="button" class="btn ghost" onclick="dcRapido(24)">24 h</button>
+              <button type="button" class="btn ghost" onclick="dcRapido(168)">7 días</button>
+              <button type="button" class="btn ghost" onclick="dcRapido(720)">30 días</button>
+              <button type="button" class="btn ghost" onclick="dcRapido(2160)">90 días</button>
+              <button type="button" class="btn ghost" onclick="dcRapido('hist')">📚 Todo el histórico</button>
             </div>
             <hr style="border:none;border-top:1px solid var(--border);margin:1.1rem 0">
             <div class="campo" style="max-width:340px">
@@ -1084,10 +1098,10 @@
               </select>
             </div>
             <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1rem">
-              <button class="btn" onclick="dcGenerar()">📊 Generar vista previa</button>
-              <button class="btn success" onclick="dcDescargarDatos()">⬇️ CSV de datos</button>
-              <button class="btn success" onclick="dcDescargarStats()">⬇️ CSV de estadísticas</button>
-              <button class="btn success" onclick="dcDescargarPNG()">🖼️ Descargar gráfico PNG</button>
+              <button type="button" class="btn" onclick="dcGenerar()">📊 Generar vista previa</button>
+              <button type="button" class="btn success" onclick="dcDescargarDatos()">⬇️ CSV de datos</button>
+              <button type="button" class="btn success" onclick="dcDescargarStats()">⬇️ CSV de estadísticas</button>
+              <button type="button" class="btn success" onclick="dcDescargarPNG()">🖼️ Descargar gráfico PNG</button>
             </div>
             <div class="estado-envio" id="dcEstado"></div>
           </div>
@@ -1111,8 +1125,8 @@
               <label>URL de inserción del informe</label>
               <div class="dest-row">
                 <input type="text" id="pbiUrl" placeholder="https://app.powerbi.com/view?r=...">
-                <button class="btn" onclick="guardarPBI()">Guardar</button>
-                <button class="btn-x" title="Quitar informe" onclick="$('pbiUrl').value=''; guardarPBI()">✕</button>
+                <button type="button" class="btn" onclick="guardarPBI()">Guardar</button>
+                <button type="button" class="btn-x" title="Quitar informe" onclick="$('pbiUrl').value=''; guardarPBI()">✕</button>
               </div>
               <div class="ayuda">
                 Cómo obtenerla: en <b>app.powerbi.com</b> abre tu informe → <b>Archivo → Insertar informe → Publicar en la web (público)</b> → copia el enlace que comienza con <code>https://app.powerbi.com/view?r=</code>.
@@ -1160,7 +1174,7 @@
         <div class="panel">
           <div class="panel-head">
             <h2>✍️ Mensaje de alerta</h2>
-            <button class="btn ghost" style="margin-left:auto" onclick="restaurarPlantilla()">↺ Restaurar por defecto</button>
+            <button type="button" class="btn ghost" style="margin-left:auto" onclick="restaurarPlantilla()">↺ Restaurar por defecto</button>
           </div>
           <div class="panel-body">
             <div class="campo">
@@ -1171,7 +1185,7 @@
             <div class="sub-titulo">👁️ Previsualización (ejemplo con Yungay caído hace 3 horas)</div>
             <div id="acPreview" style="background:var(--err-bg);border:1px solid #fecaca;border-left:5px solid var(--err);border-radius:11px;padding:.85rem 1.05rem;font-size:.88rem;color:#7f1d1d;font-weight:500"></div>
             <div style="margin-top:1rem">
-              <button class="btn success" onclick="probarPlantilla()">📤 Enviar esta previsualización a mis destinos</button>
+              <button type="button" class="btn success" onclick="probarPlantilla()">📤 Enviar esta previsualización a mis destinos</button>
             </div>
             <div class="estado-envio" id="acResultado"></div>
           </div>
@@ -1210,11 +1224,11 @@
             </div>
             <div class="sub-titulo">📧 Correos de destino (puedes agregar varios)</div>
             <div id="rsMails"></div>
-            <button class="btn ghost" onclick="agregarRsMail()">➕ Añadir correo</button>
+            <button type="button" class="btn ghost" onclick="agregarRsMail()">➕ Añadir correo</button>
             <div style="margin-top:1.1rem;display:flex;gap:.6rem;flex-wrap:wrap">
-              <button class="btn success" onclick="probarResumen()">📤 Enviar resumen de prueba ahora</button>
-              <button class="btn" onclick="enviarUltimosDosResumenes()">📤📤 Enviar últimos 2 resúmenes (una semana c/u)</button>
-              <button class="btn" onclick="generarInformePDF()">📄 Descargar informe PDF (últimos 7 días)</button>
+              <button type="button" class="btn success" onclick="probarResumen()">📤 Enviar resumen de prueba ahora</button>
+              <button type="button" class="btn" onclick="enviarUltimosDosResumenes()">📤📤 Enviar últimos 2 resúmenes (una semana c/u)</button>
+              <button type="button" class="btn" onclick="generarInformePDF()">📄 Descargar informe PDF (últimos 7 días)</button>
             </div>
             <div class="ayuda" style="margin-top:.5rem">El informe incluye: reporte de funcionamiento (estado y disponibilidad por estación), estadística descriptiva, resumen diario y los gráficos de variación temporal (perfil horario, por día de semana y mensual) de MP2,5 y MP10. <b>El envío automático semanal adjunta el PDF por correo</b> si configuraste el remitente Gmail + secreto GMAIL_APP_PASSWORD (si no, envía la versión texto). El botón "Descargar" genera el mismo informe aquí en el navegador.</div>
             <div class="estado-envio" id="rsResultado"></div>
@@ -1261,7 +1275,7 @@
             <div id="bloqueCallmebot">
               <div class="sub-titulo">📱 Números de WhatsApp (puedes agregar varios)</div>
               <div id="listaNums"></div>
-              <button class="btn ghost" onclick="agregarNum()">➕ Añadir número</button>
+              <button type="button" class="btn ghost" onclick="agregarNum()">➕ Añadir número</button>
               <div class="ayuda" style="margin-top:.4rem">Cada número debe activar CallMeBot una vez (pasos abajo) y tiene su propia API key.</div>
             </div>
 
@@ -1278,7 +1292,7 @@
             </div>
             <div class="sub-titulo">📧 Correos de destino (puedes agregar varios)</div>
             <div id="listaMails"></div>
-            <button class="btn ghost" onclick="agregarMail()">➕ Añadir correo</button>
+            <button type="button" class="btn ghost" onclick="agregarMail()">➕ Añadir correo</button>
 
             <div class="campo" style="margin-top:1.1rem;max-width:460px">
               <label>Correo remitente (desde el que se envían los avisos)</label>
@@ -1287,8 +1301,8 @@
             </div>
 
             <div style="margin-top:1.2rem;display:flex;gap:.6rem;flex-wrap:wrap">
-              <button class="btn success" onclick="probarWA()">📤 Enviar prueba a todos los destinos</button>
-              <button class="btn ghost" onclick="simularCaida()">🧪 Simular alerta de sensor caído</button>
+              <button type="button" class="btn success" onclick="probarWA()">📤 Enviar prueba a todos los destinos</button>
+              <button type="button" class="btn ghost" onclick="simularCaida()">🧪 Simular alerta de sensor caído</button>
             </div>
             <div class="estado-envio" id="waResultado"></div>
           </div>
@@ -1407,8 +1421,8 @@ function stats(arr) {
   if (!v.length) return { prom: NaN, min: NaN, max: NaN, n: 0 };
   return { prom: v.reduce((a,b)=>a+b,0)/v.length, min: Math.min(...v), max: Math.max(...v), n: v.length };
 }
-const f1 = x => Number.isFinite(x) ? x.toFixed(1) : "—";
-const f0 = x => Number.isFinite(x) ? x.toFixed(0) : "—";
+const f1 = x => Number.isFinite(x) ? x.toFixed(1).replace(".", ",") : "—";
+const f0 = x => Number.isFinite(x) ? x.toFixed(0).replace(".", ",") : "—";
 
 const LAYOUT_BASE = {
   font: { family: "Inter, sans-serif", size: 12, color: "#415a57" },
@@ -1824,7 +1838,7 @@ function configResumen() {
 function filaRsMail(m) {
   return `<div class="dest-row">
     <input type="text" class="rs-mail" placeholder="correo@dominio.cl" value="${esc(m)}" onchange="guardarResumen()">
-    <button class="btn-x" title="Quitar" onclick="this.parentElement.remove(); guardarResumen()">✕</button>
+    <button type="button" class="btn-x" title="Quitar" onclick="this.parentElement.remove(); guardarResumen()">✕</button>
   </div>`;
 }
 function agregarRsMail() { $("rsMails").insertAdjacentHTML("beforeend", filaRsMail("")); }
@@ -2562,7 +2576,7 @@ function mostrarAviso(texto) {
   const caja = $("avisos");
   const el = document.createElement("div");
   el.className = "aviso";
-  el.innerHTML = `<i class="ti ti-alert-triangle" aria-hidden="true"></i><span>${texto}</span><button aria-label="Cerrar aviso">×</button>`;
+  el.innerHTML = `<i class="ti ti-alert-triangle" aria-hidden="true"></i><span>${texto}</span><button type="button" aria-label="Cerrar aviso">×</button>`;
   caja.appendChild(el);
   const cerrar = () => {
     if (!el.isConnected) return;
@@ -2631,7 +2645,7 @@ function pintarSubmenu() {
   for (const s of SITIOS) {
     const e = estadoSitio(s.n);
     sm.insertAdjacentHTML("beforeend", `
-      <button class="sub-item ${vistaActual==='punto'&&puntoActual===s.n?'active':''}" data-n="${s.n}" onclick="irA('punto', ${s.n})">
+      <button type="button" class="sub-item ${vistaActual==='punto'&&puntoActual===s.n?'active':''}" data-n="${s.n}" onclick="irA('punto', ${s.n})">
         <span class="sdot ${e.estado}"></span> ${s.nombre}
       </button>`);
   }
@@ -2649,11 +2663,11 @@ const valoresPrevios = new Map();   // último valor mostrado por cada número o
 function countUp(el, valorFinal, decimales, clave) {
   const previo = valoresPrevios.has(clave) ? valoresPrevios.get(clave) : 0;
   valoresPrevios.set(clave, valorFinal);
-  if (sinMovimiento() || previo === valorFinal) { el.textContent = valorFinal.toFixed(decimales); return; }
+  if (sinMovimiento() || previo === valorFinal) { el.textContent = valorFinal.toFixed(decimales).replace(".", ","); return; }
   const o = { v: previo };
-  el.textContent = previo.toFixed(decimales);
+  el.textContent = previo.toFixed(decimales).replace(".", ",");
   gsap.to(o, { v: valorFinal, duration: 0.6, ease: "power2.out",
-    onUpdate: () => { el.textContent = o.v.toFixed(decimales); } });
+    onUpdate: () => { el.textContent = o.v.toFixed(decimales).replace(".", ","); } });
 }
 function animarKPIs() {
   document.querySelectorAll("#kpis .k-val, #puntoMedidas .m-val").forEach((el, i) => {
@@ -3399,13 +3413,13 @@ function filaNum(tel, key) {
     <input type="${guardada ? "password" : "text"}" class="d-key" placeholder="API key CallMeBot"
       value="${esc(key)}" ${guardada ? 'readonly title="API key guardada. Para cambiarla, elimina la fila con ✕ y agrégala de nuevo."' : ""}
       onchange="guardarWA(); if (this.value) { this.type='password'; this.readOnly = true; }">
-    <button class="btn-x" title="Quitar" onclick="this.parentElement.remove(); guardarWA()">✕</button>
+    <button type="button" class="btn-x" title="Quitar" onclick="this.parentElement.remove(); guardarWA()">✕</button>
   </div>`;
 }
 function filaMail(m) {
   return `<div class="dest-row">
     <input type="text" class="d-mail" placeholder="correo@dominio.cl" value="${esc(m)}" onchange="guardarWA()">
-    <button class="btn-x" title="Quitar" onclick="this.parentElement.remove(); guardarWA()">✕</button>
+    <button type="button" class="btn-x" title="Quitar" onclick="this.parentElement.remove(); guardarWA()">✕</button>
   </div>`;
 }
 function agregarNum() { $("listaNums").insertAdjacentHTML("beforeend", filaNum("", "")); }
