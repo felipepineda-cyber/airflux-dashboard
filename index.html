@@ -754,6 +754,34 @@
   @media (max-width: 700px) { .topnav-bar .brand-txt { display: none; } #topnav { overflow-x: auto; scrollbar-width: none; } #topnav::-webkit-scrollbar { display: none; } .nav-top { padding: 0 .6rem; } }
   @media (max-width: 520px) { .nav-top span { display: none; } .nav-top { padding: 0 .75rem; } .nav-top .chev-dd { display: none; } }
   @media (prefers-reduced-motion: reduce) { .nav-pill, .nav-panel, .nav-grupo, .nav-top { transition-duration: .01ms !important; transition-delay: 0s !important; } }
+
+  /* ── Configuración de alerta: estado arriba, pasos numerados y secciones ── */
+  .ac-resumen { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: .7rem; margin-bottom: 1rem; }
+  .ac-chip { display: flex; align-items: center; gap: .65rem; padding: .7rem .85rem; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow); }
+  .ac-chip i.ti { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-size: 1.1rem; flex: none; background: var(--accent-soft); color: var(--primary); }
+  .ac-chip.off i.ti { background: #f1f5f4; color: var(--text-3); }
+  .ac-chip b { display: block; font-size: .83rem; letter-spacing: -.01em; }
+  .ac-chip small { display: block; font-size: .72rem; color: var(--text-3); }
+  .ac-chip.on small { color: var(--primary); }
+  .ac-pasos { display: flex; gap: .45rem; flex-wrap: wrap; margin-bottom: 1.2rem; position: sticky; top: 118px; z-index: 5; padding: .45rem; border-radius: 999px; width: fit-content; max-width: 100%;
+    background: rgba(255,255,255,.72); -webkit-backdrop-filter: blur(14px) saturate(160%); backdrop-filter: blur(14px) saturate(160%); border: 1px solid var(--border); box-shadow: var(--shadow); }
+  .ac-pasos a { display: inline-flex; align-items: center; gap: .45rem; padding: .35rem .8rem .35rem .4rem; border-radius: 999px; font-size: .8rem; font-weight: 600; color: var(--text-2); text-decoration: none; transition: background .2s var(--ease-out), color .2s var(--ease-out); }
+  .ac-pasos a b { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: .72rem; background: var(--accent-soft); color: var(--primary); }
+  .ac-pasos a:hover { background: var(--primary-light); color: var(--primary); }
+  .ac-sec { margin-bottom: 1.6rem; scroll-margin-top: 130px; }
+  .ac-sec-head { display: flex; align-items: flex-start; gap: .8rem; margin: 0 .2rem .7rem; flex-wrap: wrap; }
+  .ac-sec-head > div { flex: 1; min-width: 220px; }
+  .ac-sec-head h2 { font-size: 1.02rem; font-weight: 700; letter-spacing: -.01em; }
+  .ac-sec-head p { font-size: .8rem; color: var(--text-2); margin-top: .15rem; line-height: 1.5; max-width: 62ch; }
+  .ac-sec-head .hint { font-size: .74rem; color: var(--text-3); align-self: center; }
+  .ac-num { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: .85rem; color: #fff; background: var(--grad-brand); box-shadow: 0 4px 12px rgba(20,184,166,.35); flex: none; }
+  .ac-prev { border-radius: 11px; padding: .85rem 1.05rem; font-size: .88rem; font-weight: 600; line-height: 1.5; border: 1px solid; border-left-width: 5px; }
+  .ac-prev-err { background: var(--err-bg); border-color: #fecaca; border-left-color: var(--err); color: #7f1d1d; }
+  .ac-prev-warn { background: #fffbeb; border-color: #fde68a; border-left-color: var(--warn); color: #78350f; }
+  .ac-acciones { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: 1rem; }
+  .ac-destinos-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+  @media (max-width: 900px) { .ac-pasos { top: 108px; border-radius: 16px; } }
+  @media (max-width: 600px) { .ac-pasos a { padding: .35rem .6rem .35rem .35rem; } }
 </style>
 </head>
 <body>
@@ -1199,51 +1227,74 @@
 
       <!-- ============ VISTA: CONFIGURACIÓN DE ALERTA ============ -->
       <div class="view" id="vista-alertconf">
-        <div class="panel">
-          <div class="panel-head">
-            <h2>⏱️ Tiempos de alerta</h2>
-            <span class="hint" id="acNube">Se guardan automáticamente (local + nube)</span>
-          </div>
-          <div class="panel-body">
+        <div class="ac-resumen" id="acChips" aria-live="polite"></div>
+        <nav class="ac-pasos" aria-label="Secciones de la configuración">
+          <a href="#ac-inmediato" onclick="acIr(event,'ac-inmediato')"><b>1</b> Aviso inmediato</a>
+          <a href="#ac-caida" onclick="acIr(event,'ac-caida')"><b>2</b> Caída confirmada</a>
+          <a href="#ac-semanal" onclick="acIr(event,'ac-semanal')"><b>3</b> Resumen semanal</a>
+          <a href="#ac-destinos" onclick="acIr(event,'ac-destinos')"><b>4</b> Destinos</a>
+        </nav>
+
+        <section class="ac-sec" id="ac-inmediato">
+          <header class="ac-sec-head"><span class="ac-num">1</span><div><h2>Aviso inmediato de sensor sin datos</h2>
+            <p>Un mensaje en cuanto un sensor deja de enviar datos, sin esperar a que la caída se confirme. Llega una sola vez por episodio y se rearma cuando el sensor vuelve.</p></div>
+            <span class="hint" id="acNube">Se guardan automáticamente (local + nube)</span></header>
+          <div class="panel"><div class="panel-body">
+            <div class="switch-row">
+              <label class="switch"><input type="checkbox" id="acInmActivo" onchange="guardarConfigAlerta()"><span class="slider"></span></label>
+              <div><b style="font-size:.9rem">Avisar de inmediato cuando un sensor deja de mandar datos</b>
+                <div style="font-size:.76rem;color:var(--text-3)">Lo envía el vigilante 24/7 de Supabase por WhatsApp y correo, aunque esta página esté cerrada.</div></div>
+            </div>
             <div class="form-grid">
-              <div class="campo">
-                <label>Horas sin datos para considerar un sensor caído</label>
+              <div class="campo"><label for="acInmMin">Considerar que dejó de enviar tras</label>
+                <select id="acInmMin" onchange="guardarConfigAlerta()">
+                  <option value="60">60 minutos</option><option value="75">75 minutos</option><option value="90">90 minutos (recomendado)</option>
+                  <option value="120">2 horas</option><option value="180">3 horas</option></select>
+                <div class="ayuda">Los sensores publican promedios cada 1 h: con 90 min se detecta una falla real sin falsas alarmas por pequeños atrasos. La revisión corre cada 30 min.</div></div>
+            </div>
+            <div class="campo" style="margin-top:.9rem"><label for="acInmPlantilla">Mensaje (editable)</label>
+              <textarea id="acInmPlantilla" rows="3" style="width:100%;padding:.6rem .75rem;border:1px solid var(--border);border-radius:9px;font:inherit;font-size:.87rem;resize:vertical" oninput="pintarPreviewAlerta()" onchange="guardarConfigAlerta()"></textarea>
+              <div class="ayuda">Comodines: <b>{sitio}</b> punto · <b>{id}</b> ID · <b>{fecha}</b> último dato · <b>{tiempo}</b> tiempo transcurrido.</div></div>
+            <div class="sub-titulo">👁️ Previsualización (ejemplo: Yungay sin datos hace 1 h 30 min)</div>
+            <div class="ac-prev ac-prev-warn" id="acInmPreview"></div>
+            <div class="ac-acciones">
+              <button type="button" class="btn success" onclick="probarPlantilla('inm')">📤 Enviar esta previsualización a mis destinos</button>
+              <button type="button" class="btn ghost" onclick="restaurarPlantilla('inm')">↺ Restaurar mensaje</button></div>
+            <div class="estado-envio" id="acInmResultado"></div>
+          </div></div>
+        </section>
+
+        <section class="ac-sec" id="ac-caida">
+          <header class="ac-sec-head"><span class="ac-num">2</span><div><h2>Caída confirmada</h2>
+            <p>Si el sensor sigue sin datos pasado este tiempo se marca como caído (rojo en el panel) y se avisa de nuevo, con recordatorios mientras siga así.</p></div></header>
+          <div class="panel"><div class="panel-body">
+            <div class="form-grid">
+              <div class="campo"><label for="acUmbral">Horas sin datos para considerar un sensor caído</label>
                 <input type="number" id="acUmbral" min="0.5" max="72" step="0.5" onchange="guardarConfigAlerta()">
-                <div class="ayuda">Los sensores envían promedios cada 1 h. Con 2 h se detectan fallas reales evitando falsas alarmas por retrasos.</div>
-              </div>
-              <div class="campo">
-                <label>Reenviar el aviso cada (horas) si el sensor sigue caído</label>
+                <div class="ayuda">Con 2 a 3 h se confirman fallas reales. Si es menor que el aviso inmediato, este se adelanta a ese tiempo.</div></div>
+              <div class="campo"><label for="acReenvio">Repetir el aviso cada (horas) si sigue caído</label>
                 <input type="number" id="acReenvio" min="1" max="168" step="1" onchange="guardarConfigAlerta()">
-                <div class="ayuda">Evita que llegue el mismo aviso una y otra vez. Al volver el sensor, el contador se reinicia.</div>
-              </div>
+                <div class="ayuda">Evita el mismo aviso una y otra vez. Al volver el sensor, el contador se reinicia.</div></div>
             </div>
-            <div class="ayuda" style="margin-top:.8rem">☁️ Estos valores se guardan en Supabase (tabla <b>config_alertas</b>): la página y el vigilante 24/7 usan la misma configuración.</div>
-          </div>
-        </div>
-
-        <div class="panel">
-          <div class="panel-head">
-            <h2>✍️ Mensaje de alerta</h2>
-            <button type="button" class="btn ghost" style="margin-left:auto" onclick="restaurarPlantilla()">↺ Restaurar por defecto</button>
-          </div>
-          <div class="panel-body">
-            <div class="campo">
-              <label>Plantilla del mensaje (editable)</label>
+            <div class="campo" style="margin-top:.9rem"><label for="acPlantilla">Mensaje (editable)</label>
               <textarea id="acPlantilla" rows="3" style="width:100%;padding:.6rem .75rem;border:1px solid var(--border);border-radius:9px;font:inherit;font-size:.87rem;resize:vertical" oninput="pintarPreviewAlerta()" onchange="guardarConfigAlerta()"></textarea>
-              <div class="ayuda">Comodines disponibles: <b>{sitio}</b> nombre del punto · <b>{id}</b> ID airflux · <b>{fecha}</b> fecha/hora del último dato · <b>{tiempo}</b> tiempo transcurrido (ej: "hace 3 h 0 min").</div>
-            </div>
-            <div class="sub-titulo">👁️ Previsualización (ejemplo con Yungay caído hace 3 horas)</div>
-            <div id="acPreview" style="background:var(--err-bg);border:1px solid #fecaca;border-left:5px solid var(--err);border-radius:11px;padding:.85rem 1.05rem;font-size:.88rem;color:#7f1d1d;font-weight:500"></div>
-            <div style="margin-top:1rem">
-              <button type="button" class="btn success" onclick="probarPlantilla()">📤 Enviar esta previsualización a mis destinos</button>
-            </div>
+              <div class="ayuda">Comodines: <b>{sitio}</b> punto · <b>{id}</b> ID · <b>{fecha}</b> último dato · <b>{tiempo}</b> tiempo transcurrido.</div></div>
+            <div class="sub-titulo">👁️ Previsualización (ejemplo: Yungay caído hace 3 horas)</div>
+            <div class="ac-prev ac-prev-err" id="acPreview"></div>
+            <div class="ac-acciones">
+              <button type="button" class="btn success" onclick="probarPlantilla('caida')">📤 Enviar esta previsualización a mis destinos</button>
+              <button type="button" class="btn ghost" onclick="restaurarPlantilla('caida')">↺ Restaurar mensaje</button></div>
             <div class="estado-envio" id="acResultado"></div>
-          </div>
-        </div>
+            <div class="ayuda" style="margin-top:.8rem">☁️ Se guardan en Supabase (<b>config_alertas</b>): la página y el vigilante 24/7 usan la misma configuración.</div>
+          </div></div>
+        </section>
 
+        <section class="ac-sec" id="ac-semanal">
+          <header class="ac-sec-head"><span class="ac-num">3</span><div><h2>Resumen semanal</h2>
+            <p>Un informe por correo con el estado y la disponibilidad de la red durante los últimos 7 días.</p></div></header>
         <div class="panel">
           <div class="panel-head">
-            <h2>📧 Resumen semanal automático</h2>
+            <h2><i class="ti ti-mail-fast" aria-hidden="true"></i> Resumen semanal automático</h2>
             <span class="hint" id="rsNube">Config compartida con el vigilante 24/7</span>
           </div>
           <div class="panel-body">
@@ -1284,6 +1335,16 @@
             <div class="estado-envio" id="rsResultado"></div>
           </div>
         </div>
+        </section>
+
+        <section class="ac-sec" id="ac-destinos">
+          <header class="ac-sec-head"><span class="ac-num">4</span><div><h2>Destinos</h2>
+            <p>Todos los avisos de arriba llegan a los mismos destinos: WhatsApp (CallMeBot) y correos.</p></div></header>
+          <div class="panel"><div class="panel-body ac-destinos-row">
+            <div id="acDestinoEstado"></div>
+            <button type="button" class="btn" onclick="irA('whatsapp')">Configurar destinos <i class="ti ti-arrow-right" aria-hidden="true"></i></button>
+          </div></div>
+        </section>
       </div>
 
       <!-- ============ VISTA: WHATSAPP ============ -->
@@ -1903,6 +1964,7 @@ function cargarFormResumen() {
   $("rsDia").value = c.dia;
   $("rsHora").value = c.hora;
   $("rsMails").innerHTML = (c.correos.length ? c.correos : [""]).map(filaRsMail).join("");
+  pintarChipsAlertas();
 }
 function guardarResumen() {
   const cfg = {
@@ -1912,6 +1974,7 @@ function guardarResumen() {
     correos: [...document.querySelectorAll("#rsMails .rs-mail")].map(i => i.value.trim()).filter(Boolean),
   };
   localStorage.setItem("airflux_resumen", JSON.stringify(cfg));
+  pintarChipsAlertas();
   if (supaCfg) {
     supaCfg.from("config_resumen").upsert({
       id: 1, activo: cfg.activo, dia: cfg.dia, hora: cfg.hora,
@@ -1919,7 +1982,7 @@ function guardarResumen() {
     }).then(({ error }) => {
       const el = $("rsNube");
       if (el) {
-        el.textContent = error ? "⚠️ No se pudo guardar en la nube (¿falta la tabla config_resumen?)" : "☁️ Guardado en la nube";
+        el.textContent = error ? "⚠️ No se pudo guardar en la nube (" + detalleErrorNube(error) + ")" : "☁️ Guardado en la nube";
         el.style.color = error ? "var(--warn)" : "var(--ok)";
       }
     });
@@ -2299,7 +2362,18 @@ const ALERT_DEFAULTS = {
   umbral: UMBRAL_ALERTA_H,
   reenvio: 24,
   plantilla: "🚨 SenFePin: El sensor ({sitio}, ID {id}) ha dejado de mandar datos. Último dato: {fecha} ({tiempo}).",
+  inmediato: true,       // aviso inmediato cuando un sensor deja de enviar
+  inmediatoMin: 90,      // minutos sin datos para dispararlo
+  plantillaInm: "⚠️ SenFePin: {sitio} (ID {id}) dejó de enviar datos. Último dato: {fecha} ({tiempo}).",
 };
+// Texto legible de un error de Supabase (el mensaje genérico escondía la causa real)
+function detalleErrorNube(err) {
+  if (!err) return "";
+  const t = [err.code, err.message].filter(Boolean).join(" · ");
+  return /permission|policy|42501|row-level/i.test(t) ? t + " → faltan permisos: ejecuta supabase/actualizacion_aviso_inmediato.sql en el SQL Editor"
+       : /does not exist|schema cache|PGRST20|42703|42P01/i.test(t) ? t + " → falta ejecutar supabase/actualizacion_aviso_inmediato.sql en el SQL Editor"
+       : t;
+}
 function configAlerta() {
   try { return { ...ALERT_DEFAULTS, ...JSON.parse(localStorage.getItem("airflux_alertcfg") || "{}") }; }
   catch { return { ...ALERT_DEFAULTS }; }
@@ -2504,6 +2578,9 @@ async function sincronizarConfigAlerta() {
         umbral: Number(data.umbral) || ALERT_DEFAULTS.umbral,
         reenvio: Number(data.reenvio) || ALERT_DEFAULTS.reenvio,
         plantilla: data.plantilla || ALERT_DEFAULTS.plantilla,
+        inmediato: data.inmediato_activo === undefined || data.inmediato_activo === null ? ALERT_DEFAULTS.inmediato : !!data.inmediato_activo,
+        inmediatoMin: Number(data.inmediato_min) || ALERT_DEFAULTS.inmediatoMin,
+        plantillaInm: data.plantilla_inmediata || ALERT_DEFAULTS.plantillaInm,
       }));
       $("footUmbral").textContent = `${configAlerta().umbral} h sin datos`;
       if (vistaActual === "alertconf") cargarFormAlerta();
@@ -2513,12 +2590,20 @@ async function sincronizarConfigAlerta() {
 }
 async function guardarConfigNube(cfg) {
   if (!supaCfg) return;
+  const base = { id: 1, umbral: cfg.umbral, reenvio: cfg.reenvio, plantilla: cfg.plantilla, updated_at: new Date().toISOString() };
   try {
-    const { error } = await supaCfg.from("config_alertas")
-      .upsert({ id: 1, umbral: cfg.umbral, reenvio: cfg.reenvio, plantilla: cfg.plantilla, updated_at: new Date().toISOString() });
+    let { error } = await supaCfg.from("config_alertas").upsert({ ...base,
+      inmediato_activo: cfg.inmediato, inmediato_min: cfg.inmediatoMin, plantilla_inmediata: cfg.plantillaInm });
+    if (error && /column|schema cache|PGRST20|42703/i.test(error.message + (error.code || ""))) {
+      // La nube aún no tiene las columnas del aviso inmediato: se guarda lo anterior y se avisa
+      const r2 = await supaCfg.from("config_alertas").upsert(base);
+      if (r2.error) throw r2.error;
+      marcarNube("⚠️ Guardado, pero el aviso inmediato no llegará al vigilante: " + detalleErrorNube(error), false);
+      return;
+    }
     if (error) throw error;
-    marcarNube("☁️ Guardado en la nube — el vigilante 24/7 usará estos valores", true);
-  } catch (e) { console.warn("Config nube (guardado):", e); marcarNube("⚠️ No se pudo guardar en la nube (¿falta la tabla config_alertas?) — guardado solo local", false); }
+    marcarNube("☁️ Guardado en la nube: el vigilante 24/7 usará estos valores", true);
+  } catch (e) { console.warn("Config nube (guardado):", e); marcarNube("⚠️ No se pudo guardar en la nube (" + detalleErrorNube(e) + "). Queda guardado solo local.", false); }
 }
 function mensajeAlerta(s, e) {
   return configAlerta().plantilla
@@ -2532,6 +2617,9 @@ function guardarConfigAlerta() {
     umbral: Math.min(72, Math.max(0.5, parseFloat($("acUmbral").value) || ALERT_DEFAULTS.umbral)),
     reenvio: Math.min(168, Math.max(1, parseFloat($("acReenvio").value) || ALERT_DEFAULTS.reenvio)),
     plantilla: $("acPlantilla").value.trim() || ALERT_DEFAULTS.plantilla,
+    inmediato: $("acInmActivo").checked,
+    inmediatoMin: Math.min(240, Math.max(30, parseInt($("acInmMin").value) || ALERT_DEFAULTS.inmediatoMin)),
+    plantillaInm: $("acInmPlantilla").value.trim() || ALERT_DEFAULTS.plantillaInm,
   };
   localStorage.setItem("airflux_alertcfg", JSON.stringify(cfg));
   guardarConfigNube(cfg);
@@ -2539,6 +2627,7 @@ function guardarConfigAlerta() {
   $("acReenvio").value = cfg.reenvio;
   $("footUmbral").textContent = `${cfg.umbral} h sin datos`;
   pintarPreviewAlerta();
+  pintarChipsAlertas();
   pintarSubmenu();      // re-evaluar estados con el nuevo umbral
   procesarAlertas();
   if (vistaActual === "resumen") pintarKPIs();
@@ -2548,24 +2637,53 @@ function cargarFormAlerta() {
   $("acUmbral").value = c.umbral;
   $("acReenvio").value = c.reenvio;
   $("acPlantilla").value = c.plantilla;
+  $("acInmActivo").checked = !!c.inmediato;
+  $("acInmMin").value = String([60, 75, 90, 120, 180].includes(Number(c.inmediatoMin)) ? c.inmediatoMin : 90);
+  $("acInmPlantilla").value = c.plantillaInm;
   pintarPreviewAlerta();
+  pintarChipsAlertas();
 }
-function restaurarPlantilla() {
-  $("acPlantilla").value = ALERT_DEFAULTS.plantilla;
+function restaurarPlantilla(tipo) {
+  if (tipo === "inm") $("acInmPlantilla").value = ALERT_DEFAULTS.plantillaInm;
+  else $("acPlantilla").value = ALERT_DEFAULTS.plantilla;
   guardarConfigAlerta();
+}
+/* Resumen de estado arriba de la página y desplazamiento entre secciones */
+function pintarChipsAlertas() {
+  const el = $("acChips");
+  if (!el) return;
+  const c = configAlerta(), r = configResumen(), wa = waConfigurado();
+  const dias = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+  const chip = (ok, ico, t, d) => `<div class="ac-chip ${ok ? "on" : "off"}"><i class="ti ${ico}" aria-hidden="true"></i><span><b>${t}</b><small>${d}</small></span></div>`;
+  el.innerHTML =
+    chip(c.inmediato, "ti-bolt", "Aviso inmediato", c.inmediato ? `tras ${c.inmediatoMin} min sin datos` : "desactivado") +
+    chip(true, "ti-alert-triangle", "Caída confirmada", `tras ${c.umbral} h · repite cada ${c.reenvio} h`) +
+    chip(!!r.activo, "ti-mail-fast", "Resumen semanal", r.activo ? `${dias[r.dia]} ${String(r.hora).padStart(2, "0")}:00` : "desactivado") +
+    chip(wa, "ti-send", "Destinos", wa ? "configurados" : "sin configurar");
+  const d = $("acDestinoEstado");
+  if (d) d.innerHTML = wa ? '<span class="pill on">● Destinos configurados</span>' : '<span class="pill warn">● Faltan destinos: configúralos para que lleguen los avisos</span>';
+}
+function acIr(ev, id) {
+  ev.preventDefault();
+  const el = $(id);
+  if (el) el.scrollIntoView({ behavior: sinMovimiento() ? "auto" : "smooth", block: "start" });
 }
 function ejemploAlerta() {
   return mensajeAlerta(SITIOS[2], { ultimo: new Date(Date.now() - 3 * 3600000) });
 }
-function pintarPreviewAlerta() {
-  const plantilla = $("acPlantilla").value.trim() || ALERT_DEFAULTS.plantilla;
-  $("acPreview").textContent = plantilla
+function rellenarEjemplo(plantilla, horas, tiempo) {
+  return plantilla
     .replaceAll("{sitio}", "Yungay").replaceAll("{id}", "3")
-    .replaceAll("{fecha}", fmtFecha(new Date(Date.now() - 3 * 3600000)))
-    .replaceAll("{tiempo}", "hace 3 h 0 min");
+    .replaceAll("{fecha}", fmtFecha(new Date(Date.now() - horas * 3600000)))
+    .replaceAll("{tiempo}", tiempo);
 }
-async function probarPlantilla() {
-  const res = $("acResultado");
+function pintarPreviewAlerta() {
+  $("acPreview").textContent = rellenarEjemplo($("acPlantilla").value.trim() || ALERT_DEFAULTS.plantilla, 3, "hace 3 h 0 min");
+  $("acInmPreview").textContent = rellenarEjemplo($("acInmPlantilla").value.trim() || ALERT_DEFAULTS.plantillaInm, 1.5, "hace 1 h 30 min");
+}
+async function probarPlantilla(tipo) {
+  const inm = tipo === "inm";
+  const res = $(inm ? "acInmResultado" : "acResultado");
   guardarConfigAlerta();
   if (!waConfigurado()) {
     res.style.color = "var(--err)";
@@ -2574,7 +2692,7 @@ async function probarPlantilla() {
   }
   res.style.color = "var(--text-2)"; res.textContent = "Enviando…";
   try {
-    const n = await enviarAvisos($("acPreview").textContent + " (PRUEBA)");
+    const n = await enviarAvisos($(inm ? "acInmPreview" : "acPreview").textContent + " (PRUEBA)");
     res.style.color = "var(--ok)"; res.textContent = `✔ Enviado a ${n} destino(s).`;
   } catch (err) {
     res.style.color = "var(--err)"; res.textContent = "✖ Error: " + err.message;

@@ -1,7 +1,8 @@
 // ============================================================
 // AirFlux · Vigilante 24/7 de sensores (Supabase Edge Function)
 // Revisa el último dato de cada estación en ThingSpeak.
-// Si una estación lleva más de UMBRAL_H horas sin datos, envía el
+// Si una estación deja de enviar (aviso inmediato) o lleva más de UMBRAL_H horas
+// sin datos (caída confirmada), envía el
 // aviso por WhatsApp (CallMeBot) y por correo a TODOS los destinos
 // configurados. Máximo 1 aviso por estación cada REENVIO_H horas
 // (se reinicia cuando el sensor vuelve).
@@ -43,6 +44,10 @@ const DEFAULTS = {
   umbral: 2,    // horas sin datos => sensor caído
   reenvio: 24,  // no repetir aviso del mismo sensor antes de esto
   plantilla: "🚨 SenFePin: {sitio} (ID {id}) no registra datos desde {fecha} ({tiempo}).",
+  // Aviso inmediato: se manda en cuanto el sensor deja de enviar (antes de la caída confirmada)
+  inmediato: true,
+  inmediatoMin: 90,   // minutos sin datos para disparar el aviso inmediato
+  plantillaInm: "⚠️ SenFePin: {sitio} (ID {id}) dejó de enviar datos. Último dato: {fecha} ({tiempo}).",
 };
 
 function haceCuanto(d: Date | null): string {
@@ -179,6 +184,9 @@ Deno.serve(async () => {
         umbral: Number(data.umbral) || DEFAULTS.umbral,
         reenvio: Number(data.reenvio) || DEFAULTS.reenvio,
         plantilla: data.plantilla || DEFAULTS.plantilla,
+        inmediato: data.inmediato_activo === undefined || data.inmediato_activo === null ? DEFAULTS.inmediato : !!data.inmediato_activo,
+        inmediatoMin: Number(data.inmediato_min) || DEFAULTS.inmediatoMin,
+        plantillaInm: data.plantilla_inmediata || DEFAULTS.plantillaInm,
       };
     }
   } catch (e) { console.warn("config_alertas no disponible, usando defaults:", e); }
@@ -248,6 +256,31 @@ Deno.serve(async () => {
       if (errEst) console.warn("No se pudo actualizar estado de estación:", errEst.message);
     }
 
+    // ── Aviso INMEDIATO: en cuanto el sensor pasa el límite corto (sin esperar la caída
+    // confirmada). Un solo aviso por episodio; se rearma cuando el sensor vuelve.
+    const minSinDatos = horas * 60;
+    const limiteInm = Math.min(cfg.inmediatoMin, cfg.umbral * 60);
+    let avisoInmediato = false;
+    if (cfg.inmediato && minSinDatos > limiteInm) {
+      const { data: prev, error: errPrev } = await supabase
+        .from("alertas_inmediatas").select("enviado_en").eq("sitio_n", s.n).maybeSingle();
+      if (errPrev) {
+        console.warn("alertas_inmediatas no disponible (¿falta ejecutar el SQL de actualización?):", errPrev.message);
+      } else if (!prev && dst.activo) {
+        const desdeI = ultimo ? ultimo.toLocaleString("es-CL", { timeZone: "America/Santiago" }) : "—";
+        const msgI = cfg.plantillaInm
+          .replaceAll("{sitio}", s.nombre).replaceAll("{id}", String(s.n))
+          .replaceAll("{fecha}", desdeI).replaceAll("{tiempo}", haceCuanto(ultimo));
+        const nI = await enviarAvisos(msgI, dst);
+        if (nI > 0) {
+          await supabase.from("alertas_inmediatas").upsert({ sitio_n: s.n, sitio: s.nombre, enviado_en: new Date().toISOString() });
+          avisoInmediato = true;
+        }
+      }
+    } else if (minSinDatos <= limiteInm) {
+      await supabase.from("alertas_inmediatas").delete().eq("sitio_n", s.n);   // volvió: rearmar
+    }
+
     if (estado === "caido") {
       // ¿Ya avisamos hace poco?
       const { data } = await supabase
@@ -282,6 +315,7 @@ Deno.serve(async () => {
         estado: "CAIDO",
         horas_sin_datos: horas === Infinity ? null : +horas.toFixed(1),
         avisos_enviados_ahora: enviados,
+        aviso_inmediato_enviado: avisoInmediato,
       });
     } else {
       // Sensor OK: limpiar registro para que una futura caída vuelva a avisar
@@ -290,6 +324,7 @@ Deno.serve(async () => {
         sitio: s.nombre,
         estado: estado.toUpperCase(),
         horas_desde_ultimo_dato: +horas.toFixed(1),
+        aviso_inmediato_enviado: avisoInmediato,
         ...(reemplazoDetectado
           ? { aviso: `equipo nuevo detectado (registrado ${s.sensor_id} → reporta ${idReportado}); confirmar en la página o CLI` }
           : {}),
