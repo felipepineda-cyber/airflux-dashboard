@@ -694,6 +694,65 @@
     #btnRefrescar { font-size: 0; padding: .5rem .65rem; }
     #btnRefrescar i { font-size: 1.05rem; }
   }
+
+  /* ══ Menú superior fijo + desplegables hacia abajo en liquid glass (nov 2026) ══ */
+  aside { width: auto; inset: 0 0 auto 0; height: 64px; background: none; box-shadow: none; overflow: visible; display: block; transform: none !important; transition: none; z-index: 1100; border: 0; }
+  aside::after { display: none; }
+  main { margin-left: 0 !important; padding-top: 64px; }
+  .topbar { top: 64px; }
+  #btnMenu { display: none !important; }
+  .backdrop { display: none !important; }
+  .topnav-bar { position: relative; height: 64px; display: flex; align-items: center; gap: 1.4rem; padding: 0 1.2rem;
+    background: linear-gradient(180deg, rgba(3,38,36,.93), rgba(5,58,54,.88));
+    -webkit-backdrop-filter: blur(18px) saturate(170%); backdrop-filter: blur(18px) saturate(170%);
+    border-bottom: 1px solid rgba(255,255,255,.12); box-shadow: 0 6px 24px -10px rgba(3,38,36,.55), inset 0 -1px 0 rgba(94,234,212,.10); }
+  .topnav-bar .brand { border: 0; padding: 0; flex: none; }
+  .topnav-bar .brand .logo { width: 40px; height: 40px; }
+  #topnav { position: relative; display: flex; align-items: center; gap: .15rem; padding: 0; overflow: visible; flex: 1; min-width: 0; }
+  .nav-pill { position: absolute; left: 0; top: 50%; height: 40px; margin-top: -20px; width: 0; border-radius: 999px; pointer-events: none; opacity: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,.20), rgba(255,255,255,.08));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.40), inset 0 0 0 1px rgba(255,255,255,.10), 0 4px 14px -4px rgba(45,212,191,.35);
+    transition: transform .42s var(--ease-out), width .42s var(--ease-out), opacity .2s var(--ease-out); }
+  .nav-top { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: .5rem; width: auto; height: 40px; padding: 0 .95rem;
+    border: 0; background: none; border-radius: 999px; color: #cfe9e5; font: inherit; font-size: .86rem; font-weight: 600; white-space: nowrap; cursor: pointer;
+    text-transform: none; letter-spacing: 0; justify-content: flex-start; transition: color .2s var(--ease-out), transform .15s var(--ease-out); }
+  .nav-top:hover, .nav-top[aria-expanded="true"], .nav-top.has-active, .nav-top.active { background: none; color: #fff; box-shadow: none; }
+  .nav-top.active::before { display: none; }
+  .nav-top i.ti { font-size: 1.05rem; width: auto; color: #7fd8cc; }
+  .nav-top:active { transform: scale(.97); }
+  .nav-top .chev-dd { font-size: .8rem; margin-left: -.1rem; opacity: .75; transition: transform .3s var(--ease-out); }
+  .nav-top.nav-grupo-btn[aria-expanded] i { transform: none; }
+  .nav-top.nav-grupo-btn[aria-expanded="true"] .chev-dd { transform: rotate(180deg); }
+  .nav-top:focus-visible, .brand-toggle:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(94,234,212,.55); }
+
+  .nav-panel { position: fixed; top: 70px; left: 8px; width: 280px; height: 0; z-index: 1100; border-radius: 24px; overflow: hidden;
+    background: linear-gradient(155deg, rgba(20,150,138,.62) 0%, rgba(6,70,65,.78) 55%, rgba(3,44,41,.84) 100%);
+    -webkit-backdrop-filter: blur(26px) saturate(200%) brightness(1.04); backdrop-filter: blur(26px) saturate(200%) brightness(1.04);
+    border: 1px solid rgba(255,255,255,.30);
+    box-shadow: 0 22px 56px -14px rgba(3,38,36,.60), 0 2px 10px rgba(3,38,36,.25), inset 0 1.5px 0 rgba(255,255,255,.50), inset 0 -1px 0 rgba(255,255,255,.10), inset 0 0 28px rgba(94,234,212,.14);
+    opacity: 0; visibility: hidden; transform: translateY(-10px) scale(.97); transform-origin: 50% 0; pointer-events: none;
+    transition: left .42s var(--ease-out), width .42s var(--ease-out), height .42s var(--ease-out), opacity .22s var(--ease-out), transform .38s var(--ease-out), visibility 0s .38s; }
+  .nav-panel::before { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 2; border-radius: inherit;
+    background: radial-gradient(120% 70% at 18% -12%, rgba(255,255,255,.34), transparent 55%), linear-gradient(180deg, rgba(255,255,255,.07), transparent 30%); }
+  .nav-panel.abierto { opacity: 1; visibility: visible; transform: none; pointer-events: auto; transition-delay: 0s; }
+  .nav-panel.no-t, .nav-grupo.no-t { transition: none !important; }
+  .nav-grupo { position: absolute; left: 0; top: 0; width: 100%; display: block; grid-template-rows: none; opacity: 0; visibility: hidden; transform: translateX(var(--sx, 0));
+    transition: opacity .24s var(--ease-out), transform .42s var(--ease-out), visibility 0s .24s; }
+  .nav-grupo.on { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
+  .nav-grupo-in { overflow: visible; padding: .55rem; position: relative; z-index: 1; }
+  .nav-panel .nav-item { width: 100%; padding: .6rem .75rem; border-radius: 14px; color: #e8fffb; font-size: .87rem; }
+  .nav-panel .nav-item i.ti { color: #9be9de; }
+  .nav-panel .nav-item:hover, .nav-panel .sub-item:hover { background: rgba(255,255,255,.16); color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.25); }
+  .nav-panel .nav-item.active, .nav-panel .sub-item.active { background: rgba(255,255,255,.22); color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.40), inset 0 0 0 1px rgba(255,255,255,.14); }
+  .nav-panel .nav-item.active::before, .nav-panel .sub-item.active::before { display: none; }
+  .nav-panel .sub-item { color: #d5f5f0; padding: .45rem .75rem .45rem 2.4rem; border-radius: 12px; }
+  .nav-panel .nav-item .chev { color: #9be9de; }
+  .nav-panel .side-foot { margin: .35rem .2rem 0; padding: .7rem .7rem .2rem; border-top: 1px solid rgba(255,255,255,.18); color: #bfe9e3; font-size: .7rem; }
+  .nav-panel .side-foot b { color: #fff !important; }
+  @media (max-width: 900px) { .topnav-bar { gap: .8rem; padding: 0 .8rem; } .topnav-bar .brand-txt small { display: none; } .nav-top { padding: 0 .7rem; } }
+  @media (max-width: 700px) { .topnav-bar .brand-txt { display: none; } #topnav { overflow-x: auto; scrollbar-width: none; } #topnav::-webkit-scrollbar { display: none; } .nav-top { padding: 0 .6rem; } }
+  @media (max-width: 520px) { .nav-top span { display: none; } .nav-top { padding: 0 .75rem; } .nav-top .chev-dd { display: none; } }
+  @media (prefers-reduced-motion: reduce) { .nav-pill, .nav-panel, .nav-grupo, .nav-top { transition-duration: .01ms !important; transition-delay: 0s !important; } }
 </style>
 </head>
 <body>
@@ -701,35 +760,33 @@
 
   <!-- ============ SIDEBAR ============ -->
   <aside id="sidebar">
-    <div class="brand">
-      <button type="button" class="brand-toggle" id="btnColapsar" onclick="alternarMenu()" aria-label="Contraer menú lateral" aria-expanded="true" title="Contraer menú">
-        <img class="logo" src="/icon-192.png" alt="Logo SenFePin" width="42" height="42">
-      </button>
-      <div class="brand-txt">
-        <b>SenFePin</b>
-        <small>Calidad de aire para un mejor mañana</small>
+    <div class="topnav-bar">
+      <div class="brand">
+        <button type="button" class="brand-toggle" id="btnColapsar" onclick="irA('resumen')" aria-label="Ir a Resumen" title="SenFePin · Resumen">
+          <img class="logo" src="/icon-192.png" alt="Logo SenFePin" width="42" height="42">
+        </button>
+        <div class="brand-txt">
+          <b>SenFePin</b>
+          <small>Calidad de aire para un mejor mañana</small>
+        </div>
       </div>
+      <nav id="topnav" aria-label="Menú principal">
+        <span class="nav-pill" id="navPill" aria-hidden="true"></span>
+        <button type="button" class="nav-top nav-item active" data-view="resumen" title="Resumen" onclick="irA('resumen')"><i class="ti ti-layout-dashboard" aria-hidden="true"></i><span>Resumen</span></button>
+        <button type="button" class="nav-top nav-grupo-btn" data-grupo="monitoreo" aria-expanded="false" aria-controls="grupo-monitoreo" aria-haspopup="true" title="Monitoreo" onclick="alternarGrupo('monitoreo')"><i class="ti ti-map-pin" aria-hidden="true"></i><span>Monitoreo</span><i class="ti ti-chevron-down chev-dd" aria-hidden="true"></i></button>
+        <button type="button" class="nav-top nav-grupo-btn" data-grupo="analisis" aria-expanded="false" aria-controls="grupo-analisis" aria-haspopup="true" title="Análisis" onclick="alternarGrupo('analisis')"><i class="ti ti-chart-bar" aria-hidden="true"></i><span>Análisis</span><i class="ti ti-chevron-down chev-dd" aria-hidden="true"></i></button>
+        <button type="button" class="nav-top nav-grupo-btn" data-grupo="aplicaciones" aria-expanded="false" aria-controls="grupo-aplicaciones" aria-haspopup="true" title="Aplicaciones" onclick="alternarGrupo('aplicaciones')"><i class="ti ti-apps" aria-hidden="true"></i><span>Aplicaciones</span><i class="ti ti-chevron-down chev-dd" aria-hidden="true"></i></button>
+        <button type="button" class="nav-top nav-grupo-btn" data-grupo="sistema" aria-expanded="false" aria-controls="grupo-sistema" aria-haspopup="true" title="Sistema" onclick="alternarGrupo('sistema')"><i class="ti ti-settings" aria-hidden="true"></i><span>Sistema</span><i class="ti ti-chevron-down chev-dd" aria-hidden="true"></i></button>
+      </nav>
     </div>
-    <nav>
-      <div class="nav-label">General</div>
-      <button type="button" class="nav-item active" data-view="resumen" onclick="irA('resumen')">
-        <i class="ti ti-layout-dashboard" aria-hidden="true"></i> Resumen
-      </button>
-
-      <button type="button" class="nav-label nav-grupo-btn" aria-expanded="true" aria-controls="grupo-monitoreo" onclick="alternarGrupo('monitoreo')">
-        <span>Monitoreo</span><i class="ti ti-chevron-down" aria-hidden="true"></i>
-      </button>
-      <div class="nav-grupo" id="grupo-monitoreo"><div class="nav-grupo-in">
+    <div class="nav-panel" id="navPanel" aria-hidden="true">
+      <div class="nav-grupo" id="grupo-monitoreo" data-grupo="monitoreo" role="group"><div class="nav-grupo-in">
       <button type="button" class="nav-item" id="menuPuntos" onclick="togglePuntos()">
         <i class="ti ti-map-pin" aria-hidden="true"></i> Puntos de monitoreo <i class="ti ti-chevron-right chev" aria-hidden="true" style="font-size:.8rem"></i>
       </button>
       <div class="submenu" id="submenuPuntos"></div>
       </div></div>
-
-      <button type="button" class="nav-label nav-grupo-btn" aria-expanded="true" aria-controls="grupo-analisis" onclick="alternarGrupo('analisis')">
-        <span>Análisis</span><i class="ti ti-chevron-down" aria-hidden="true"></i>
-      </button>
-      <div class="nav-grupo" id="grupo-analisis"><div class="nav-grupo-in">
+      <div class="nav-grupo" id="grupo-analisis" data-grupo="analisis" role="group"><div class="nav-grupo-in">
       <button type="button" class="nav-item" data-view="estadisticas" onclick="irA('estadisticas')">
         <i class="ti ti-chart-bar" aria-hidden="true"></i> Estadísticas generales
       </button>
@@ -743,32 +800,24 @@
         <i class="ti ti-chart-area" aria-hidden="true"></i> Análisis Power BI
       </button>
       </div></div>
-
-      <button type="button" class="nav-label nav-grupo-btn" aria-expanded="true" aria-controls="grupo-aplicaciones" onclick="alternarGrupo('aplicaciones')">
-        <span>Aplicaciones</span><i class="ti ti-chevron-down" aria-hidden="true"></i>
-      </button>
-      <div class="nav-grupo" id="grupo-aplicaciones"><div class="nav-grupo-in">
+      <div class="nav-grupo" id="grupo-aplicaciones" data-grupo="aplicaciones" role="group"><div class="nav-grupo-in">
       <button type="button" class="nav-item" onclick="window.open('norma.html', '_blank')">
         <i class="ti ti-clipboard-data" aria-hidden="true"></i> Norma Background <i class="ti ti-external-link" aria-hidden="true" style="margin-left:auto;font-size:.75rem;opacity:.6"></i>
       </button>
       </div></div>
-
-      <button type="button" class="nav-label nav-grupo-btn" aria-expanded="true" aria-controls="grupo-sistema" onclick="alternarGrupo('sistema')">
-        <span>Sistema</span><i class="ti ti-chevron-down" aria-hidden="true"></i>
-      </button>
-      <div class="nav-grupo" id="grupo-sistema"><div class="nav-grupo-in">
+      <div class="nav-grupo" id="grupo-sistema" data-grupo="sistema" role="group"><div class="nav-grupo-in">
       <button type="button" class="nav-item" data-view="whatsapp" onclick="irA('whatsapp')">
         <i class="ti ti-brand-whatsapp" aria-hidden="true"></i> Alertas WhatsApp
       </button>
       <button type="button" class="nav-item" data-view="alertconf" onclick="irA('alertconf')">
         <i class="ti ti-settings" aria-hidden="true"></i> Configuración de alerta
       </button>
-      </div></div>
-    </nav>
-    <div class="side-foot">
+      <div class="side-foot">
       Auto-actualización cada 5 min<br>
       Umbral de alerta: <b style="color:#dbe7ef" id="footUmbral">2 h sin datos</b><br>
       Fuente: ThingSpeak · airflux
+    </div>
+      </div></div>
     </div>
   </aside>
   <div class="backdrop" id="backdrop" onclick="cerrarSidebar()"></div>
@@ -1454,6 +1503,7 @@ function irA(vista, n) {
     tv.className = "topbar-breadcrumb";
     tv.innerHTML = `<span class="bc-current">${TITULOS[vista] || vista}</span>`;
   }
+  marcarGrupoActivo();
   cerrarSidebar();
   pintarVista();
 }
@@ -1464,8 +1514,8 @@ function togglePuntos(forzarAbrir) {
   sm.classList.toggle("open", abrir);
   btn.classList.toggle("open", abrir);
 }
-function abrirSidebar() { $("sidebar").classList.add("open"); $("backdrop").classList.add("on"); }
-function cerrarSidebar() { $("sidebar").classList.remove("open"); $("backdrop").classList.remove("on"); }
+function abrirSidebar() { /* menú superior: nada que abrir */ }
+function cerrarSidebar() { if (typeof cerrarGrupos === "function") cerrarGrupos(); }
 
 /* ================== 2. RED RESILIENTE Y CACHÉ ================== */
 /* fetch con timeout (15 s) y 2 intentos con espera creciente: evita que una
@@ -2591,35 +2641,78 @@ function mostrarAviso(texto) {
 /* ── Menú lateral: contraer con el logo y grupos desplegables (se recuerdan) ── */
 function leerPref(clave, porDefecto) { try { const v = localStorage.getItem(clave); return v === null ? porDefecto : JSON.parse(v); } catch (e) { return porDefecto; } }
 function guardarPref(clave, valor) { try { localStorage.setItem(clave, JSON.stringify(valor)); } catch (e) { /* sin almacenamiento */ } }
-function alternarMenu(forzar) {
-  // En pantallas chicas el menú es un panel que se abre y cierra: el logo lo cierra
-  if (window.matchMedia("(max-width: 900px)").matches && forzar === undefined) { cerrarSidebar(); return; }
-  const contraer = forzar !== undefined ? forzar : !document.body.classList.contains("menu-contraido");
-  document.body.classList.toggle("menu-contraido", contraer);
-  const btn = $("btnColapsar");
-  btn.setAttribute("aria-expanded", String(!contraer));
-  btn.setAttribute("aria-label", contraer ? "Mostrar menú lateral" : "Contraer menú lateral");
-  btn.title = contraer ? "Mostrar menú" : "Contraer menú";
-  guardarPref("senfepin_menu_contraido", contraer);
-  // El mapa y los gráficos se reajustan al nuevo ancho cuando termina la transición
-  setTimeout(() => {
-    if (typeof mapa !== "undefined" && mapa) mapa.invalidateSize();
-    if (window.Plotly) document.querySelectorAll(".js-plotly-plot").forEach(g => { if (g.offsetParent) Plotly.Plots.resize(g); });
-  }, 320);
+const ORDEN_GRUPOS = ["monitoreo", "analisis", "aplicaciones", "sistema"];
+let grupoAbierto = null, observadorPanel = null;
+const esMouse = e => !e || e.pointerType === "mouse";
+function moverPastilla(el) {
+  const p = $("navPill"), nav = $("topnav");
+  if (!p || !nav) return;
+  if (!el) { p.style.opacity = 0; return; }
+  const r = el.getBoundingClientRect(), n = nav.getBoundingClientRect();
+  p.style.width = r.width + "px"; p.style.transform = `translateX(${r.left - n.left}px)`; p.style.opacity = 1;
+}
+function triggerActivo() {
+  return grupoAbierto ? document.querySelector(`.nav-top[data-grupo="${grupoAbierto}"]`) : (document.querySelector(".nav-top.has-active") || document.querySelector('.nav-top[data-view].active'));
+}
+function marcarGrupoActivo() {
+  document.querySelectorAll(".nav-top[data-grupo]").forEach(b => {
+    const g = $("grupo-" + b.dataset.grupo);
+    b.classList.toggle("has-active", !!g && !!g.querySelector(".nav-item.active, .sub-item.active"));
+  });
+  moverPastilla(triggerActivo());
+}
+function ajustarPanel(clave, sinAnimar) {
+  const panel = $("navPanel"), blk = $("grupo-" + clave), btn = document.querySelector(`.nav-top[data-grupo="${clave}"]`);
+  if (!blk || !btn) return;
+  const w = Math.min(280, window.innerWidth - 16), r = btn.getBoundingClientRect();
+  const left = Math.max(8, Math.min(r.left + r.width / 2 - w / 2, window.innerWidth - w - 8));
+  if (sinAnimar) panel.classList.add("no-t");
+  panel.style.width = w + "px"; panel.style.left = left + "px"; panel.style.height = blk.offsetHeight + "px";
+  if (sinAnimar) { void panel.offsetWidth; panel.classList.remove("no-t"); }
+}
+function abrirGrupo(clave) {
+  if (grupoAbierto === clave) return;
+  const panel = $("navPanel"), previo = grupoAbierto, nuevo = $("grupo-" + clave);
+  const dir = previo ? Math.sign(ORDEN_GRUPOS.indexOf(clave) - ORDEN_GRUPOS.indexOf(previo)) || 1 : 0;
+  if (previo) { const v = $("grupo-" + previo); v.style.setProperty("--sx", (-dir * 18) + "px"); v.classList.remove("on"); }
+  nuevo.classList.add("no-t"); nuevo.style.setProperty("--sx", (dir * 18) + "px"); void nuevo.offsetWidth; nuevo.classList.remove("no-t");
+  nuevo.classList.add("on");
+  ajustarPanel(clave, !previo);
+  panel.classList.add("abierto"); panel.setAttribute("aria-hidden", "false");
+  document.querySelectorAll(".nav-top[data-grupo]").forEach(b => b.setAttribute("aria-expanded", String(b.dataset.grupo === clave)));
+  grupoAbierto = clave;
+  if (observadorPanel) observadorPanel.disconnect();
+  if (window.ResizeObserver) { observadorPanel = new ResizeObserver(() => ajustarPanel(clave)); observadorPanel.observe(nuevo); }
+  moverPastilla(document.querySelector(`.nav-top[data-grupo="${clave}"]`));
+}
+function cerrarGrupos(devolverFoco) {
+  const panel = $("navPanel");
+  if (!panel) return;
+  if (grupoAbierto && devolverFoco) { const b = document.querySelector(`.nav-top[data-grupo="${grupoAbierto}"]`); if (b) b.focus(); }
+  const g = grupoAbierto && $("grupo-" + grupoAbierto);
+  panel.classList.remove("abierto"); panel.setAttribute("aria-hidden", "true");
+  if (g) g.classList.remove("on");
+  document.querySelectorAll(".nav-top[data-grupo]").forEach(b => b.setAttribute("aria-expanded", "false"));
+  if (observadorPanel) observadorPanel.disconnect();
+  grupoAbierto = null; moverPastilla(triggerActivo());
 }
 function alternarGrupo(clave, forzarAbierto) {
-  const grupo = $("grupo-" + clave);
-  const btn = document.querySelector(`[aria-controls="grupo-${clave}"]`);
-  const abrir = forzarAbierto !== undefined ? forzarAbierto : grupo.classList.contains("cerrado");
-  grupo.classList.toggle("cerrado", !abrir);
-  btn.setAttribute("aria-expanded", String(abrir));
-  const cerrados = new Set(leerPref("senfepin_grupos_cerrados", []));
-  abrir ? cerrados.delete(clave) : cerrados.add(clave);
-  guardarPref("senfepin_grupos_cerrados", [...cerrados]);
+  const abrir = forzarAbierto !== undefined ? forzarAbierto : grupoAbierto !== clave;
+  abrir ? abrirGrupo(clave) : cerrarGrupos();
 }
 function restaurarMenu() {
-  if (leerPref("senfepin_menu_contraido", false) && !window.matchMedia("(max-width: 900px)").matches) alternarMenu(true);
-  for (const clave of leerPref("senfepin_grupos_cerrados", [])) if ($("grupo-" + clave)) alternarGrupo(clave, false);
+  const nav = $("topnav");
+  nav.addEventListener("pointerover", e => {
+    const t = e.target.closest(".nav-top"); if (!t || !esMouse(e)) return;
+    moverPastilla(t);
+    if (grupoAbierto && t.dataset.grupo && t.dataset.grupo !== grupoAbierto) abrirGrupo(t.dataset.grupo);   // de botón a botón, sin cerrar
+  });
+  nav.addEventListener("pointerleave", () => moverPastilla(triggerActivo()));
+  document.addEventListener("pointerdown", e => { if (grupoAbierto && !e.target.closest("#sidebar")) cerrarGrupos(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && grupoAbierto) cerrarGrupos(true); });
+  window.addEventListener("resize", () => { if (grupoAbierto) ajustarPanel(grupoAbierto, true); moverPastilla(triggerActivo()); });
+  marcarGrupoActivo();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => moverPastilla(triggerActivo()));
 }
 
 /* ================== NOTIFICACIONES NAVEGADOR ================== */
