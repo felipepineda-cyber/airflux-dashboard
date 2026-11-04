@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SenFePin · Calidad del Aire en Chile — MP2.5 y MP10 en tiempo real</title>
-<meta name="description" content="Red de monitoreo de calidad del aire en Chile — MP2.5, MP10, temperatura, humedad y presión en tiempo real. Estaciones en Calama, Olmué, Yungay, Copiapó, Puerto Montt y Curacaví. USACH.">
+<title>SenFePin · Calidad del Aire en Chile, MP2.5 y MP10 en vivo</title>
+<meta name="description" content="Monitoreo de calidad del aire en Chile en tiempo real: MP2.5, MP10, temperatura y humedad en Calama, Olmué, Yungay, Copiapó, Puerto Montt y Curacaví.">
 <meta property="og:title" content="SenFePin · Calidad del Aire en Chile — MP2.5 y MP10">
 <meta property="og:description" content="Calidad del aire en tiempo real: MP2.5 y MP10 en 6 estaciones de Chile.">
 <meta property="og:type" content="website">
@@ -23,6 +23,7 @@
 <link rel="icon" href="/favicon-96.png" type="image/png" sizes="96x96">
 <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="theme-color" content="#0f766e">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"SenFePin","alternateName":"SenFePin · Calidad del Aire en Chile","url":"https://senfepin.vercel.app/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"SenFePin","url":"https://senfepin.vercel.app/","logo":"https://senfepin.vercel.app/icon-192.png","slogan":"Calidad de aire para un mejor mañana"}</script>
@@ -201,7 +202,7 @@
     transition: background var(--dur-micro) var(--ease-out);
   }
   #btnMenu:hover { background: #f4f4f5; }
-  .topbar h1 { font-size: 1.05rem; font-weight: 650; letter-spacing: -.01em; }
+  .topbar h1, .topbar #tituloVista { font-size: 1.05rem; font-weight: 650; letter-spacing: -.01em; }
   .topbar .sub { font-size: .73rem; color: var(--text-3); font-weight: 500; }
   .top-right { margin-left: auto; display: flex; align-items: center; gap: .55rem; flex-wrap: wrap; }
 
@@ -570,7 +571,7 @@
   }
   .hero::before { width: 260px; height: 260px; right: -60px; top: -90px; }
   .hero::after { width: 180px; height: 180px; right: 22%; bottom: -100px; }
-  .hero h2 { font-size: 1.35rem; font-weight: 800; letter-spacing: -.02em; position: relative; z-index: 1; }
+  .hero h1, .hero h2 { font-size: 1.35rem; font-weight: 800; letter-spacing: -.02em; position: relative; z-index: 1; }
   .hero p { font-size: .9rem; opacity: .9; margin-top: .3rem; max-width: 640px; position: relative; z-index: 1; }
   .hero .live { display: inline-flex; align-items: center; gap: .45rem; font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
     background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.24); padding: .28rem .7rem; border-radius: 999px; margin-bottom: .7rem; position: relative; z-index: 1; }
@@ -678,7 +679,7 @@
   .aviso .ti-alert-triangle { color: var(--err); font-size: 1.2rem; flex-shrink: 0; margin-top: .05rem; }
   .aviso button { margin-left: auto; border: none; background: none; color: var(--text-3); cursor: pointer; font-size: 1rem; padding: 0 .1rem; border-radius: 6px; }
   .aviso button:hover { color: var(--text); }
-  @media (max-width: 900px) { .hero { padding: 1.2rem; } .hero-logo { display: none; } .hero h2 { font-size: 1.1rem; } .hero .ondas { display: none; } }
+  @media (max-width: 900px) { .hero { padding: 1.2rem; } .hero-logo { display: none; } .hero h1, .hero h2 { font-size: 1.1rem; } .hero .ondas { display: none; } }
   @media (prefers-reduced-motion: reduce) { .hero .live i, .marker-pin.est-off::after { animation: none !important; } }
 
   /* ── Pulido (nov 2026): foco visible, títulos equilibrados, cabecera móvil compacta ── */
@@ -829,7 +830,7 @@
     <div class="topbar">
       <button type="button" id="btnMenu" onclick="abrirSidebar()" aria-label="Abrir menú"><i class="ti ti-menu-2" style="font-size:1.1rem" aria-hidden="true"></i></button>
       <div id="tituloWrap">
-        <h1 id="tituloVista" class="topbar-breadcrumb">Resumen</h1>
+        <div id="tituloVista" class="topbar-breadcrumb" role="heading" aria-level="2">Resumen</div>
         <div class="sub" id="reloj">Cargando…</div>
       </div>
       <div class="top-right">
@@ -855,7 +856,7 @@
       <div class="view visible" id="vista-resumen">
         <div class="hero">
           <span class="live"><i></i> En vivo · red SenFePin</span>
-          <h2>Calidad del aire en Chile, en tiempo real</h2>
+          <h1>Calidad del aire en Chile, en tiempo real</h1>
           <p>MP2,5, MP10 y variables meteorológicas de las estaciones de la red, actualizadas automáticamente cada 5 minutos.</p>
           <img class="hero-logo" src="/icon-192.png" alt="" aria-hidden="true">
         </div>
