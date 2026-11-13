@@ -169,6 +169,9 @@ textarea{resize:vertical;min-height:60px}
   @keyframes entrar{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
   @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 </style>
+<link rel="stylesheet" href="viewia.css">
+<script src="norma-tools.js"></script>
+<script src="norma-pdf.js"></script>
 </head>
 <body>
 
@@ -194,6 +197,7 @@ textarea{resize:vertical;min-height:60px}
     <i class="nav-icon ti ti-chart-bar" aria-hidden="true"></i> Informe general
   </button>
   <div class="nav-section">Herramientas</div>
+  <button id="nav-viewia" class="nav-btn" onclick="showTab('viewia',this)"><i class="nav-icon ti ti-scan" aria-hidden="true"></i> ViewIA <span class="viewia-beta">Beta</span></button>
   <button class="nav-btn" onclick="openImportModal()">
     <i class="nav-icon ti ti-file-import" aria-hidden="true"></i> Importar registros
   </button>
@@ -356,6 +360,20 @@ textarea{resize:vertical;min-height:60px}
       </div>
     </div>
   </div>
+  <section class="tab" id="tab-viewia" aria-labelledby="viewia-title">
+    <div class="form-header"><img class="fh-logo" src="/icon-192.png" alt="Logo SenFePin" width="56" height="56"><div><h2 id="viewia-title">ViewIA <span class="viewia-beta">Beta</span></h2><p class="viewia-muted">Lee una imagen y prepara un nuevo registro con los datos que aceptes.</p></div></div>
+    <div class="viewia-layout"><div class="viewia-source">
+      <label class="viewia-label" for="viewia-file">Imagen de la bitácora</label><input id="viewia-file" type="file" accept="image/png,image/jpeg,image/webp,image/bmp" class="viewia-file">
+      <p class="viewia-muted">PNG, JPG, WebP o BMP, hasta 12 MB. La primera lectura descarga el motor OCR y sus idiomas; la imagen se procesa en tu navegador.</p>
+      <img id="viewia-preview" alt="Imagen de la bitácora seleccionada" hidden>
+      <label class="viewia-label" for="viewia-target">Contaminante si la imagen no lo indica</label><select id="viewia-target"><option value="auto">Detectar encabezados MP2,5 y MP10</option><option value="f25">La imagen corresponde a MP2,5</option><option value="f10">La imagen corresponde a MP10</option></select>
+      <div class="btn-bar viewia-actions"><button id="viewia-read" class="btn btn-primary" disabled><i class="ti ti-scan" aria-hidden="true"></i> Leer imagen</button><button id="viewia-cancel" class="btn btn-ghost" hidden>Cancelar lectura</button></div>
+      <p id="viewia-status" role="status" aria-live="polite" class="viewia-muted">Selecciona una imagen para comenzar.</p><progress id="viewia-progress" max="1" value="0" hidden aria-label="Progreso de lectura"></progress>
+    </div><div class="viewia-result"><label class="viewia-label" for="viewia-text">Texto leído · puedes corregirlo</label><textarea id="viewia-text" rows="12" placeholder="Aquí aparecerá el texto. También puedes pegar una transcripción para identificar sus campos."></textarea><button id="viewia-suggest" class="btn btn-ghost viewia-actions">Identificar sugerencias del texto</button><p class="viewia-muted">El OCR puede confundir números o escritura manual. Revisa filtros, fechas y lecturas comparando con la imagen. No se inventan datos faltantes.</p></div></div>
+    <div id="viewia-review" hidden><h3 class="viewia-subtitle">Revisa qué datos quieres usar</h3><ul id="viewia-warnings" class="viewia-warnings"></ul><div class="viewia-table-wrap"><table class="form-table viewia-table"><thead><tr><th>Usar</th><th>Campo del nuevo registro</th><th>Valor sugerido · editable</th><th>Texto de origen</th></tr></thead><tbody id="viewia-suggestions"></tbody></table></div></div>
+    <details class="viewia-manual"><summary>Añadir un dato que no se reconoció</summary><div class="viewia-manual-fields"><label>Campo<select id="viewia-manual-field"></select></label><label>Valor<input id="viewia-manual-value" type="text"></label><button id="viewia-add" class="btn btn-ghost">Añadir sugerencia</button></div></details>
+    <div class="btn-bar viewia-actions"><button id="viewia-apply" class="btn btn-success" disabled><i class="ti ti-check" aria-hidden="true"></i> Aceptar sugerencias y abrir nuevo registro</button></div><p class="viewia-muted">Aceptar solo rellena el formulario. Debes revisarlo y guardar la bitácora con el flujo habitual.</p>
+  </section>
 </main>
 
 <!-- CONFIRM MODAL -->
@@ -474,7 +492,7 @@ function setHora(fid, val) {
   var h = document.getElementById(fid + '_h');
   var m = document.getElementById(fid + '_m');
   if (h && parts[0]) h.value = parts[0];
-  if (m && parts[1]) m.value = parts[1].substring(0,2);
+  if (m && parts[1]) { var minute = parts[1].substring(0,2); if (!Array.from(m.options).some(function(o) { return o.value === minute; })) m.add(new Option(minute, minute)); m.value = minute; }
 }
 function syncCustomOp(srcId, dstId) {
   var src = document.getElementById(srcId);
@@ -865,58 +883,9 @@ function deleteRecord(id) {
 function downloadRecord(id) {
   var r = records.find(function(x) { return x.id === id; });
   if (!r) return;
-  var jsPDF = window.jspdf.jsPDF;
-  var doc = new jsPDF({ unit: 'mm', format: 'a4' });
-  var W = 210, margin = 14, y = 14;
-
-  doc.setFillColor(26,25,22); doc.rect(margin, y, W-margin*2, 12, 'F');
-  doc.setTextColor(255,255,255); doc.setFontSize(13); doc.setFont('helvetica','bold');
-  doc.text('USACH', margin+3, y+8);
-  doc.text('Proyecto Norma Background', W/2, y+8, {align:'center'});
-  doc.text('In-Data', W-margin-3, y+8, {align:'right'});
-  y += 17;
-
-  doc.setTextColor(26,25,22); doc.setFontSize(12); doc.setFont('helvetica','bold');
-  doc.text('Sitio: ' + (r.sitio||''), margin, y); y += 6;
-  doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(100,100,100);
-  doc.text('Folio: ' + (r.folio||'—') + '   Registrado: ' + r.ts, margin, y); y += 10;
-
-  function drawTable(label, mp) {
-    doc.setFillColor(26,25,22); doc.rect(margin, y, W-margin*2, 8, 'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(10); doc.setFont('helvetica','bold');
-    doc.text(label, margin+3, y+6); y += 8;
-    var rows2 = [
-      ['Filtro N°', mp.filtro||'—'],['Impactador', mp.imp||'—'],['Operador', mp.op||'—'],
-      ['Fecha', fmtD(mp.fi) + '  →  ' + fmtD(mp.ff)],
-      ['Hora', (mp.hi||'—') + '  →  ' + (mp.hf||'—')],
-      ['Rotámetro', (mp.ri||'—') + '  →  ' + (mp.rf||'—')],
-      ['Horómetro', (mp.oi||'—') + '  →  ' + (mp.of||'—')]
-    ];
-    doc.setFontSize(9);
-    rows2.forEach(function(row, i) {
-      doc.setFillColor(i%2===0?247:255, i%2===0?246:255, i%2===0?241:255);
-      doc.rect(margin, y, 40, 7, 'F'); doc.rect(margin+40, y, W-margin*2-40, 7, 'F');
-      doc.setDrawColor(220,218,214); doc.rect(margin,y,40,7); doc.rect(margin+40,y,W-margin*2-40,7);
-      doc.setTextColor(100,100,100); doc.setFont('helvetica','bold');
-      doc.text(row[0], margin+2, y+5);
-      doc.setTextColor(26,25,22); doc.setFont('helvetica','normal');
-      doc.text(String(row[1]), margin+42, y+5);
-      y += 7;
-    });
-    y += 5;
-  }
-
-  drawTable('MP 2,5', r.mp25);
-  drawTable('MP 10', r.mp10);
-
-  if (r.obs) {
-    doc.setFont('helvetica','bold'); doc.setFontSize(10);
-    doc.text('Observaciones', margin, y); y += 6;
-    doc.setFont('helvetica','normal'); doc.setFontSize(9);
-    doc.text(r.obs, margin, y, { maxWidth: W-margin*2 });
-  }
-
-  var fname = ((r.sitio||'sin_sitio').replace(/\s/g,'_')) + '_' + (r.folio||r.id) + '.pdf';
+  if (!window.jspdf) { toast('No se pudo cargar el generador PDF. Revisa tu conexión.', 'err'); return; }
+  var doc = NormaPdf.record(window.jspdf.jsPDF, r);
+  var fname = String(r.sitio || 'sin_sitio').replace(/[\s/\\]+/g,'_') + '_' + (r.folio || r.id) + '.pdf';
   doc.save(fname);
   toast('PDF descargado', 'ok');
 }
@@ -1034,157 +1003,29 @@ function closeReportMenuOutside(e) {
 // ── GENERATE FULL PDF REPORT ──
 function generateReport() {
   if (!records.length) { toast('No hay registros', 'err'); return; }
-  toast('Generando PDF...', '', 4000);
-  var jsPDF = window.jspdf.jsPDF;
-  var doc = new jsPDF({ unit: 'mm', format: 'a4' });
-  var W = 210, margin = 14, y = 14;
-
-  doc.setFillColor(26,25,22); doc.rect(margin, y, W-margin*2, 12, 'F');
-  doc.setTextColor(255,255,255); doc.setFontSize(13); doc.setFont('helvetica','bold');
-  doc.text('USACH', margin+3, y+8);
-  doc.text('Proyecto Norma Background', W/2, y+8, {align:'center'});
-  doc.text('In-Data', W-margin-3, y+8, {align:'right'});
-  y += 17;
-
-  doc.setTextColor(26,25,22); doc.setFontSize(10);
-  doc.text('Informe general · ' + records.length + ' registros · ' + new Date().toLocaleString('es-CL'), margin, y);
-  y += 10;
-
-  var cols = [40, 25, 25, 25, 25, 42];
-  var labels = ['Sitio','MP2.5 Filtro','MP10 Filtro','Impactador','Operador','Observaciones'];
-  var x = margin;
-  labels.forEach(function(lbl, i) {
-    doc.setFillColor(26,25,22); doc.rect(x, y, cols[i], 9, 'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(8); doc.setFont('helvetica','bold');
-    doc.text(lbl, x+2, y+6); x += cols[i];
-  });
-  y += 9;
-
-  records.forEach(function(r, ri) {
-    if (y > 270) { doc.addPage(); y = 14; }
-    var bg = ri % 2 === 0 ? [247,246,241] : [255,255,255];
-    doc.setFillColor(bg[0],bg[1],bg[2]);
-    x = margin; cols.forEach(function(w) { doc.rect(x,y,w,7,'F'); doc.setDrawColor(220,218,214); doc.rect(x,y,w,7); x+=w; });
-    x = margin;
-    var cells = [r.sitio||'—', r.mp25.filtro||'—', r.mp10.filtro||'—', r.mp25.imp||'—', r.mp25.op||'—', r.obs?r.obs.substring(0,30):'—'];
-    doc.setTextColor(26,25,22); doc.setFontSize(7); doc.setFont('helvetica','normal');
-    cells.forEach(function(cell, ci) { doc.text(String(cell), x+2, y+5); x += cols[ci]; });
-    y += 7;
-  });
-
-  doc.save('NormaBackground_Informe.pdf');
+  if (!window.jspdf) { toast('No se pudo cargar el generador PDF. Revisa tu conexión.', 'err'); return; }
+  NormaPdf.report(window.jspdf.jsPDF, records).save('NormaBackground_Informe.pdf');
   toast('Informe PDF descargado', 'ok');
 }
-
-// ── GENERATE REPORT FOR SINGLE LOCATION ──
 function generateReportForLoc(loc) {
-  var locRecords = records.filter(function(r) { return r.sitio === loc; });
-  if (!locRecords.length) { toast('No hay registros para ' + loc, 'err'); return; }
-  toast('Generando PDF de ' + loc + '...', '', 4000);
-  var jsPDF = window.jspdf.jsPDF;
-  var doc = new jsPDF({ unit: 'mm', format: 'a4' });
-  var W = 210, margin = 14, y = 14;
-
-  doc.setFillColor(26,25,22); doc.rect(margin, y, W-margin*2, 12, 'F');
-  doc.setTextColor(255,255,255); doc.setFontSize(13); doc.setFont('helvetica','bold');
-  doc.text('USACH', margin+3, y+8);
-  doc.text('Proyecto Norma Background', W/2, y+8, {align:'center'});
-  y += 17;
-
-  doc.setTextColor(26,25,22); doc.setFontSize(12); doc.setFont('helvetica','bold');
-  doc.text('Localidad: ' + loc, margin, y); y += 6;
-  doc.setFontSize(8); doc.setTextColor(130,130,130); doc.setFont('helvetica','normal');
-  doc.text(locRecords.length + ' registro' + (locRecords.length > 1 ? 's' : '') + ' · ' + new Date().toLocaleString('es-CL'), margin, y);
-  y += 10;
-
-  var cols = [18,18,22,20,20,20,20,44];
-  var labels = ['MP2.5 Filt.','MP2.5 Imp.','MP2.5 Op.','F.Inicio','F.Final','MP10 Filt.','MP10 Imp.','Observaciones'];
-  var x = margin;
-  labels.forEach(function(lbl, i) {
-    doc.setFillColor(26,25,22); doc.rect(x, y, cols[i], 9, 'F');
-    doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont('helvetica','bold');
-    doc.text(lbl, x+1, y+6); x += cols[i];
-  });
-  y += 9;
-
-  locRecords.forEach(function(r, ri) {
-    if (y > 270) { doc.addPage(); y = 14; }
-    var bg = ri % 2 === 0 ? [247,246,241] : [255,255,255];
-    doc.setFillColor(bg[0],bg[1],bg[2]);
-    x = margin; cols.forEach(function(w) { doc.rect(x,y,w,7,'F'); doc.setDrawColor(220,218,214); doc.rect(x,y,w,7); x+=w; });
-    x = margin;
-    var cells = [r.mp25.filtro||'—', r.mp25.imp||'—', r.mp25.op||'—', fmtD(r.mp25.fi), fmtD(r.mp25.ff), r.mp10.filtro||'—', r.mp10.imp||'—', r.obs?r.obs.substring(0,35):'—'];
-    doc.setTextColor(26,25,22); doc.setFontSize(7); doc.setFont('helvetica','normal');
-    cells.forEach(function(cell, ci) { doc.text(String(cell), x+1, y+5); x += cols[ci]; });
-    y += 7;
-  });
-
-  doc.save(loc.replace(/\s/g,'_') + '_informe.pdf');
-  toast('Informe de ' + loc + ' descargado', 'ok');
+  var selected = records.filter(function(r) { return r.sitio === loc; });
+  if (!selected.length) { toast('No hay registros para ' + loc, 'err'); return; }
+  if (!window.jspdf) { toast('No se pudo cargar el generador PDF. Revisa tu conexión.', 'err'); return; }
+  NormaPdf.report(window.jspdf.jsPDF, selected, loc).save(String(loc).replace(/[\s/\\]+/g,'_') + '_informe.pdf');
+  toast('Informe de localidad descargado', 'ok');
 }
 
 // ── GENERATE EXCEL ──
 function generateExcel() {
   if (!records.length) { toast('No hay registros', 'err'); return; }
-  var esc = function(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
-
-  var colW = [14,22,12,11,14,14,14,14,14,14,14,14,14,30];
-  var xml = '<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?>';
-  xml += '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">';
-  xml += '<Styles>';
-  xml += '<Style ss:ID="h0"><Font ss:Bold="1" ss:Color="#FFFFFF" ss:Size="11"/><Interior ss:Color="#0d1f2d" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/></Style>';
-  xml += '<Style ss:ID="h1"><Font ss:Bold="1" ss:Color="#FFFFFF" ss:Size="11"/><Interior ss:Color="#185FA5" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/></Style>';
-  xml += '<Style ss:ID="h2"><Font ss:Bold="1" ss:Color="#FFFFFF" ss:Size="11"/><Interior ss:Color="#dc2626" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/></Style>';
-  xml += '<Style ss:ID="h3"><Font ss:Bold="1" ss:Color="#FFFFFF" ss:Size="11"/><Interior ss:Color="#444441" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/></Style>';
-  xml += '<Style ss:ID="d"><Font ss:Size="11"/><Alignment ss:Horizontal="Left" ss:Vertical="Center"/></Style>';
-  xml += '<Style ss:ID="dc"><Font ss:Size="11"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/></Style>';
-  xml += '</Styles>';
-  xml += '<Worksheet ss:Name="Registros"><Table>';
-  colW.forEach(function(w) { xml += '<Column ss:Width="' + (w*7.5) + '"/>'; });
-
-  // Row 1: group headers
-  xml += '<Row ss:Height="22">';
-  xml += '<Cell ss:StyleID="h0" ss:MergeAcross="4"><Data ss:Type="String"></Data></Cell>';
-  xml += '<Cell ss:StyleID="h1" ss:MergeAcross="3"><Data ss:Type="String">MP 2,5</Data></Cell>';
-  xml += '<Cell ss:StyleID="h2" ss:MergeAcross="3"><Data ss:Type="String">MP 10</Data></Cell>';
-  xml += '<Cell ss:StyleID="h3"><Data ss:Type="String"></Data></Cell>';
-  xml += '</Row>';
-
-  // Row 2: sub-headers
-  xml += '<Row ss:Height="20">';
-  var h2Labels = ['N° Folio','Localidad','Fecha','Hora inicio','Hora final','Rot. inicio','Rot. final','Hor. inicio','Hor. final','Rot. inicio','Rot. final','Hor. inicio','Hor. final','Observaciones'];
-  var h2Styles = ['h0','h0','h0','h0','h0','h1','h1','h1','h1','h2','h2','h2','h2','h3'];
-  h2Labels.forEach(function(l, i) {
-    xml += '<Cell ss:StyleID="' + h2Styles[i] + '"><Data ss:Type="String">' + l + '</Data></Cell>';
-  });
-  xml += '</Row>';
-
-  // Data rows
-  records.forEach(function(r) {
-    var fecha = r.mp25.fi || r.mp10.fi || '';
-    if (fecha) { var p = fecha.split('-'); fecha = p[2] + '/' + p[1] + '/' + p[0]; }
-    var vals = [
-      r.folio||'', r.sitio||'', fecha, r.mp25.hi||r.mp10.hi||'', r.mp25.hf||r.mp10.hf||'',
-      r.mp25.ri||'', r.mp25.rf||'', r.mp25.oi||'', r.mp25.of||'',
-      r.mp10.ri||'', r.mp10.rf||'', r.mp10.oi||'', r.mp10.of||'',
-      r.obs||''
-    ];
-    xml += '<Row ss:Height="18">';
-    vals.forEach(function(val, i) {
-      var st = (i === 0 || i === 1) ? 'd' : 'dc';
-      xml += '<Cell ss:StyleID="' + st + '"><Data ss:Type="String">' + esc(val) + '</Data></Cell>';
-    });
-    xml += '</Row>';
-  });
-
-  xml += '</Table></Worksheet></Workbook>';
-
-  var blob = new Blob([xml], {type:'application/vnd.ms-excel'});
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
+  var xml = NormaTools.buildExcel(records);
+  var blob = new Blob([xml], {type:'application/vnd.ms-excel;charset=utf-8'});
+  var url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url;
   a.download = 'NormaBackground_' + new Date().toLocaleDateString('es-CL').split('/').join('-') + '.xls';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  toast('Excel descargado', 'ok');
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function() { URL.revokeObjectURL(url); }, 10000);
+  toast('Excel descargado: filtros y datos separados por contaminante', 'ok');
 }
 
 // ── EXPORT ALL JSON ──
@@ -1457,5 +1298,6 @@ document.getElementById('import-input').addEventListener('change', function() {
 window.addEventListener('load', function() { initSupabase(); });
 </script>
 
+<script src="viewia.js"></script>
 </body>
 </html>
