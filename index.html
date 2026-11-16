@@ -3968,23 +3968,30 @@ init();
   .intro-x:hover { background: #115e59; transform: rotate(90deg); }
   .intro-x:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(94,234,212,.6); }
 
-  /* Hojas apiladas: la 1 queda encima y se da vuelta como la página de un libro */
-  .intro-hojas { position: relative; perspective: 2200px; min-height: 430px; }
+  /* Hojas apiladas: la 1 queda encima y se "pela" desde la esquina inferior derecha (ver hojaDibujar) */
+  .intro-hojas { position: relative; min-height: 430px; border-radius: 20px; overflow: hidden; }
   .intro-hoja { position: absolute; inset: 0; border-radius: 20px; overflow: hidden; padding: 28px 30px 24px;
     background: radial-gradient(500px 260px at 100% 0%, #ecfdf9, transparent 70%), #fffefb;
     box-shadow: inset 0 0 0 1px #e6efed, inset 16px 0 22px -18px rgba(12,28,27,.18);
     display: grid; grid-template-columns: 210px 1fr; gap: 18px; align-items: center; }
-  .hoja-1 { z-index: 2; transform-origin: left center; transform-style: preserve-3d; backface-visibility: hidden; -webkit-backface-visibility: hidden;
-    transition: transform .95s cubic-bezier(.645,.045,.355,1), box-shadow .95s, visibility 0s .95s; }
-  .hoja-1::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .95s;
-    background: linear-gradient(90deg, rgba(12,28,27,0) 40%, rgba(12,28,27,.22)); }
-  .intro.pasada .hoja-1 { transform: rotateY(-178deg); visibility: hidden; box-shadow: -30px 0 40px rgba(12,28,27,.18); }
-  .intro.pasada .hoja-1::after { opacity: 1; }
-  .intro:not(.pasada) .hoja-1 { visibility: visible; transition-delay: 0s; }
+  .hoja-1 { z-index: 2; will-change: clip-path; }
   .hoja-2 { z-index: 1; }
-  .hoja-2::before { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 5; opacity: 1; transition: opacity .95s;
-    background: linear-gradient(90deg, rgba(12,28,27,.16), transparent 55%); }
-  .intro.pasada .hoja-2::before { opacity: 0; }
+  .intro.pasada .hoja-1 { visibility: hidden; }
+  /* Capas del doblez: sombra sobre la hoja 2, sombreado de la curva y reverso del papel */
+  .doblez { position: absolute; inset: 0; pointer-events: none; z-index: 3; display: none; }
+  .doblez.on { display: block; }
+  .doblez-recorte { position: absolute; inset: 0; overflow: hidden; }
+  .doblez-banda { position: absolute; left: 0; top: 0; transform-origin: 50% 50%; }
+  #dzSombra .doblez-banda { background: linear-gradient(to bottom, rgba(12,28,27,0) 0%, rgba(12,28,27,.30) 50%, rgba(12,28,27,0) 100%); }
+  #dzCurva .doblez-banda { background: linear-gradient(to bottom, rgba(12,28,27,0) 0%, rgba(12,28,27,.16) 50%, rgba(12,28,27,0) 100%); }
+  #dzReverso { z-index: 4; filter: drop-shadow(-8px 6px 10px rgba(12,28,27,.28)); }
+  #dzReverso .doblez-recorte { background: linear-gradient(135deg, #f7faf9, #e3ecea); }
+  #dzReverso .doblez-banda { background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,.95) 50%, rgba(214,226,223,.0) 100%); mix-blend-mode: normal; }
+  #dzReverso .doblez-banda.lejos { background: linear-gradient(to bottom, rgba(12,28,27,0) 0%, rgba(12,28,27,0) 50%, rgba(12,28,27,.10) 100%); }
+  .intro-sonido { width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(15,118,110,.25); background: rgba(255,255,255,.6); color: #0f766e; cursor: pointer; display: grid; place-items: center; font-size: 1rem; }
+  .intro-sonido:hover { background: #fff; }
+  .intro-sonido:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(94,234,212,.6); }
+  .intro-izq { display: flex; align-items: center; gap: 10px; }
 
   .intro-texto { min-width: 0; }
   .intro-chip { display: inline-flex; align-items: center; gap: .4rem; font-size: .7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
@@ -4039,8 +4046,6 @@ init();
   }
   @media (prefers-reduced-motion: reduce) {
     .brisa .cuerpo, .brisa .ojos, .brisa .brazo-apunta, .brisa .luz { animation: none; }
-    .hoja-1, .hoja-1::after, .hoja-2::before { transition-duration: .01ms; }
-    .intro.pasada .hoja-1 { transform: none; opacity: 0; }
   }
 </style>
 
@@ -4098,7 +4103,7 @@ init();
 <div class="intro" id="intro" role="dialog" aria-modal="true" aria-labelledby="introT1" hidden>
   <div class="intro-libro">
     <button type="button" class="intro-x" id="introX" aria-label="Cerrar introducción" title="Cerrar">&times;</button>
-    <div class="intro-hojas">
+    <div class="intro-hojas" id="introHojas">
       <!-- HOJA 2: sensores -->
       <section class="intro-hoja hoja-2" id="introH2" aria-labelledby="introT2" aria-hidden="true">
         <div class="intro-personaje"></div>
@@ -4134,9 +4139,16 @@ init();
           </ul>
         </div>
       </section>
+      <!-- capas que dibujan el doblez de la hoja (las controla hojaDibujar) -->
+      <div class="doblez" id="dzSombra" aria-hidden="true"><div class="doblez-recorte"><div class="doblez-banda"></div></div></div>
+      <div class="doblez" id="dzCurva" aria-hidden="true"><div class="doblez-recorte"><div class="doblez-banda"></div></div></div>
+      <div class="doblez" id="dzReverso" aria-hidden="true"><div class="doblez-recorte"><div class="doblez-banda"></div><div class="doblez-banda lejos"></div></div></div>
     </div>
     <div class="intro-pie">
-      <label class="intro-check"><input type="checkbox" id="introNoMostrar"> No volver a mostrar</label>
+      <div class="intro-izq">
+        <button type="button" class="intro-sonido" id="introSonido" aria-pressed="true" aria-label="Sonido de la hoja activado" title="Sonido"><i class="ti ti-volume" aria-hidden="true"></i></button>
+        <label class="intro-check"><input type="checkbox" id="introNoMostrar"> No volver a mostrar</label>
+      </div>
       <div class="intro-puntos" aria-hidden="true"><span class="on"></span><span></span></div>
       <div class="intro-botones">
         <button type="button" class="btn ghost" id="introAtras" hidden><i class="ti ti-arrow-left" aria-hidden="true"></i> Atrás</button>
@@ -4156,9 +4168,117 @@ const INTRO_SENSOR = { modelo: "Sensirion SPS30 · sensor láser de partículas"
 const INTRO_CLAVE = "senfepin_intro_oculta";
 let introFocoPrevio = null;
 
-function introPagina(n) {
+/* ── Paso de hoja realista: la esquina inferior derecha se levanta, se dobla y la hoja se va hacia la izquierda.
+   Geometría: el doblez es la mediatriz entre la esquina original C y el punto P donde está la esquina ahora.
+   Lo que queda del lado de C se recorta de la hoja 1 y se dibuja reflejado como reverso del papel. */
+let hojaT = 0, hojaAnim = 0, hojaHover = false;
+const sinMovimientoIntro = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function recortarPoligono(poli, f) {   // Sutherland–Hodgman contra un semiplano (f >= 0 queda)
+  const out = [];
+  for (let i = 0; i < poli.length; i++) {
+    const a = poli[i], b = poli[(i + 1) % poli.length], fa = f(a), fb = f(b);
+    if (fa >= 0) out.push(a);
+    if ((fa >= 0) !== (fb >= 0)) { const k = fa / (fa - fb); out.push({ x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k }); }
+  }
+  return out;
+}
+const poligonoCss = pts => pts.length < 3 ? "polygon(0 0, 0 0, 0 0)" : "polygon(" + pts.map(p => p.x.toFixed(1) + "px " + p.y.toFixed(1) + "px").join(", ") + ")";
+function hojaDibujar(t) {
+  hojaT = t;
+  const caja = $("introHojas"), h1 = $("introH1"), capas = ["dzSombra", "dzCurva", "dzReverso"].map(id => $(id));
+  if (t <= 0.0005) { h1.style.clipPath = ""; capas.forEach(c => c.classList.remove("on")); return; }
+  if (t >= 0.9995) { h1.style.clipPath = "polygon(0 0, 0 0, 0 0)"; capas.forEach(c => c.classList.remove("on")); return; }
+  const W = caja.offsetWidth, H = caja.offsetHeight;
+  const C = { x: W, y: H };
+  const P = { x: W - t * 2 * W, y: H - Math.sin(Math.PI * Math.min(1, t * 1.15)) * H * 0.42 };   // la esquina sube en arco y cruza hacia la izquierda
+  const M = { x: (C.x + P.x) / 2, y: (C.y + P.y) / 2 };
+  let nx = C.x - P.x, ny = C.y - P.y; const largo = Math.hypot(nx, ny) || 1; nx /= largo; ny /= largo;
+  const lado = q => (q.x - M.x) * nx + (q.y - M.y) * ny;   // > 0: del lado de la esquina (parte levantada)
+  const rect = [{ x: 0, y: 0 }, { x: W, y: 0 }, { x: W, y: H }, { x: 0, y: H }];
+  const queda = recortarPoligono(rect, q => -lado(q));
+  const levantada = recortarPoligono(rect, lado);
+  const reflejo = levantada.map(q => { const d = 2 * lado(q); return { x: q.x - d * nx, y: q.y - d * ny }; });
+  h1.style.clipPath = poligonoCss(queda);
+  // bandas de sombra/brillo alineadas con el doblez
+  const diag = Math.hypot(W, H) * 2.2, ang = Math.atan2(nx, -ny) * 180 / Math.PI;
+  const banda = (el, alto) => {
+    el.style.width = diag + "px"; el.style.height = alto + "px";
+    el.style.transform = `translate(${M.x - diag / 2}px, ${M.y - alto / 2}px) rotate(${ang}deg)`;
+  };
+  const abierta = Math.min(1, largo / (W * 0.9));   // cuanto más levantada, más sombra
+  $("dzSombra").firstElementChild.style.clipPath = poligonoCss(levantada);
+  banda($("dzSombra").querySelector(".doblez-banda"), 70 + 90 * abierta);
+  $("dzSombra").style.opacity = 0.5 + 0.5 * abierta;
+  $("dzCurva").firstElementChild.style.clipPath = poligonoCss(queda);
+  banda($("dzCurva").querySelector(".doblez-banda"), 40 + 50 * abierta);
+  $("dzReverso").firstElementChild.style.clipPath = poligonoCss(reflejo);
+  const [brillo, lejos] = $("dzReverso").querySelectorAll(".doblez-banda");
+  banda(brillo, 60 + 80 * abierta); banda(lejos, Math.max(W, H) * 1.6);
+  capas.forEach(c => c.classList.add("on"));
+}
+function hojaAnimar(hasta, ms, alTerminar) {
+  cancelAnimationFrame(hojaAnim);
+  const desde = hojaT, t0 = performance.now(), dur = ms * Math.abs(hasta - desde);
+  if (sinMovimientoIntro() || dur < 16) { hojaDibujar(hasta); if (alTerminar) alTerminar(); return; }
+  const suave = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;   // easeInOutCubic
+  const paso = ahora => {
+    const k = Math.min(1, (ahora - t0) / dur);
+    hojaDibujar(desde + (hasta - desde) * suave(k));
+    if (k < 1) hojaAnim = requestAnimationFrame(paso); else if (alTerminar) alTerminar();
+  };
+  hojaAnim = requestAnimationFrame(paso);
+}
+
+/* ── Sonido de hoja sintetizado (Web Audio): roce del papel + caída al final ── */
+let introAudio = null, introSonidoOn = true;
+try { introSonidoOn = localStorage.getItem("senfepin_intro_sonido") !== "0"; } catch (e) {}
+function sonidoHoja() {
+  if (!introSonidoOn) return;
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    introAudio = introAudio || new AC(); const ctx = introAudio;
+    if (ctx.state === "suspended") ctx.resume();
+    const dur = 0.85, sr = ctx.sampleRate, buf = ctx.createBuffer(1, Math.floor(sr * dur), sr), d = buf.getChannelData(0);
+    let marron = 0;
+    for (let i = 0; i < d.length; i++) {
+      const blanco = Math.random() * 2 - 1;
+      marron = (marron + 0.04 * blanco) / 1.04;              // ruido grave: cuerpo del papel
+      let v = blanco * 0.55 + marron * 3.2;
+      if (Math.random() < 0.0012) v *= 2.6;                  // pequeños crujidos
+      d[i] = Math.max(-1, Math.min(1, v));
+    }
+    const t0 = ctx.currentTime, src = ctx.createBufferSource(); src.buffer = buf;
+    const hp = ctx.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 250;
+    const bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.Q.value = 0.7;
+    bp.frequency.setValueAtTime(900, t0);
+    bp.frequency.exponentialRampToValueAtTime(3200, t0 + 0.32);   // la hoja corta el aire
+    bp.frequency.exponentialRampToValueAtTime(1400, t0 + 0.7);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.22, t0 + 0.06);   // se levanta
+    g.gain.exponentialRampToValueAtTime(0.10, t0 + 0.42);
+    g.gain.linearRampToValueAtTime(0.30, t0 + 0.66);        // cae sobre la otra hoja
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    src.connect(hp).connect(bp).connect(g).connect(ctx.destination);
+    src.start(t0); src.stop(t0 + dur);
+  } catch (e) { /* sin audio disponible */ }
+}
+function alternarSonidoIntro() {
+  introSonidoOn = !introSonidoOn;
+  try { localStorage.setItem("senfepin_intro_sonido", introSonidoOn ? "1" : "0"); } catch (e) {}
+  const b = $("introSonido");
+  b.setAttribute("aria-pressed", String(introSonidoOn));
+  b.setAttribute("aria-label", introSonidoOn ? "Sonido de la hoja activado" : "Sonido de la hoja desactivado");
+  b.innerHTML = `<i class="ti ${introSonidoOn ? "ti-volume" : "ti-volume-off"}" aria-hidden="true"></i>`;
+}
+
+function introPagina(n, animar) {
   const ov = $("intro"), segunda = n === 2;
-  ov.classList.toggle("pasada", segunda);
+  if (animar && segunda !== ov.classList.contains("pasada")) {
+    sonidoHoja();
+    if (segunda) hojaAnimar(1, 950, () => ov.classList.add("pasada"));
+    else { ov.classList.remove("pasada"); hojaAnimar(0, 950); }
+  } else { cancelAnimationFrame(hojaAnim); ov.classList.toggle("pasada", segunda); hojaDibujar(segunda ? 1 : 0); }
   $("introH1").setAttribute("aria-hidden", String(segunda));
   $("introH2").setAttribute("aria-hidden", String(!segunda));
   $("introH1").inert = segunda; $("introH2").inert = !segunda;
@@ -4190,20 +4310,33 @@ function cerrarIntro() {
   if (ov.hidden) return;
   try { $("introNoMostrar").checked ? localStorage.setItem(INTRO_CLAVE, "1") : localStorage.removeItem(INTRO_CLAVE); } catch (e) {}
   ov.classList.remove("visible"); document.body.style.overflow = "";
-  setTimeout(() => { ov.hidden = true; ov.classList.remove("pasada"); }, 350);
+  setTimeout(() => { ov.hidden = true; cancelAnimationFrame(hojaAnim); ov.classList.remove("pasada"); hojaDibujar(0); }, 350);
   if (introFocoPrevio && introFocoPrevio.focus) introFocoPrevio.focus();
 }
 (function iniciarIntro() {
   $("introX").addEventListener("click", cerrarIntro);
   $("introFin").addEventListener("click", cerrarIntro);
-  $("introSig").addEventListener("click", () => introPagina(2));
-  $("introAtras").addEventListener("click", () => introPagina(1));
+  $("introSig").addEventListener("click", () => introPagina(2, true));
+  $("introAtras").addEventListener("click", () => introPagina(1, true));
+  $("introSonido").addEventListener("click", alternarSonidoIntro);
+  if (!introSonidoOn) { introSonidoOn = true; alternarSonidoIntro(); }
+  // la esquina se levanta un poco al acercar el mouse: invita a pasar la hoja
+  $("introH1").addEventListener("pointermove", e => {
+    if (e.pointerType !== "mouse" || $("intro").classList.contains("pasada") || (hojaT > 0.06 && !hojaHover)) return;
+    const r = $("introH1").getBoundingClientRect(), cerca = r.right - e.clientX < 130 && r.bottom - e.clientY < 130;
+    if (cerca !== hojaHover) { hojaHover = cerca; $("introH1").style.cursor = cerca ? "pointer" : ""; hojaAnimar(cerca ? 0.05 : 0, 500); }
+  });
+  $("introH1").addEventListener("pointerleave", () => { if (hojaHover) { hojaHover = false; hojaAnimar(0, 500); } });
+  $("introH1").addEventListener("click", e => {   // clic en la esquina levantada = pasar la hoja
+    if (hojaHover && !e.target.closest("button, a, input")) { hojaHover = false; introPagina(2, true); }
+  });
+  window.addEventListener("resize", () => { if (!$("intro").hidden && hojaT > 0 && hojaT < 1) hojaDibujar(hojaT); });
   $("intro").addEventListener("click", e => { if (e.target.id === "intro") cerrarIntro(); });
   document.addEventListener("keydown", e => {
     if ($("intro").hidden) return;
     if (e.key === "Escape") { e.preventDefault(); cerrarIntro(); }
-    else if (e.key === "ArrowRight") introPagina(2);
-    else if (e.key === "ArrowLeft") introPagina(1);
+    else if (e.key === "ArrowRight") introPagina(2, true);
+    else if (e.key === "ArrowLeft") introPagina(1, true);
     else if (e.key === "Tab") {   // el foco no sale de la ventana
       const f = [...$("intro").querySelectorAll("button:not([hidden]), input")].filter(el => !el.closest("[inert]"));
       const i = f.indexOf(document.activeElement);
