@@ -867,6 +867,9 @@
       <button type="button" class="nav-item" data-view="alertconf" onclick="irA('alertconf')">
         <i class="ti ti-settings" aria-hidden="true"></i> Configuración de alerta <i class="ti ti-lock nav-lock" aria-hidden="true"></i>
       </button>
+      <button type="button" class="nav-item" onclick="abrirIntro()">
+        <i class="ti ti-sparkles" aria-hidden="true"></i> Ver introducción
+      </button>
       <button type="button" class="nav-item" id="btnSalirAdmin" onclick="salirAdmin()">
         <i class="ti ti-logout" aria-hidden="true"></i> Cerrar sesión de administrador
       </button>
@@ -3937,6 +3940,281 @@ async function init() {
 }
 restaurarMenu();
 init();
+</script>
+
+<!-- ============ INTRODUCCIÓN (ventana de bienvenida con Brisa) ============ -->
+<style id="intro-css">
+  /* Fondo liquid glass: la página queda detrás, desenfocada y teñida de turquesa */
+  .intro { position: fixed; inset: 0; z-index: 3000; display: grid; place-items: center; padding: 20px;
+    background:
+      radial-gradient(900px 520px at 20% 10%, rgba(255,255,255,.38), transparent 60%),
+      radial-gradient(700px 520px at 85% 90%, rgba(45,212,191,.30), transparent 60%),
+      linear-gradient(135deg, rgba(204,251,241,.30), rgba(15,118,110,.26));
+    -webkit-backdrop-filter: blur(22px) saturate(190%) brightness(1.06); backdrop-filter: blur(22px) saturate(190%) brightness(1.06);
+    opacity: 0; transition: opacity .35s var(--ease-out); }
+  .intro.visible { opacity: 1; }
+  .intro[hidden] { display: none; }
+
+  /* Libro: marco de vidrio con una hoja de papel adentro */
+  .intro-libro { position: relative; width: min(820px, 100%); border-radius: 30px; padding: 14px;
+    background: linear-gradient(160deg, rgba(255,255,255,.55), rgba(255,255,255,.22));
+    border: 1px solid rgba(255,255,255,.65);
+    box-shadow: 0 40px 80px -24px rgba(3,38,36,.45), inset 0 1.5px 0 rgba(255,255,255,.9), inset 0 0 40px rgba(94,234,212,.18);
+    transform: translateY(18px) scale(.96); transition: transform .5s var(--ease-spring); }
+  .intro.visible .intro-libro { transform: none; }
+  .intro-x { position: absolute; top: -14px; right: -14px; z-index: 20; width: 42px; height: 42px; border-radius: 50%; border: 1px solid rgba(255,255,255,.7);
+    background: #0f766e; color: #fff; font-size: 1.35rem; line-height: 1; cursor: pointer; display: grid; place-items: center;
+    box-shadow: 0 8px 20px -6px rgba(15,118,110,.6), inset 0 1px 0 rgba(255,255,255,.35); transition: transform .2s var(--ease-out), background .2s; }
+  .intro-x:hover { background: #115e59; transform: rotate(90deg); }
+  .intro-x:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(94,234,212,.6); }
+
+  /* Hojas apiladas: la 1 queda encima y se da vuelta como la página de un libro */
+  .intro-hojas { position: relative; perspective: 2200px; min-height: 430px; }
+  .intro-hoja { position: absolute; inset: 0; border-radius: 20px; overflow: hidden; padding: 28px 30px 24px;
+    background: radial-gradient(500px 260px at 100% 0%, #ecfdf9, transparent 70%), #fffefb;
+    box-shadow: inset 0 0 0 1px #e6efed, inset 16px 0 22px -18px rgba(12,28,27,.18);
+    display: grid; grid-template-columns: 210px 1fr; gap: 18px; align-items: center; }
+  .hoja-1 { z-index: 2; transform-origin: left center; transform-style: preserve-3d; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+    transition: transform .95s cubic-bezier(.645,.045,.355,1), box-shadow .95s, visibility 0s .95s; }
+  .hoja-1::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .95s;
+    background: linear-gradient(90deg, rgba(12,28,27,0) 40%, rgba(12,28,27,.22)); }
+  .intro.pasada .hoja-1 { transform: rotateY(-178deg); visibility: hidden; box-shadow: -30px 0 40px rgba(12,28,27,.18); }
+  .intro.pasada .hoja-1::after { opacity: 1; }
+  .intro:not(.pasada) .hoja-1 { visibility: visible; transition-delay: 0s; }
+  .hoja-2 { z-index: 1; }
+  .hoja-2::before { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 5; opacity: 1; transition: opacity .95s;
+    background: linear-gradient(90deg, rgba(12,28,27,.16), transparent 55%); }
+  .intro.pasada .hoja-2::before { opacity: 0; }
+
+  .intro-texto { min-width: 0; }
+  .intro-chip { display: inline-flex; align-items: center; gap: .4rem; font-size: .7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    color: #0f766e; background: #ccfbf1; padding: .3rem .7rem; border-radius: 999px; }
+  .intro-texto h2 { font-size: 1.6rem; line-height: 1.15; font-weight: 800; letter-spacing: -.02em; color: #0c1c1b; margin: .6rem 0 .5rem; text-wrap: balance; }
+  .intro-texto h2 em { font-style: normal; background: var(--grad-texto); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .burbuja { position: relative; background: #fff; border: 2px solid #0f4c47; border-radius: 18px; padding: .7rem .95rem; font-size: .92rem; line-height: 1.5;
+    color: #0c1c1b; box-shadow: 4px 4px 0 #99f6e4; margin-bottom: .9rem; max-width: 46ch; }
+  .burbuja::before { content: ""; position: absolute; left: -12px; top: 22px; width: 18px; height: 18px; background: #fff; border-left: 2px solid #0f4c47; border-bottom: 2px solid #0f4c47; transform: rotate(45deg); }
+  .intro-lista { list-style: none; display: grid; gap: .45rem; margin: 0; padding: 0; }
+  .intro-lista li { display: flex; gap: .6rem; align-items: flex-start; font-size: .88rem; line-height: 1.45; color: #415a57; }
+  .intro-lista li i { flex: none; width: 28px; height: 28px; border-radius: 9px; display: grid; place-items: center; font-size: 1rem; color: #fff; background: var(--grad-brand); box-shadow: 0 4px 10px -4px rgba(15,118,110,.5); }
+  .intro-lista b { color: #0c1c1b; }
+  .ficha { display: grid; grid-template-columns: auto 1fr; gap: .35rem .9rem; font-size: .86rem; margin: .2rem 0 .8rem; padding: .7rem .9rem; border-radius: 14px; background: #f0fdfa; border: 1px solid #ccfbf1; }
+  .ficha dt { color: #415a57; font-weight: 600; } .ficha dd { margin: 0; color: #0c1c1b; font-weight: 600; }
+  .flujo { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; font-size: .76rem; font-weight: 600; color: #115e59; margin-top: .7rem; }
+  .flujo span { background: #fff; border: 1px solid #ccfbf1; padding: .25rem .6rem; border-radius: 999px; }
+  .flujo i { color: #14b8a6; }
+
+  /* Personaje: Brisa, una nubecita-sensor que explica y apunta */
+  .brisa { width: 100%; max-width: 210px; overflow: visible; }
+  .brisa .cuerpo { animation: flotarBrisa 3.2s ease-in-out infinite; transform-origin: 110px 230px; }
+  .brisa .ojos { animation: parpadeo 4.5s infinite; transform-origin: 110px 112px; }
+  .brisa .brazo-apunta { animation: apuntar 1.6s ease-in-out infinite; transform-origin: 168px 140px; }
+  .brisa .luz { animation: luz 1.8s ease-in-out infinite; }
+  .hoja-2 .brisa .brazo-apunta { animation-delay: .3s; }
+  @keyframes flotarBrisa { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+  @keyframes parpadeo { 0%,92%,100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
+  @keyframes apuntar { 0%,100% { transform: rotate(0deg) translateX(0); } 50% { transform: rotate(-4deg) translateX(4px); } }
+  @keyframes luz { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+
+  /* Pie: no volver a mostrar · puntos · botones */
+  .intro-pie { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 10px 2px; flex-wrap: wrap; }
+  .intro-check { display: inline-flex; align-items: center; gap: .45rem; font-size: .8rem; color: #0f4c47; font-weight: 500; cursor: pointer; }
+  .intro-check input { width: 16px; height: 16px; accent-color: #0f766e; }
+  .intro-puntos { display: flex; gap: 6px; }
+  .intro-puntos span { width: 8px; height: 8px; border-radius: 999px; background: rgba(15,118,110,.25); transition: width .3s var(--ease-out), background .3s; }
+  .intro-puntos span.on { width: 22px; background: #0f766e; }
+  .intro-botones { display: flex; gap: 8px; }
+  .intro-botones .btn[hidden] { display: none; }
+
+  @media (max-width: 720px) {
+    .intro { padding: 14px; align-items: start; overflow-y: auto; }
+    .intro-libro { margin-top: 18px; border-radius: 24px; padding: 10px; }
+    .intro-hojas { min-height: 0; display: grid; }
+    .intro-hoja { position: relative; grid-area: 1 / 1; grid-template-columns: 1fr; padding: 18px 18px 16px; gap: 6px; align-content: start; }
+    .brisa { max-width: 120px; margin: 0 auto -6px; }
+    .intro-texto h2 { font-size: 1.3rem; }
+    .burbuja { margin-top: .4rem; }
+    .burbuja::before { left: 50%; top: -11px; transform: translateX(-50%) rotate(135deg); }
+    .intro-pie { justify-content: center; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .brisa .cuerpo, .brisa .ojos, .brisa .brazo-apunta, .brisa .luz { animation: none; }
+    .hoja-1, .hoja-1::after, .hoja-2::before { transition-duration: .01ms; }
+    .intro.pasada .hoja-1 { transform: none; opacity: 0; }
+  }
+</style>
+
+<!-- Dibujo reutilizable del personaje (se clona en cada hoja) -->
+<template id="tplBrisa">
+  <svg class="brisa" viewBox="0 0 230 270" role="img" aria-label="Brisa, la nubecita-sensor de SenFePin, apuntando a la explicación">
+    <defs>
+      <linearGradient id="gBrisa" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5eead4"/><stop offset=".55" stop-color="#2dd4bf"/><stop offset="1" stop-color="#14b8a6"/></linearGradient>
+    </defs>
+    <ellipse cx="110" cy="252" rx="62" ry="10" fill="rgba(12,28,27,.12)"/>
+    <g class="cuerpo">
+      <!-- antena de sensor con luz -->
+      <path d="M110 52 Q108 34 116 22" fill="none" stroke="#0f4c47" stroke-width="5" stroke-linecap="round"/>
+      <circle class="luz" cx="117" cy="19" r="8" fill="#fde047" stroke="#0f4c47" stroke-width="4"/>
+      <!-- piernas -->
+      <rect x="80" y="196" width="20" height="40" rx="10" fill="#14b8a6" stroke="#0f4c47" stroke-width="5"/>
+      <rect x="120" y="196" width="20" height="40" rx="10" fill="#14b8a6" stroke="#0f4c47" stroke-width="5"/>
+      <ellipse cx="88" cy="238" rx="17" ry="9" fill="#0f4c47"/>
+      <ellipse cx="132" cy="238" rx="17" ry="9" fill="#0f4c47"/>
+      <!-- brazo que saluda (izquierdo) -->
+      <path d="M50 150 Q22 150 24 118" fill="none" stroke="#0f4c47" stroke-width="15" stroke-linecap="round"/>
+      <path d="M50 150 Q22 150 24 118" fill="none" stroke="#2dd4bf" stroke-width="7" stroke-linecap="round"/>
+      <circle cx="24" cy="112" r="11" fill="#fff" stroke="#0f4c47" stroke-width="4.5"/>
+      <!-- nube: contorno grueso primero y relleno encima -->
+      <g fill="#0f4c47">
+        <circle cx="110" cy="135" r="74"/><circle cx="56" cy="128" r="44"/><circle cx="164" cy="128" r="44"/><circle cx="84" cy="80" r="42"/><circle cx="138" cy="78" r="44"/>
+      </g>
+      <g fill="url(#gBrisa)">
+        <circle cx="110" cy="135" r="69"/><circle cx="56" cy="128" r="39"/><circle cx="164" cy="128" r="39"/><circle cx="84" cy="80" r="37"/><circle cx="138" cy="78" r="39"/>
+      </g>
+      <ellipse cx="78" cy="66" rx="18" ry="9" fill="#fff" opacity=".45" transform="rotate(-25 78 66)"/>
+      <!-- cara -->
+      <g class="ojos">
+        <ellipse cx="88" cy="112" rx="14" ry="17" fill="#fff" stroke="#0f4c47" stroke-width="4"/>
+        <ellipse cx="134" cy="112" rx="14" ry="17" fill="#fff" stroke="#0f4c47" stroke-width="4"/>
+        <circle cx="93" cy="115" r="7.5" fill="#0c1c1b"/><circle cx="139" cy="115" r="7.5" fill="#0c1c1b"/>
+        <circle cx="96" cy="111" r="2.6" fill="#fff"/><circle cx="142" cy="111" r="2.6" fill="#fff"/>
+      </g>
+      <ellipse cx="70" cy="140" rx="11" ry="7" fill="#f472b6" opacity=".75"/>
+      <ellipse cx="152" cy="140" rx="11" ry="7" fill="#f472b6" opacity=".75"/>
+      <path d="M94 146 Q112 166 130 146 Q112 154 94 146 Z" fill="#7f1d1d" stroke="#0f4c47" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M103 152 Q112 158 121 152" fill="none" stroke="#fb7185" stroke-width="4" stroke-linecap="round"/>
+      <!-- brazo que apunta (derecho, hacia el texto) -->
+      <g class="brazo-apunta">
+        <path d="M168 142 Q194 136 208 112" fill="none" stroke="#0f4c47" stroke-width="15" stroke-linecap="round"/>
+        <path d="M168 142 Q194 136 208 112" fill="none" stroke="#2dd4bf" stroke-width="7" stroke-linecap="round"/>
+        <circle cx="210" cy="106" r="11" fill="#fff" stroke="#0f4c47" stroke-width="4.5"/>
+        <path d="M214 100 L228 84" stroke="#0f4c47" stroke-width="11" stroke-linecap="round"/>
+        <path d="M214 100 L228 84" stroke="#fff" stroke-width="4.5" stroke-linecap="round"/>
+      </g>
+    </g>
+  </svg>
+</template>
+
+<div class="intro" id="intro" role="dialog" aria-modal="true" aria-labelledby="introT1" hidden>
+  <div class="intro-libro">
+    <button type="button" class="intro-x" id="introX" aria-label="Cerrar introducción" title="Cerrar">&times;</button>
+    <div class="intro-hojas">
+      <!-- HOJA 2: sensores -->
+      <section class="intro-hoja hoja-2" id="introH2" aria-labelledby="introT2" aria-hidden="true">
+        <div class="intro-personaje"></div>
+        <div class="intro-texto">
+          <span class="intro-chip"><i class="ti ti-cpu" aria-hidden="true"></i> Nuestros sensores</span>
+          <h2 id="introT2">Medimos con <em>sensores AirFlux</em></h2>
+          <p class="burbuja">Estos equipos miden el aire las 24 horas. ¡Mira lo que registra cada uno!</p>
+          <dl class="ficha">
+            <dt>Empresa</dt><dd>AirFlux · startup chilena de monitoreo ambiental</dd>
+            <dt>Modelo</dt><dd id="introModelo">Multisensor de bajo costo AirFlux</dd>
+            <dt>Mide</dt><dd>MP2,5 · MP10 · temperatura · humedad · presión</dd>
+            <dt>Red</dt><dd id="introRed">Estaciones en Chile</dd>
+          </dl>
+          <div class="flujo" aria-label="Recorrido de los datos">
+            <span><i class="ti ti-antenna" aria-hidden="true"></i> Sensor AirFlux</span><i class="ti ti-arrow-right" aria-hidden="true"></i>
+            <span><i class="ti ti-cloud-upload" aria-hidden="true"></i> ThingSpeak</span><i class="ti ti-arrow-right" aria-hidden="true"></i>
+            <span><i class="ti ti-chart-line" aria-hidden="true"></i> SenFePin</span>
+          </div>
+        </div>
+      </section>
+      <!-- HOJA 1: introducción -->
+      <section class="intro-hoja hoja-1" id="introH1" aria-labelledby="introT1">
+        <div class="intro-personaje"></div>
+        <div class="intro-texto">
+          <span class="intro-chip"><i class="ti ti-sparkles" aria-hidden="true"></i> Bienvenida</span>
+          <h2 id="introT1">¡Hola! Esto es <em>SenFePin</em></h2>
+          <p class="burbuja">Soy Brisa 👋 Te ayudo a conocer la calidad del aire que respiras, en tiempo real.</p>
+          <ul class="intro-lista">
+            <li><i class="ti ti-map-pin" aria-hidden="true"></i><span><b>Mapa en vivo</b> con cada estación de monitoreo y su estado.</span></li>
+            <li><i class="ti ti-chart-bar" aria-hidden="true"></i><span><b>MP2,5 y MP10</b> comparados con la norma chilena de 24 horas.</span></li>
+            <li><i class="ti ti-bell-ringing" aria-hidden="true"></i><span><b>Alertas</b> cuando un sensor deja de enviar datos.</span></li>
+            <li><i class="ti ti-download" aria-hidden="true"></i><span><b>Descargas e informes</b> para analizar los datos.</span></li>
+          </ul>
+        </div>
+      </section>
+    </div>
+    <div class="intro-pie">
+      <label class="intro-check"><input type="checkbox" id="introNoMostrar"> No volver a mostrar</label>
+      <div class="intro-puntos" aria-hidden="true"><span class="on"></span><span></span></div>
+      <div class="intro-botones">
+        <button type="button" class="btn ghost" id="introAtras" hidden><i class="ti ti-arrow-left" aria-hidden="true"></i> Atrás</button>
+        <button type="button" class="btn" id="introSig">Siguiente <i class="ti ti-arrow-right" aria-hidden="true"></i></button>
+        <button type="button" class="btn" id="introFin" hidden>Explorar SenFePin <i class="ti ti-check" aria-hidden="true"></i></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================== INTRODUCCIÓN CON BRISA ==================
+   Se abre al entrar a la página (salvo que se marque "No volver a mostrar").
+   Se puede abrir de nuevo desde Sistema → Ver introducción. */
+// Datos del sensor: cambiar aquí si se usa otro modelo
+const INTRO_SENSOR = { modelo: "" };   // ej.: "AirFlux XXX"; vacío = texto genérico
+const INTRO_CLAVE = "senfepin_intro_oculta";
+let introFocoPrevio = null;
+
+function introPagina(n) {
+  const ov = $("intro"), segunda = n === 2;
+  ov.classList.toggle("pasada", segunda);
+  $("introH1").setAttribute("aria-hidden", String(segunda));
+  $("introH2").setAttribute("aria-hidden", String(!segunda));
+  $("introH1").inert = segunda; $("introH2").inert = !segunda;
+  $("introAtras").hidden = !segunda; $("introSig").hidden = segunda; $("introFin").hidden = !segunda;
+  ov.querySelectorAll(".intro-puntos span").forEach((p, i) => p.classList.toggle("on", i === n - 1));
+  ov.setAttribute("aria-labelledby", segunda ? "introT2" : "introT1");
+  (segunda ? $("introFin") : $("introSig")).focus({ preventScroll: true });
+}
+function abrirIntro() {
+  const ov = $("intro");
+  if (!ov.dataset.listo) {   // dibuja a Brisa en ambas hojas una sola vez
+    ov.querySelectorAll(".intro-personaje").forEach(c => c.appendChild($("tplBrisa").content.cloneNode(true)));
+    ov.dataset.listo = "1";
+  }
+  if (INTRO_SENSOR.modelo) $("introModelo").textContent = INTRO_SENSOR.modelo;
+  try {   // la red se arma con las estaciones reales configuradas
+    const nombres = (typeof SITIOS !== "undefined" ? SITIOS : []).map(s => s.nombre).filter(Boolean);
+    if (nombres.length) $("introRed").textContent = `${nombres.length} estaciones: ${nombres.join(", ")}`;
+  } catch (e) { /* se deja el texto por defecto */ }
+  try { $("introNoMostrar").checked = localStorage.getItem(INTRO_CLAVE) === "1"; } catch (e) {}
+  introFocoPrevio = document.activeElement;
+  ov.hidden = false; document.body.style.overflow = "hidden";
+  if (typeof cerrarGrupos === "function") cerrarGrupos();
+  introPagina(1);
+  requestAnimationFrame(() => ov.classList.add("visible"));
+}
+function cerrarIntro() {
+  const ov = $("intro");
+  if (ov.hidden) return;
+  try { $("introNoMostrar").checked ? localStorage.setItem(INTRO_CLAVE, "1") : localStorage.removeItem(INTRO_CLAVE); } catch (e) {}
+  ov.classList.remove("visible"); document.body.style.overflow = "";
+  setTimeout(() => { ov.hidden = true; ov.classList.remove("pasada"); }, 350);
+  if (introFocoPrevio && introFocoPrevio.focus) introFocoPrevio.focus();
+}
+(function iniciarIntro() {
+  $("introX").addEventListener("click", cerrarIntro);
+  $("introFin").addEventListener("click", cerrarIntro);
+  $("introSig").addEventListener("click", () => introPagina(2));
+  $("introAtras").addEventListener("click", () => introPagina(1));
+  $("intro").addEventListener("click", e => { if (e.target.id === "intro") cerrarIntro(); });
+  document.addEventListener("keydown", e => {
+    if ($("intro").hidden) return;
+    if (e.key === "Escape") { e.preventDefault(); cerrarIntro(); }
+    else if (e.key === "ArrowRight") introPagina(2);
+    else if (e.key === "ArrowLeft") introPagina(1);
+    else if (e.key === "Tab") {   // el foco no sale de la ventana
+      const f = [...$("intro").querySelectorAll("button:not([hidden]), input")].filter(el => !el.closest("[inert]"));
+      const i = f.indexOf(document.activeElement);
+      if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
+      else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); }
+    }
+  });
+  let oculta = false;
+  try { oculta = localStorage.getItem(INTRO_CLAVE) === "1"; } catch (e) {}
+  if (!oculta) setTimeout(abrirIntro, 700);
+})();
 </script>
 </body>
 </html>
