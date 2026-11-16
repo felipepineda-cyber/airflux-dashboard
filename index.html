@@ -4108,7 +4108,7 @@ init();
           <p class="burbuja">Estos equipos miden el aire las 24 horas. ¡Mira lo que registra cada uno!</p>
           <dl class="ficha">
             <dt>Empresa</dt><dd>AirFlux · startup chilena de monitoreo ambiental</dd>
-            <dt>Modelo</dt><dd id="introModelo">Multisensor de bajo costo AirFlux</dd>
+            <dt>Modelo</dt><dd id="introModelo">Sensirion SPS30 · sensor láser de partículas</dd>
             <dt>Mide</dt><dd>MP2,5 · MP10 · temperatura · humedad · presión</dd>
             <dt>Red</dt><dd id="introRed">Estaciones en Chile</dd>
           </dl>
@@ -4152,7 +4152,7 @@ init();
    Se abre al entrar a la página (salvo que se marque "No volver a mostrar").
    Se puede abrir de nuevo desde Sistema → Ver introducción. */
 // Datos del sensor: cambiar aquí si se usa otro modelo
-const INTRO_SENSOR = { modelo: "" };   // ej.: "AirFlux XXX"; vacío = texto genérico
+const INTRO_SENSOR = { modelo: "Sensirion SPS30 · sensor láser de partículas" };   // vacío = deja el texto del HTML
 const INTRO_CLAVE = "senfepin_intro_oculta";
 let introFocoPrevio = null;
 
