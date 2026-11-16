@@ -14,7 +14,9 @@
 //   VIEWIA_MAX_DIA_TOTAL  = 300  (lecturas totales al día, opcional)
 //
 // Requiere ejecutar antes supabase/viewia_limite.sql (contador diario).
-// Despliegue:  supabase functions deploy viewia-leer
+// Proyecto: el de SenFePin (stuxspraehjbxyiujsnu), igual que vigilante.
+// Despliegue:  supabase functions deploy viewia-leer --project-ref stuxspraehjbxyiujsnu --no-verify-jwt
+// (sin verificación JWT porque la página usa una clave publishable; el límite diario protege el uso)
 // ============================================================
 
 // Campos permitidos: deben coincidir con NormaTools.fields (norma-tools.js)
