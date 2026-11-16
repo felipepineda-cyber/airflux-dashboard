@@ -36,5 +36,17 @@ function suggest(text,target){
  });
  if(!proposals.length)warnings.push('No se identificaron campos con suficiente contexto. Selecciona MP2,5 o MP10, corrige el texto o añade una sugerencia manual.');return {proposals:proposals,warnings:warnings};
 }
-root.NormaTools={fields:fields,buildExcel:buildExcel,suggest:suggest,validateField:validateField,dateIso:dateIso};
+// Convierte la respuesta de la IA (función viewia-leer) en sugerencias revisables
+function fromAi(data){var proposals=[],warnings=[],seen={};data=data||{};
+ (Array.isArray(data.avisos)?data.avisos:[]).forEach(function(a){if(String(a||'').trim())warnings.push(String(a).trim())});
+ (Array.isArray(data.campos)?data.campos:[]).forEach(function(c){if(!c||!Object.hasOwn(fields,c.campo))return;var key=c.campo,value=String(c.valor==null?'':c.valor).trim(),conf=['alta','media','baja'].indexOf(c.confianza)>=0?c.confianza:'baja';if(!value)return;
+  // normaliza formatos frecuentes de la escritura a mano
+  if(/_(hi|hf)$/.test(key)){var h=/^(\d{1,2})\s*[:.h]\s*(\d{2})$/i.exec(value);if(h)value=String(+h[1]).padStart(2,'0')+':'+String(+h[2]).padStart(2,'0')}
+  if(/_(fi|ff)$/.test(key)&&dateIso(value))value=dateIso(value);
+  if(/_(ri|rf|oi|of)$/.test(key))value=value.replace(/\s+/g,'');
+  var error=validateField(key,value);if(error){warnings.push(fields[key]+': '+error+' (leído: "'+value+'")');conf='baja'}
+  if(Object.hasOwn(seen,key)){if(seen[key]!==value)warnings.push('La IA leyó dos valores para '+fields[key]+' ("'+seen[key]+'" y "'+value+'"). Se conserva el primero; revisa la imagen.');return}
+  seen[key]=value;proposals.push({field:key,value:value,confidence:conf,evidence:String(c.evidencia||'').trim()||'Leído por IA'})});
+ return{text:String(data.texto||''),proposals:proposals,warnings:warnings}}
+root.NormaTools={fields:fields,buildExcel:buildExcel,suggest:suggest,validateField:validateField,dateIso:dateIso,fromAi:fromAi};
 })(typeof module==='object'&&module.exports?module.exports:globalThis);
