@@ -42,3 +42,9 @@ input:focus, .btn:focus-visible, a:focus-visible { outline: none; box-shadow: 0 
 .interruptor input { width: 20px; height: 20px; accent-color: var(--primario); }
 footer.pie { text-align: center; font-size: .82rem; color: var(--texto-2); padding: 20px 16px 32px; }
 footer.pie a { margin: 0 .4rem; }
+select, textarea { width: 100%; padding: .7rem .8rem; border: 1px solid var(--borde); border-radius: 10px; font: inherit; background: #fff; color: var(--texto); }
+textarea { resize: vertical; min-height: 140px; }
+select:focus, textarea:focus { outline: none; box-shadow: 0 0 0 3px rgba(20,184,166,.35); }
+.trampa { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+form .interruptor { margin: 1rem 0 .2rem; align-items: flex-start; }
+form .interruptor input { margin-top: .2rem; flex: none; }

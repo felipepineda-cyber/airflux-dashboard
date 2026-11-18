@@ -862,6 +862,18 @@
   .est-lista li span, .est-lista li b { position: relative; z-index: 1; }
   .est-vacio { font-size: .84rem; color: var(--text-3); margin: 0; }
   .est-pie { margin-top: .8rem; }
+  .msj-lista { display: grid; gap: .7rem; }
+  .msj { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid #14b8a6; border-radius: 14px; padding: .9rem 1rem; }
+  .msj.respondido { border-left-color: #cbd5e1; opacity: .85; }
+  .msj header { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; margin-bottom: .3rem; }
+  .msj-tipo { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #0f766e; background: #ccfbf1; padding: .15rem .55rem; border-radius: 999px; }
+  .msj-urg { font-size: .72rem; font-weight: 700; color: #9a3412; background: #ffedd5; padding: .15rem .55rem; border-radius: 999px; }
+  .msj time { margin-left: auto; font-size: .76rem; color: var(--text-3); }
+  .msj-de { font-size: .85rem; margin: 0 0 .4rem; display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; }
+  .msj-correo { color: var(--text-2); word-break: break-all; }
+  .msj-txt { font-size: .88rem; line-height: 1.5; color: var(--text); margin: 0 0 .7rem; white-space: normal; overflow-wrap: anywhere; }
+  .msj-acc { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
+  .msj-borrar { margin-left: auto; color: #b91c1c; }
   .ac-detalle > summary { cursor: pointer; list-style: none; }
   .ac-detalle > summary::-webkit-details-marker { display: none; }
   .ac-detalle > summary h2::after { content: "▾"; margin-left: .5rem; font-size: .8rem; color: var(--text-3); }
@@ -947,6 +959,9 @@
       </a>
       <a class="nav-item" href="privacidad.html">
         <i class="ti ti-shield-check" aria-hidden="true"></i><span class="nav-txt">Privacidad<small>Qué datos se tratan y tus derechos</small></span>
+      </a>
+      <a class="nav-item" href="contacto.html">
+        <i class="ti ti-mail" aria-hidden="true"></i><span class="nav-txt">Contacto<small>Consultas, derechos y errores</small></span>
       </a>
       </div></div>
     </div>
@@ -1379,10 +1394,11 @@
         <div class="ac-resumen" id="acChips" aria-live="polite"></div>
         <nav class="ac-pasos" aria-label="Secciones de administración">
           <a href="#ac-estadisticas" onclick="acIr(event,'ac-estadisticas')"><b>1</b> Estadísticas</a>
-          <a href="#ac-destinos" onclick="acIr(event,'ac-destinos')"><b>2</b> Destinatarios</a>
-          <a href="#ac-inmediato" onclick="acIr(event,'ac-inmediato')"><b>3</b> Aviso inmediato</a>
-          <a href="#ac-caida" onclick="acIr(event,'ac-caida')"><b>4</b> Caída confirmada</a>
-          <a href="#ac-semanal" onclick="acIr(event,'ac-semanal')"><b>5</b> Resumen semanal</a>
+          <a href="#ac-mensajes" onclick="acIr(event,'ac-mensajes')"><b>2</b> Mensajes</a>
+          <a href="#ac-destinos" onclick="acIr(event,'ac-destinos')"><b>3</b> Destinatarios</a>
+          <a href="#ac-inmediato" onclick="acIr(event,'ac-inmediato')"><b>4</b> Aviso inmediato</a>
+          <a href="#ac-caida" onclick="acIr(event,'ac-caida')"><b>5</b> Caída confirmada</a>
+          <a href="#ac-semanal" onclick="acIr(event,'ac-semanal')"><b>6</b> Resumen semanal</a>
         </nav>
 
         <!-- 1 · Estadísticas del sitio (conteos agregados, sin datos personales) -->
@@ -1405,9 +1421,18 @@
           <p class="ayuda est-pie">No se cuentan las visitas de quien desactivó la medición ni las de navegadores con Global Privacy Control. Para ver países y navegadores, usa Vercel → Analytics cuando esté activado.</p>
         </section>
 
-        <!-- 2 · Destinatarios: quién recibe los avisos -->
+        <!-- 2 · Mensajes del formulario de contacto -->
+        <section class="ac-sec" id="ac-mensajes">
+          <header class="ac-sec-head"><span class="ac-num">2</span><div><h2>Mensajes de contacto</h2>
+            <p>Lo que llega desde el formulario de contacto: consultas, solicitudes sobre datos personales, bajas de alertas y errores. Responde al correo de cada persona y márcalo como respondido.</p></div>
+            <label class="est-periodo">Mostrar
+              <select id="msjFiltro" onchange="cargarMensajes()"><option value="nuevo" selected>Pendientes</option><option value="todos">Todos</option></select></label></header>
+          <div id="msjLista" class="msj-lista"></div>
+        </section>
+
+        <!-- 3 · Destinatarios: quién recibe los avisos -->
         <section class="ac-sec" id="ac-destinos">
-          <header class="ac-sec-head"><span class="ac-num">2</span><div><h2>Destinatarios</h2>
+          <header class="ac-sec-head"><span class="ac-num">3</span><div><h2>Destinatarios</h2>
             <p>Todos los avisos y resúmenes llegan a estos destinos: WhatsApp (CallMeBot) y correo.</p></div>
             <div id="acDestinoEstado"></div></header>
         <div class="panel">
@@ -1493,7 +1518,7 @@
         </section>
 
         <section class="ac-sec" id="ac-inmediato">
-          <header class="ac-sec-head"><span class="ac-num">3</span><div><h2>Aviso inmediato de sensor sin datos</h2>
+          <header class="ac-sec-head"><span class="ac-num">4</span><div><h2>Aviso inmediato de sensor sin datos</h2>
             <p>Un mensaje en cuanto un sensor deja de enviar datos, sin esperar a que la caída se confirme. Llega una sola vez por episodio y se rearma cuando el sensor vuelve.</p></div>
             <span class="hint" id="acNube">Se guardan automáticamente (local + nube)</span></header>
           <div class="panel"><div class="panel-body">
@@ -1522,7 +1547,7 @@
         </section>
 
         <section class="ac-sec" id="ac-caida">
-          <header class="ac-sec-head"><span class="ac-num">4</span><div><h2>Caída confirmada</h2>
+          <header class="ac-sec-head"><span class="ac-num">5</span><div><h2>Caída confirmada</h2>
             <p>Si el sensor sigue sin datos pasado este tiempo se marca como caído (rojo en el panel) y se avisa de nuevo, con recordatorios mientras siga así.</p></div></header>
           <div class="panel"><div class="panel-body">
             <div class="form-grid">
@@ -1547,7 +1572,7 @@
         </section>
 
         <section class="ac-sec" id="ac-semanal">
-          <header class="ac-sec-head"><span class="ac-num">5</span><div><h2>Resumen semanal</h2>
+          <header class="ac-sec-head"><span class="ac-num">6</span><div><h2>Resumen semanal</h2>
             <p>Un informe por correo con el estado y la disponibilidad de la red durante los últimos 7 días.</p></div></header>
         <div class="panel">
           <div class="panel-head">
@@ -1605,6 +1630,7 @@
         <a href="uso-datos.html">Uso de los datos</a>
         <a href="privacidad.html">Privacidad</a>
         <a href="privacidad.html#medicion">Medición de visitas</a>
+        <a href="contacto.html">Contacto</a>
       </nav>
     </footer>
   </main>
@@ -1943,6 +1969,7 @@ function pintarVista() {
     pintarEstadoWA();
     pintarQuienAdmin();
     cargarEstadisticasSitio();
+    cargarMensajes();
   } else if (vistaActual === "descargas") {
     dcInit();
   } else if (vistaActual === "variacion") {
@@ -2849,6 +2876,7 @@ function pintarChipsAlertas() {
   const chip = (ok, ico, t, d) => `<div class="ac-chip ${ok ? "on" : "off"}"><i class="ti ${ico}" aria-hidden="true"></i><span><b>${t}</b><small>${d}</small></span></div>`;
   // mismo orden que las secciones de la página
   el.innerHTML =
+    chip(!mensajesPendientes, "ti-mail", "Mensajes", mensajesPendientes ? `${mensajesPendientes} pendiente${mensajesPendientes > 1 ? "s" : ""}` : "al día") +
     chip(wa, "ti-address-book", "Destinatarios", wa ? "configurados" : "sin configurar") +
     chip(c.inmediato, "ti-bolt", "Aviso inmediato", c.inmediato ? `tras ${c.inmediatoMin} min sin datos` : "desactivado") +
     chip(true, "ti-alert-triangle", "Caída confirmada", `tras ${c.umbral} h · repite cada ${c.reenvio} h`) +
@@ -2921,6 +2949,54 @@ async function cargarEstadisticasSitio() {
   estLista($("estVistas"), porValor("abrir_vista").map(([v, n]) => [EST_NOMBRES.abrir_vista[v] || v, n]), suma("abrir_vista"));
   estLista($("estPeriodos"), porValor("cambiar_periodo").map(([v, n]) => [EST_NOMBRES.cambiar_periodo[v] || v, n]), periodos);
 }
+/* ================== MENSAJES DE CONTACTO (solo administradores) ================== */
+let mensajesPendientes = 0;
+const MSJ_TIPOS = { consulta: "Consulta", derechos: "Derechos sobre datos", baja_alertas: "Baja de alertas", error_datos: "Error en los datos" };
+async function cargarMensajes() {
+  const el = $("msjLista"); if (!el) return;
+  if (!supaCfg || !adminSesion) { el.innerHTML = ""; return; }
+  const filtro = $("msjFiltro").value;
+  let q = supaCfg.from("mensajes_contacto").select("id, creado_en, tipo, nombre, correo, mensaje, estado, respondido_en").order("creado_en", { ascending: false }).limit(100);
+  if (filtro === "nuevo") q = q.eq("estado", "nuevo");
+  const { data, error } = await q;
+  if (error) { el.innerHTML = '<p class="est-vacio">Aún no está activo: ejecuta <code>supabase/contacto.sql</code> en Supabase.</p>'; return; }
+  const { count } = await supaCfg.from("mensajes_contacto").select("id", { count: "exact", head: true }).eq("estado", "nuevo");
+  mensajesPendientes = count || 0; pintarChipsAlertas();
+  if (!data.length) { el.innerHTML = `<p class="est-vacio">${filtro === "nuevo" ? "No hay mensajes pendientes." : "Aún no llegan mensajes."}</p>`; return; }
+  el.innerHTML = data.map(m => {
+    const fecha = new Date(m.creado_en).toLocaleString("es-CL", { timeZone: "America/Santiago", dateStyle: "medium", timeStyle: "short" });
+    const urgente = m.tipo === "derechos" ? '<span class="msj-urg">Plazo legal</span>' : "";
+    return `<article class="msj ${m.estado}">
+      <header><span class="msj-tipo">${esc(MSJ_TIPOS[m.tipo] || m.tipo)}</span>${urgente}<time>${fecha}</time></header>
+      <p class="msj-de"><b>${esc(m.nombre || "Sin nombre")}</b> · <span class="msj-correo">${esc(m.correo)}</span>
+        <button type="button" class="adm-link" onclick="copiarCorreoMsj(this, '${esc(m.correo)}')">Copiar correo</button></p>
+      <p class="msj-txt">${esc(m.mensaje).replace(/\n/g, "<br>")}</p>
+      <div class="msj-acc">
+        ${m.estado === "nuevo"
+          ? `<button type="button" class="btn" onclick="marcarMensaje(${m.id}, 'respondido')"><i class="ti ti-check" aria-hidden="true"></i> Marcar como respondido</button>`
+          : `<span class="pill on">● Respondido ${m.respondido_en ? new Date(m.respondido_en).toLocaleDateString("es-CL") : ""}</span>
+             <button type="button" class="btn ghost" onclick="marcarMensaje(${m.id}, 'nuevo')">Volver a pendiente</button>`}
+        <button type="button" class="btn ghost msj-borrar" onclick="borrarMensaje(${m.id}, this)"><i class="ti ti-trash" aria-hidden="true"></i> Eliminar</button>
+      </div></article>`;
+  }).join("");
+}
+async function marcarMensaje(id, estado) {
+  const { error } = await supaCfg.from("mensajes_contacto").update({ estado, respondido_en: estado === "respondido" ? new Date().toISOString() : null }).eq("id", id);
+  if (error) { mostrarAviso("No se pudo actualizar el mensaje."); return; }
+  cargarMensajes();
+}
+async function borrarMensaje(id, btn) {
+  // confirmación en la misma página (sin diálogos del navegador)
+  if (btn.dataset.confirmar !== "1") { btn.dataset.confirmar = "1"; btn.innerHTML = '<i class="ti ti-alert-triangle" aria-hidden="true"></i> ¿Eliminar definitivamente?'; setTimeout(() => { if (btn.isConnected) { btn.dataset.confirmar = ""; btn.innerHTML = '<i class="ti ti-trash" aria-hidden="true"></i> Eliminar'; } }, 4000); return; }
+  const { error } = await supaCfg.from("mensajes_contacto").delete().eq("id", id);
+  if (error) { mostrarAviso("No se pudo eliminar el mensaje."); return; }
+  cargarMensajes();
+}
+async function copiarCorreoMsj(btn, correo) {
+  try { await navigator.clipboard.writeText(correo); btn.textContent = "Copiado ✓"; }
+  catch { btn.textContent = correo; }
+  setTimeout(() => { btn.textContent = "Copiar correo"; }, 2000);
+}
 function acIr(ev, id) {
   ev.preventDefault();
   const el = $(id);
@@ -2945,7 +3021,7 @@ async function probarPlantilla(tipo) {
   guardarConfigAlerta();
   if (!waConfigurado()) {
     res.style.color = "var(--err)";
-    res.textContent = "✖ Primero activa y configura los destinatarios en Acceso Administradores → 2 Destinatarios.";
+    res.textContent = "✖ Primero activa y configura los destinatarios en Acceso Administradores → 3 Destinatarios.";
     return;
   }
   res.style.color = "var(--text-2)"; res.textContent = "Enviando…";

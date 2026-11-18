@@ -95,7 +95,7 @@ window.SENFEPIN_CONFIG = {
   // Una visita por pestaña y página (sessionStorage), solo en páginas públicas
   (function contarVisita() {
     if (!medicionPermitida() || PAGINAS_EXCLUIDAS.test(location.pathname)) return;
-    const m = /\/(privacidad|uso-datos|norma)(\.html)?$/.exec(location.pathname);
+    const m = /\/(privacidad|uso-datos|norma|contacto)(\.html)?$/.exec(location.pathname);
     const pagina = m ? m[1] : "index";
     try {
       const marca = "senfepin_visita_" + pagina;

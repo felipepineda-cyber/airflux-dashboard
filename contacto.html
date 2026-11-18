@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Contacto · SenFePin</title>
+<meta name="description" content="Escribe a SenFePin: consultas, ejercicio de derechos sobre datos personales, baja de alertas o errores en los datos.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="paginas.css">
+<script src="sitio.js" defer></script>
+</head>
+<body>
+<header class="cab">
+  <img src="/icon-192.png" alt="" width="36" height="36">
+  <div><b>SenFePin</b><small>Calidad del aire en Chile</small></div>
+  <a class="volver" href="index.html">← Volver al visor</a>
+</header>
+<main>
+  <h1>Contacto</h1>
+  <p>Escríbenos para hacer una consulta, ejercer tus derechos sobre tus datos personales, darte de baja de las alertas o avisar de un error en los datos. Tu mensaje lo leen solo los administradores de SenFePin, y te responderemos al correo que indiques.</p>
+
+  <form class="tarjeta" id="formContacto" novalidate>
+    <label for="cTipo">Motivo</label>
+    <select id="cTipo" required>
+      <option value="consulta">Consulta general</option>
+      <option value="derechos">Ejercer un derecho sobre mis datos (acceso, rectificación, supresión, oposición, portabilidad o bloqueo)</option>
+      <option value="baja_alertas">Dejar de recibir alertas o resúmenes</option>
+      <option value="error_datos">Avisar de un error en los datos</option>
+    </select>
+
+    <label for="cNombre">Nombre <span class="meta">(opcional)</span></label>
+    <input id="cNombre" type="text" maxlength="120" autocomplete="name">
+
+    <label for="cCorreo">Correo para responderte</label>
+    <input id="cCorreo" type="email" maxlength="160" autocomplete="email" required inputmode="email" autocapitalize="off" spellcheck="false">
+
+    <label for="cMensaje">Mensaje</label>
+    <textarea id="cMensaje" rows="6" maxlength="2000" required></textarea>
+    <p class="meta" id="cCuenta">0 / 2000</p>
+
+    <!-- Campo trampa para robots: las personas no lo ven -->
+    <div class="trampa" aria-hidden="true"><label>No completar <input id="cWeb" type="text" tabindex="-1" autocomplete="off"></label></div>
+
+    <label class="interruptor" style="font-weight:500"><input type="checkbox" id="cAcepto" required><span>Acepto que SenFePin use estos datos solo para responder mi mensaje, según la <a href="privacidad.html#contacto" target="_blank" rel="noopener">política de privacidad</a>.</span></label>
+
+    <div class="msg" id="cMsg" role="status"></div>
+    <button class="btn" id="cEnviar" type="submit">Enviar mensaje</button>
+  </form>
+
+  <p class="meta">Los mensajes se conservan hasta resolverlos y, una vez respondidos, por un máximo de 12 meses.</p>
+</main>
+<footer class="pie"><a href="index.html">Visor</a> · <a href="uso-datos.html">Uso de los datos</a> · <a href="privacidad.html">Privacidad</a> · <a href="contacto.html">Contacto</a></footer>
+
+<script>
+(function () {
+  "use strict";
+  const URL_RPC = "https://stuxspraehjbxyiujsnu.supabase.co/rest/v1/rpc/enviar_mensaje_contacto";
+  const CLAVE = "sb_publishable_Eemqq4D54Y_Bg3XAm25psg_DBJ2QG0I";   // clave pública
+  const $ = id => document.getElementById(id);
+
+  // Motivo desde la URL (ej.: contacto.html#derechos)
+  const motivo = location.hash.slice(1);
+  if (["consulta", "derechos", "baja_alertas", "error_datos"].includes(motivo)) $("cTipo").value = motivo;
+
+  $("cMensaje").addEventListener("input", () => { $("cCuenta").textContent = $("cMensaje").value.length + " / 2000"; });
+
+  $("formContacto").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    const msg = $("cMsg"), btn = $("cEnviar");
+    const correo = $("cCorreo").value.trim(), texto = $("cMensaje").value.trim();
+    msg.className = "msg error";
+    if ($("cWeb").value) { msg.className = "msg ok"; msg.textContent = "Mensaje enviado."; return; }   // robot: no se envía
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) { msg.textContent = "Escribe un correo válido para poder responderte."; return; }
+    if (texto.length < 10) { msg.textContent = "Cuéntanos un poco más (al menos 10 caracteres)."; return; }
+    if (!$("cAcepto").checked) { msg.textContent = "Debes aceptar el uso de tus datos para responderte."; return; }
+    btn.disabled = true; btn.textContent = "Enviando…"; msg.textContent = "";
+    try {
+      const r = await fetch(URL_RPC, {
+        method: "POST", credentials: "omit",
+        headers: { "Content-Type": "application/json", apikey: CLAVE, Authorization: "Bearer " + CLAVE },
+        body: JSON.stringify({ p_tipo: $("cTipo").value, p_nombre: $("cNombre").value.trim(), p_correo: correo, p_mensaje: texto }),
+      });
+      const res = r.ok ? await r.json() : null;
+      if (res === "ok") {
+        msg.className = "msg ok";
+        msg.textContent = "¡Gracias! Recibimos tu mensaje y te responderemos a " + correo + ".";
+        $("formContacto").reset(); $("cCuenta").textContent = "0 / 2000";
+      } else if (res === "limite") {
+        msg.textContent = "Ya recibimos varios mensajes tuyos hoy. Intenta de nuevo mañana.";
+      } else if (res === "invalido") {
+        msg.textContent = "Revisa los datos del formulario e intenta de nuevo.";
+      } else {
+        msg.textContent = "No se pudo enviar el mensaje. Intenta de nuevo en unos minutos.";
+      }
+    } catch (e) {
+      msg.textContent = "No se pudo conectar. Revisa tu conexión e intenta de nuevo.";
+    } finally { btn.disabled = false; btn.textContent = "Enviar mensaje"; }
+  });
+})();
+</script>
+</body>
+</html>
