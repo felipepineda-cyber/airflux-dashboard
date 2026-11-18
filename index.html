@@ -774,6 +774,13 @@
   .nav-panel .nav-item.active::before, .nav-panel .sub-item.active::before { display: none; }
   .nav-panel .sub-item { color: #d5f5f0; padding: .45rem .75rem .45rem 2.4rem; border-radius: 12px; }
   .nav-panel .nav-item .chev { color: #9be9de; }
+  .nav-panel .nav-seccion { display: flex; align-items: center; gap: .4rem; padding: .5rem .75rem .3rem; font-size: .68rem; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; color: #9be9de; }
+  .nav-panel .nav-seccion i.ti { font-size: .85rem; }
+  .nav-panel .nav-div { height: 1px; margin: .45rem .6rem; background: rgba(255,255,255,.16); }
+  .nav-panel .nav-txt { display: flex; flex-direction: column; gap: .1rem; line-height: 1.2; text-align: left; min-width: 0; }
+  .nav-panel .nav-txt small { font-size: .72rem; font-weight: 400; color: rgba(232,255,251,.66); }
+  .nav-panel #submenuPuntos { max-height: none; }
   .nav-panel .side-foot { margin: .35rem .2rem 0; padding: .7rem .7rem .2rem; border-top: 1px solid rgba(255,255,255,.18); color: #bfe9e3; font-size: .7rem; }
   .nav-panel .side-foot b { color: #fff !important; }
   @media (max-width: 900px) { .topnav-bar { gap: .8rem; padding: 0 .8rem; } .topnav-bar .brand-txt small { display: none; } .nav-top { padding: 0 .7rem; } }
@@ -830,45 +837,50 @@
         <button type="button" class="nav-top nav-item active" data-view="resumen" title="Resumen" onclick="irA('resumen')"><i class="ti ti-layout-dashboard" aria-hidden="true"></i><span>Resumen</span></button>
         <button type="button" class="nav-top nav-grupo-btn" data-grupo="monitoreo" aria-expanded="false" aria-controls="grupo-monitoreo" aria-haspopup="true" title="Monitoreo" onclick="alternarGrupo('monitoreo')"><i class="ti ti-map-pin" aria-hidden="true"></i><span>Monitoreo</span><i class="ti ti-chevron-down chev-dd" aria-hidden="true"></i></button>
         <button type="button" class="nav-top nav-grupo-btn" data-grupo="analisis" aria-expanded="false" aria-controls="grupo-analisis" aria-haspopup="true" title="Análisis" onclick="alternarGrupo('analisis')"><i class="ti ti-chart-bar" aria-hidden="true"></i><span>Análisis</span><i class="ti ti-chevron-down chev-dd" aria-hidden="true"></i></button>
-        <button type="button" class="nav-top nav-grupo-btn" data-grupo="aplicaciones" aria-expanded="false" aria-controls="grupo-aplicaciones" aria-haspopup="true" title="Aplicaciones" onclick="alternarGrupo('aplicaciones')"><i class="ti ti-apps" aria-hidden="true"></i><span>Aplicaciones</span><i class="ti ti-chevron-down chev-dd" aria-hidden="true"></i></button>
+        <button type="button" class="nav-top nav-grupo-btn" data-grupo="herramientas" aria-expanded="false" aria-controls="grupo-herramientas" aria-haspopup="true" title="Herramientas" onclick="alternarGrupo('herramientas')"><i class="ti ti-tools" aria-hidden="true"></i><span>Herramientas</span><i class="ti ti-chevron-down chev-dd" aria-hidden="true"></i></button>
         <button type="button" class="nav-top nav-grupo-btn" data-grupo="sistema" aria-expanded="false" aria-controls="grupo-sistema" aria-haspopup="true" title="Sistema" onclick="alternarGrupo('sistema')"><i class="ti ti-settings" aria-hidden="true"></i><span>Sistema</span><i class="ti ti-chevron-down chev-dd" aria-hidden="true"></i></button>
       </nav>
     </div>
     <div class="nav-panel" id="navPanel" aria-hidden="true">
+      <!-- Monitoreo: las estaciones se ven de inmediato, sin un clic extra -->
       <div class="nav-grupo" id="grupo-monitoreo" data-grupo="monitoreo" role="group"><div class="nav-grupo-in">
-      <button type="button" class="nav-item" id="menuPuntos" onclick="togglePuntos()">
-        <i class="ti ti-map-pin" aria-hidden="true"></i> Puntos de monitoreo <i class="ti ti-chevron-right chev" aria-hidden="true" style="font-size:.8rem"></i>
-      </button>
-      <div class="submenu" id="submenuPuntos"></div>
+      <div class="nav-seccion" id="menuPuntos"><i class="ti ti-map-pin" aria-hidden="true"></i> Estaciones de monitoreo</div>
+      <div class="submenu open" id="submenuPuntos"></div>
       </div></div>
+      <!-- Análisis: de lo general a lo detallado -->
       <div class="nav-grupo" id="grupo-analisis" data-grupo="analisis" role="group"><div class="nav-grupo-in">
       <button type="button" class="nav-item" data-view="estadisticas" onclick="irA('estadisticas')">
-        <i class="ti ti-chart-bar" aria-hidden="true"></i> Estadísticas generales
+        <i class="ti ti-chart-bar" aria-hidden="true"></i><span class="nav-txt">Estadísticas generales<small>Promedio, mín. y máx. por punto</small></span>
       </button>
       <button type="button" class="nav-item" data-view="variacion" onclick="irA('variacion')">
-        <i class="ti ti-clock" aria-hidden="true"></i> Variación temporal
-      </button>
-      <button type="button" class="nav-item" data-view="descargas" onclick="irA('descargas')">
-        <i class="ti ti-download" aria-hidden="true"></i> Centro de descargas
+        <i class="ti ti-clock" aria-hidden="true"></i><span class="nav-txt">Variación temporal<small>Promedios horarios con IC 95 %</small></span>
       </button>
       <button type="button" class="nav-item" data-view="powerbi" onclick="irA('powerbi')">
-        <i class="ti ti-chart-area" aria-hidden="true"></i> Análisis Power BI
+        <i class="ti ti-chart-area" aria-hidden="true"></i><span class="nav-txt">Análisis Power BI<small>Informe embebido</small></span>
       </button>
       </div></div>
-      <div class="nav-grupo" id="grupo-aplicaciones" data-grupo="aplicaciones" role="group"><div class="nav-grupo-in">
+      <!-- Herramientas: sacar datos y registrar terreno -->
+      <div class="nav-grupo" id="grupo-herramientas" data-grupo="herramientas" role="group"><div class="nav-grupo-in">
+      <button type="button" class="nav-item" data-view="descargas" onclick="irA('descargas')">
+        <i class="ti ti-download" aria-hidden="true"></i><span class="nav-txt">Centro de descargas<small>Datos, estadísticas y gráficos</small></span>
+      </button>
       <button type="button" class="nav-item" onclick="window.open('norma.html', '_blank')">
-        <i class="ti ti-clipboard-data" aria-hidden="true"></i> Norma Background <i class="ti ti-external-link" aria-hidden="true" style="margin-left:auto;font-size:.75rem;opacity:.6"></i>
+        <i class="ti ti-clipboard-data" aria-hidden="true"></i><span class="nav-txt">Norma Background<small>Bitácoras de muestreo · nueva pestaña</small></span><i class="ti ti-external-link" aria-hidden="true" style="margin-left:auto;font-size:.75rem;opacity:.6"></i>
       </button>
       </div></div>
+      <!-- Sistema: administración arriba (con candado), ayuda abajo -->
       <div class="nav-grupo" id="grupo-sistema" data-grupo="sistema" role="group"><div class="nav-grupo-in">
-      <button type="button" class="nav-item" data-view="whatsapp" onclick="irA('whatsapp')">
-        <i class="ti ti-brand-whatsapp" aria-hidden="true"></i> Alertas WhatsApp <i class="ti ti-lock nav-lock" aria-hidden="true"></i>
-      </button>
+      <div class="nav-seccion"><i class="ti ti-lock" aria-hidden="true"></i> Alertas · administradores</div>
       <button type="button" class="nav-item" data-view="alertconf" onclick="irA('alertconf')">
-        <i class="ti ti-settings" aria-hidden="true"></i> Configuración de alerta <i class="ti ti-lock nav-lock" aria-hidden="true"></i>
+        <i class="ti ti-bell-cog" aria-hidden="true"></i><span class="nav-txt">Configuración de alerta<small>Avisos, caídas y resumen</small></span><i class="ti ti-lock nav-lock" aria-hidden="true"></i>
       </button>
+      <button type="button" class="nav-item" data-view="whatsapp" onclick="irA('whatsapp')">
+        <i class="ti ti-brand-whatsapp" aria-hidden="true"></i><span class="nav-txt">Alertas WhatsApp<small>Destinos por WhatsApp y correo</small></span><i class="ti ti-lock nav-lock" aria-hidden="true"></i>
+      </button>
+      <div class="nav-div" role="separator"></div>
+      <div class="nav-seccion"><i class="ti ti-help-circle" aria-hidden="true"></i> Ayuda</div>
       <button type="button" class="nav-item" onclick="abrirIntro()">
-        <i class="ti ti-sparkles" aria-hidden="true"></i> Ver introducción
+        <i class="ti ti-sparkles" aria-hidden="true"></i><span class="nav-txt">Ver introducción<small>Recorrido por SenFePin</small></span>
       </button>
       <button type="button" class="nav-item" id="btnSalirAdmin" onclick="salirAdmin()">
         <i class="ti ti-logout" aria-hidden="true"></i> Cerrar sesión de administrador
@@ -1624,11 +1636,8 @@ function irA(vista, n) {
   pintarVista();
 }
 
-function togglePuntos(forzarAbrir) {
-  const sm = $("submenuPuntos"), btn = $("menuPuntos");
-  const abrir = forzarAbrir === true ? true : !sm.classList.contains("open");
-  sm.classList.toggle("open", abrir);
-  btn.classList.toggle("open", abrir);
+function togglePuntos() {   // la lista de estaciones se muestra siempre dentro de Monitoreo
+  $("submenuPuntos").classList.add("open");
 }
 function abrirSidebar() { /* menú superior: nada que abrir */ }
 function cerrarSidebar() { if (typeof cerrarGrupos === "function") cerrarGrupos(); }
@@ -2814,7 +2823,7 @@ function mostrarAviso(texto) {
 /* ── Menú lateral: contraer con el logo y grupos desplegables (se recuerdan) ── */
 function leerPref(clave, porDefecto) { try { const v = localStorage.getItem(clave); return v === null ? porDefecto : JSON.parse(v); } catch (e) { return porDefecto; } }
 function guardarPref(clave, valor) { try { localStorage.setItem(clave, JSON.stringify(valor)); } catch (e) { /* sin almacenamiento */ } }
-const ORDEN_GRUPOS = ["monitoreo", "analisis", "aplicaciones", "sistema"];
+const ORDEN_GRUPOS = ["monitoreo", "analisis", "herramientas", "sistema"];
 let grupoAbierto = null, observadorPanel = null;
 const esMouse = e => !e || e.pointerType === "mouse";
 function moverPastilla(el) {
@@ -2869,7 +2878,10 @@ function cerrarGrupos(devolverFoco) {
   if (observadorPanel) observadorPanel.disconnect();
   grupoAbierto = null; moverPastilla(triggerActivo());
 }
+let abiertoPorHover = { clave: null, t: 0 };
 function alternarGrupo(clave, forzarAbierto) {
+  // si el grupo se acaba de abrir al pasar el mouse, el clic que sigue no debe cerrarlo
+  if (forzarAbierto === undefined && grupoAbierto === clave && abiertoPorHover.clave === clave && performance.now() - abiertoPorHover.t < 600) return;
   const abrir = forzarAbierto !== undefined ? forzarAbierto : grupoAbierto !== clave;
   abrir ? abrirGrupo(clave) : cerrarGrupos();
 }
@@ -2878,7 +2890,9 @@ function restaurarMenu() {
   nav.addEventListener("pointerover", e => {
     const t = e.target.closest(".nav-top"); if (!t || !esMouse(e)) return;
     moverPastilla(t);
-    if (grupoAbierto && t.dataset.grupo && t.dataset.grupo !== grupoAbierto) abrirGrupo(t.dataset.grupo);   // de botón a botón, sin cerrar
+    if (grupoAbierto && t.dataset.grupo && t.dataset.grupo !== grupoAbierto) {   // de botón a botón, sin cerrar
+      abrirGrupo(t.dataset.grupo); abiertoPorHover = { clave: t.dataset.grupo, t: performance.now() };
+    }
   });
   nav.addEventListener("pointerleave", () => moverPastilla(triggerActivo()));
   document.addEventListener("pointerdown", e => { if (grupoAbierto && !e.target.closest("#sidebar")) cerrarGrupos(); });
