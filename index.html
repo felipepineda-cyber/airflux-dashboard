@@ -37,6 +37,7 @@
   integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="sitio.js" defer></script>
 <!-- jsPDF + autotable: generación del informe PDF semanal en el navegador -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -499,6 +500,29 @@
   .adm-pass button:hover { color: var(--text); }
   .adm-msg { min-height: 1.2rem; font-size: .8rem; color: var(--err); margin: -.1rem 0 .6rem; }
   .adm-acc { display: flex; gap: .6rem; justify-content: flex-end; }
+  .adm-card[hidden] { display: none; }
+  .adm-pie { display: flex; justify-content: space-between; gap: .6rem; margin-top: 1rem; padding-top: .8rem; border-top: 1px solid var(--border); }
+  .adm-link { background: none; border: 0; padding: 0; font: inherit; font-size: .8rem; font-weight: 600; color: var(--accent, #0f766e); cursor: pointer; text-decoration: none; }
+  .adm-link:hover { text-decoration: underline; }
+  #admRecMsg { color: var(--text-2); }
+  /* Aviso de privacidad antes de registrar destinatarios */
+  .aviso-priv { display: flex; gap: .55rem; align-items: flex-start; margin: 0 0 1rem; padding: .7rem .9rem; border-radius: 12px;
+    background: #f0fdfa; border: 1px solid #ccfbf1; color: #115e59; font-size: .82rem; line-height: 1.45; }
+  .aviso-priv i { font-size: 1.05rem; margin-top: .05rem; }
+  .aviso-priv a { color: #0f766e; font-weight: 600; }
+  /* Pie de página y espacio de patrocinio */
+  .pie-sitio { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .6rem 1.2rem; margin: 2rem 24px 0; padding: 1.1rem 0 1.4rem;
+    border-top: 1px solid var(--border); font-size: .82rem; color: var(--text-2); }
+  .pie-sitio nav { display: flex; flex-wrap: wrap; gap: .4rem 1rem; }
+  .pie-sitio a { color: var(--text-2); font-weight: 600; text-decoration: none; }
+  .pie-sitio a:hover { color: #0f766e; text-decoration: underline; }
+  .patrocinio-slot { margin: 1.6rem 24px 0; }
+  @media (max-width: 700px) { .pie-sitio, .patrocinio-slot { margin-left: 16px; margin-right: 16px; } .pie-sitio { flex-direction: column; align-items: flex-start; } }
+  .patrocinio { display: flex; align-items: center; gap: .9rem; padding: .8rem 1rem; border-radius: 14px; border: 1px dashed #99f6e4; background: #fbfefd; color: var(--text); text-decoration: none; }
+  .patrocinio img { width: 56px; height: 56px; object-fit: contain; border-radius: 10px; }
+  .patrocinio-etq { font-size: .66rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #0f766e; background: #ccfbf1; padding: .2rem .5rem; border-radius: 999px; }
+  .patrocinio-txt { font-size: .86rem; color: var(--text-2); }
+  .ref-orient { color: inherit; text-decoration: underline dotted; text-underline-offset: 2px; }
   .adm-acc .btn { min-width: 96px; justify-content: center; }
   .adm-acc .btn[disabled] { opacity: .6; cursor: wait; }
   @keyframes admFondo { from { opacity: 0; } to { opacity: 1; } }
@@ -914,6 +938,25 @@
         <button type="button" class="btn ghost" onclick="cerrarLoginAdmin()">Cancelar</button>
         <button type="submit" class="btn" id="admBtn">Entrar</button>
       </div>
+      <div class="adm-pie">
+        <button type="button" class="adm-link" onclick="modoRecuperar(true)">¿Olvidaste tu contraseña?</button>
+        <a class="adm-link" href="privacidad.html#administradores" target="_blank" rel="noopener">Privacidad</a>
+      </div>
+    </form>
+    <!-- Recuperación: misma respuesta exista o no la cuenta -->
+    <form class="adm-card" id="admRecForm" role="dialog" aria-modal="true" aria-labelledby="admRecTitulo" onsubmit="pedirRecuperacion(event)" hidden>
+      <div class="adm-icono"><i class="ti ti-key" aria-hidden="true"></i></div>
+      <h2 id="admRecTitulo">Recuperar acceso</h2>
+      <p>Escribe el correo de tu cuenta de administrador. Si existe, te enviaremos un enlace para crear una contraseña nueva. El enlace sirve una sola vez y vence pronto.</p>
+      <label>Correo
+        <input id="admRecEmail" type="email" autocomplete="username" required inputmode="email" autocapitalize="off" spellcheck="false">
+      </label>
+      <div class="adm-msg" id="admRecMsg" role="status"></div>
+      <div class="adm-acc">
+        <button type="button" class="btn ghost" onclick="modoRecuperar(false)">Volver</button>
+        <button type="submit" class="btn" id="admRecBtn">Enviar instrucciones</button>
+      </div>
+      <div class="adm-pie"><a class="adm-link" href="privacidad.html#administradores" target="_blank" rel="noopener">Privacidad</a></div>
     </form>
   </div>
 
@@ -929,7 +972,7 @@
       <div class="top-right">
         <span id="spinner"><span class="spin"></span> Actualizando</span>
         <label style="font-size:.8rem;color:var(--text-2);font-weight:600">Período
-          <select id="rango" onchange="refrescar()">
+          <select id="rango" onchange="refrescar(); window.senfepinMedir && senfepinMedir('cambiar_periodo', { periodo: this.value })">
             <option value="24">24 h</option>
             <option value="48">48 h</option>
             <option value="168" selected>7 días</option>
@@ -1363,6 +1406,7 @@
             <span class="hint" id="rsNube">Config compartida con el vigilante 24/7</span>
           </div>
           <div class="panel-body">
+            <p class="aviso-priv"><i class="ti ti-shield-check" aria-hidden="true"></i><span>Antes de agregar a una persona, asegúrate de que aceptó recibir estos avisos. Su número, clave de CallMeBot y correo se guardan en la base de datos de SenFePin (solo administradores) y se envían a los servicios de mensajería. <a href="privacidad.html#destinatarios" target="_blank" rel="noopener">Cómo tratamos estos datos</a>.</span></p>
             <div class="switch-row">
               <label class="switch">
                 <input type="checkbox" id="rsActivo" onchange="guardarResumen()">
@@ -1421,6 +1465,7 @@
             <span class="hint" id="waNube"></span>
           </div>
           <div class="panel-body">
+            <p class="aviso-priv"><i class="ti ti-shield-check" aria-hidden="true"></i><span>Antes de agregar a una persona, asegúrate de que aceptó recibir estos avisos. Su número, clave de CallMeBot y correo se guardan en la base de datos de SenFePin (solo administradores) y se envían a los servicios de mensajería. <a href="privacidad.html#destinatarios" target="_blank" rel="noopener">Cómo tratamos estos datos</a>.</span></p>
             <div class="switch-row">
               <label class="switch">
                 <input type="checkbox" id="waActivo" onchange="guardarWA()">
@@ -1496,6 +1541,15 @@
       </div>
 
     </div>
+    <div id="patrocinio" class="patrocinio-slot" hidden role="complementary" aria-label="Patrocinio"></div>
+    <footer class="pie-sitio">
+      <span>SenFePin · Calidad del aire en Chile</span>
+      <nav aria-label="Información del sitio">
+        <a href="uso-datos.html">Uso de los datos</a>
+        <a href="privacidad.html">Privacidad</a>
+        <a href="privacidad.html#medicion">Medición de visitas</a>
+      </nav>
+    </footer>
   </main>
 </div>
 
@@ -1612,6 +1666,11 @@ const TITULOS = { resumen: "Resumen", estadisticas: "Estadísticas generales", v
 
 function irA(vista, n) {
   if (VISTAS_ADMIN.includes(vista) && !adminSesion) { abrirLoginAdmin(vista); return; }
+  // medición agregada: solo vistas públicas, nunca las de administración
+  if (window.senfepinMedir) {
+    if (vista === "punto") senfepinMedir("ver_estacion", { estacion: n });
+    else if (!VISTAS_ADMIN.includes(vista)) senfepinMedir("abrir_vista", { vista });
+  }
   vistaActual = vista;
   if (vista === "punto") puntoActual = n;
   document.querySelectorAll(".view").forEach(v => v.classList.remove("visible"));
@@ -2092,8 +2151,11 @@ async function construirResumenSemanal(ini, fin) {
    (QuickChart + pdf-lib + SMTP). Aquí solo se invoca; si la función no está
    desplegada, se cae al envío de texto simple desde el navegador. */
 async function invocarResumenEdge(semanas) {
+  // el envío manual exige la sesión del administrador (la función lo verifica en el servidor)
+  const token = await tokenAdmin();
+  if (!token) throw new Error("Inicia sesión como administrador.");
   const r = await fetch(`${SUPA_URL}/functions/v1/resumen?forzar=1&semanas=${semanas}`, {
-    headers: { Authorization: `Bearer ${SUPA_KEY}`, apikey: SUPA_KEY },
+    headers: { Authorization: `Bearer ${token}`, apikey: SUPA_KEY },
   });
   if (!r.ok) throw new Error("HTTP " + r.status);
   return await r.json();
@@ -2537,15 +2599,15 @@ async function enriquecerDesdeMeta() {
         }
       } catch { /* geocoding caido: las coords igual se aplican */ }
 
-      // 4) Persistir en Supabase (best-effort): el cambio queda para todos
-      fetch(SUPA_URL + "/rest/v1/estaciones?sitio_n=eq." + s.n, {
-        method: "PATCH",
-        headers: {
-          apikey: SUPA_KEY,
-          Authorization: "Bearer " + SUPA_KEY,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(cuerpo),
+      // 4) Persistir en Supabase solo con sesión de administrador (el público ya no puede
+      //    editar estaciones; para visitantes el cambio queda solo en este navegador)
+      tokenAdmin().then(token => {
+        if (!token) return;
+        return fetch(SUPA_URL + "/rest/v1/estaciones?sitio_n=eq." + s.n, {
+          method: "PATCH",
+          headers: { apikey: SUPA_KEY, Authorization: "Bearer " + token, "Content-Type": "application/json" },
+          body: JSON.stringify(cuerpo),
+        });
       }).catch(() => {});
     } catch { /* red caida: se ignora */ }
   }));
@@ -2587,9 +2649,11 @@ async function tsDiagnostico(canal, key) {
 }
 async function aplicarReemplazo(n, nuevoId) {
   const s = SITIOS.find(x => x.n === n);
+  const token = await tokenAdmin();
+  if (!token) throw new Error("Inicia sesión como administrador para registrar el reemplazo.");
   const r = await fetch(`${SUPA_URL}/rest/v1/estaciones?sitio_n=eq.${n}`, {
     method: "PATCH",
-    headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`,
+    headers: { apikey: SUPA_KEY, Authorization: `Bearer ${token}`,
       "Content-Type": "application/json", Prefer: "return=minimal" },
     body: JSON.stringify({
       sensor_anterior: s?.sensor_id ?? null,
@@ -3003,6 +3067,8 @@ function pintarKPIs() {
   const pct25 = Number.isFinite(s25.prom) ? Math.min(100, Math.round(s25.prom / 50 * 100)) : 0;
   const pct10 = Number.isFinite(s10.prom) ? Math.min(100, Math.round(s10.prom / 130 * 100)) : 0;
   const colBar = p => p > 90 ? "#ef4444" : p > 70 ? "#f97316" : p > 50 ? "#eab308" : "#22c55e";
+  // período elegido, en palabras (el % compara ese promedio con una norma de 24 h)
+  const selR = $("rango"), periodoTxt = selR ? selR.options[selR.selectedIndex].text.replace(/^📚\s*/, "").toLowerCase() : "del período";
   $("kpis").innerHTML = `
     <div class="kpi c-ok ${caidos ? "" : "k-ok"}">
       <span class="k-ico"><i class="ti ti-broadcast"></i></span>
@@ -3020,17 +3086,17 @@ function pintarKPIs() {
       <span class="k-ico"><i class="ti ti-grain"></i></span>
       <div class="k-label">MP2,5 promedio red</div>
       <div class="k-val">${f1(s25.prom)}</div>
-      <div class="k-sub">µg/m³ · norma 24h = 50</div>
+      <div class="k-sub">µg/m³ · promedio ${periodoTxt}</div>
       <div class="norm-bar-wrap"><div class="norm-bar" style="width:${pct25}%;background:${colBar(pct25)}"></div></div>
-      <span class="norm-pct">${pct25}% de la norma</span>
+      <span class="norm-pct">${pct25}% de la norma 24 h · <a href="uso-datos.html#norma" class="ref-orient" title="Promedio de ${periodoTxt} y de toda la red comparado con una norma de 24 h. No es una evaluación de cumplimiento.">referencia orientativa</a></span>
     </div>
     <div class="kpi c-mp10 ${pct10 > 80 ? "k-exc-warn" : ""}">
       <span class="k-ico"><i class="ti ti-cloud-fog"></i></span>
       <div class="k-label">MP10 promedio red</div>
       <div class="k-val">${f1(s10.prom)}</div>
-      <div class="k-sub">µg/m³ · norma 24h = 130</div>
+      <div class="k-sub">µg/m³ · promedio ${periodoTxt}</div>
       <div class="norm-bar-wrap"><div class="norm-bar" style="width:${pct10}%;background:${colBar(pct10)}"></div></div>
-      <span class="norm-pct">${pct10}% de la norma</span>
+      <span class="norm-pct">${pct10}% de la norma 24 h · <a href="uso-datos.html#norma" class="ref-orient" title="Promedio de ${periodoTxt} y de toda la red comparado con una norma de 24 h. No es una evaluación de cumplimiento.">referencia orientativa</a></span>
     </div>`;
   animarKPIs();   // números desde su valor anterior
   animarBarras();
@@ -3133,7 +3199,7 @@ function popupHTML(s) {
 function initMapa() {
   mapa = L.map("mapa").setView([-33.0, -71.0], 4);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 18, attribution: "&copy; OpenStreetMap",
+    maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">colaboradores de OpenStreetMap</a>',
   }).addTo(mapa);
   for (const s of SITIOS) {
     marcadores[s.n] = L.marker([s.lat, s.lon], { icon: iconoEstado("off") })
@@ -3362,6 +3428,7 @@ function dibujarDisponibilidad() {
 
 /* ================== CSV ORDENADO ================== */
 function descargarCSV(modo) {
+  if (window.senfepinMedir) senfepinMedir("descargar_csv", { tipo: modo === "all" ? "todos" : "punto" });
   const lista = modo === "all" ? SITIOS : SITIOS.filter(s => s.n === puntoActual);
   const cab = ["Fecha/Hora", "Temperatura (°C)", "Presión (mmHg)", "Humedad (%)", "MP10 (µg/m³)", "MP2.5 (µg/m³)"];
   if (modo === "all") cab.unshift("Sitio");
@@ -3388,6 +3455,12 @@ function descargarCSV(modo) {
 
 /* ================== DESCARGAS GENÉRICAS ================== */
 function bajarArchivo(contenido, nombreArchivo, tipo) {
+  // tipo de CSV a partir del nombre del archivo (valores fijos, sin datos del usuario)
+  if (window.senfepinMedir && /\.csv$/.test(nombreArchivo)) {
+    const m = /^airflux_(comparacion|disponibilidad|datos|estadisticas)_/.exec(nombreArchivo);
+    const tipoCsv = m ? ({ comparacion: "comparacion", disponibilidad: "disponibilidad", datos: "centro_datos", estadisticas: "centro_estadisticas" })[m[1]] : "punto";
+    senfepinMedir("descargar_csv", { tipo: tipoCsv });
+  }
   const blob = new Blob([contenido], { type: tipo });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -3849,12 +3922,21 @@ async function esAdminConfirmado() {
   try { const { data, error } = await supaCfg.rpc("es_admin"); return !error && data === true; }
   catch { return false; }
 }
+// Token de acceso vigente del administrador (o null si no hay sesión de administrador)
+async function tokenAdmin() {
+  if (!supaCfg || !adminSesion) return null;
+  try { const { data } = await supaCfg.auth.getSession(); return data?.session?.access_token || null; }
+  catch { return null; }
+}
 function pintarAdminUI() { document.body.classList.toggle("es-admin", !!adminSesion); }
 function sincronizarPrivado() { sincronizarConfigResumen(); sincronizarDestinos(); }
 function limpiarDatosPrivados() {
   ["airflux_wa", "airflux_resumen", "airflux_wa_envmap"].forEach(k => { try { localStorage.removeItem(k); } catch {} });
 }
 async function iniciarAdmin() {
+  // #acceso (desde restablecer.html): abre el formulario de inicio de sesión
+  if (location.hash === "#acceso") { history.replaceState(null, "", location.pathname); setTimeout(() => abrirLoginAdmin(), 300); }
+  window.addEventListener("load", () => { if (window.senfepinPintarPatrocinio) senfepinPintarPatrocinio($("patrocinio")); });
   if (!supaCfg) return;
   try {
     const { data } = await supaCfg.auth.getSession();
@@ -3871,6 +3953,7 @@ async function iniciarAdmin() {
   });
 }
 function abrirLoginAdmin(vista) {
+  modoRecuperar(false, true);
   vistaPendiente = vista || null;
   admFoco = document.activeElement;
   $("admMsg").textContent = ""; $("admPass").value = "";
@@ -3879,6 +3962,7 @@ function abrirLoginAdmin(vista) {
 }
 function cerrarLoginAdmin() {
   $("admOverlay").classList.remove("open");
+  modoRecuperar(false, true);
   $("admPass").value = ""; vistaPendiente = null;
   if (admFoco && admFoco.focus) { try { admFoco.focus(); } catch {} }
 }
@@ -3887,15 +3971,47 @@ function verPassAdmin() {
   i.type = ver ? "text" : "password";
   $("admOjo").className = "ti " + (ver ? "ti-eye-off" : "ti-eye");
 }
+/* Recuperación de contraseña: Supabase Auth envía el enlace al correo ya registrado.
+   La respuesta es siempre la misma (no revela si la cuenta existe). */
+const RESET_ESPERA_MS = 60000;   // además del límite propio de Supabase
+function modoRecuperar(activar, sinFoco) {
+  $("admForm").hidden = !!activar; $("admRecForm").hidden = !activar;
+  $("admRecMsg").textContent = ""; $("admMsg").textContent = "";
+  if (activar) $("admRecEmail").value = $("admEmail").value.trim();
+  if (!sinFoco) setTimeout(() => (activar ? $("admRecEmail") : $("admEmail")).focus(), 30);
+}
+async function pedirRecuperacion(ev) {
+  ev.preventDefault();
+  const msg = $("admRecMsg"), btn = $("admRecBtn"), email = $("admRecEmail").value.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { msg.textContent = "Escribe un correo válido."; return; }
+  let ultimo = 0; try { ultimo = Number(localStorage.getItem("senfepin_reset_ultimo")) || 0; } catch {}
+  const falta = RESET_ESPERA_MS - (Date.now() - ultimo);
+  if (falta > 0) { msg.textContent = `Espera ${Math.ceil(falta / 1000)} s antes de pedir otro correo.`; return; }
+  btn.disabled = true; btn.textContent = "Enviando…";
+  // En producción el enlace siempre apunta al dominio autorizado; en local, a este mismo servidor
+  const base = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? location.origin : "https://senfepin.vercel.app";
+  try { if (supaCfg) await supaCfg.auth.resetPasswordForEmail(email, { redirectTo: base + "/restablecer.html" }); }
+  catch { /* misma respuesta aunque falle */ }
+  try { localStorage.setItem("senfepin_reset_ultimo", String(Date.now())); } catch {}
+  msg.textContent = "Si existe una cuenta asociada, recibirás instrucciones para recuperar el acceso. Revisa también la carpeta de spam.";
+  btn.disabled = false; btn.textContent = "Enviar instrucciones";
+}
+// Límite local de intentos de inicio de sesión (Supabase aplica además su propio límite por IP)
+let admFallos = 0, admBloqueoHasta = 0;
 async function entrarAdmin(ev) {
   ev.preventDefault();
   if (!supaCfg) { $("admMsg").textContent = "No hay conexión con el servidor. Intenta de nuevo."; return; }
   const btn = $("admBtn"), msg = $("admMsg");
+  if (Date.now() < admBloqueoHasta) {
+    msg.textContent = `Demasiados intentos. Espera ${Math.ceil((admBloqueoHasta - Date.now()) / 1000)} s.`; return;
+  }
   btn.disabled = true; btn.textContent = "Entrando…"; msg.textContent = "";
   try {
     const { data, error } = await supaCfg.auth.signInWithPassword({
       email: $("admEmail").value.trim(), password: $("admPass").value });
     if (error) {
+      admFallos++;
+      if (admFallos >= 5) { admBloqueoHasta = Date.now() + 30000 * (admFallos - 4); }   // espera creciente
       msg.textContent = error.status === 429
         ? "Demasiados intentos. Espera unos minutos y vuelve a probar."
         : "Correo o contraseña incorrectos.";
@@ -3906,6 +4022,7 @@ async function entrarAdmin(ev) {
       msg.textContent = "Esta cuenta no tiene permisos de administrador.";
       return;
     }
+    admFallos = 0; admBloqueoHasta = 0;
     adminSesion = data.session; pintarAdminUI(); sincronizarPrivado();
     const destino = vistaPendiente;
     $("admOverlay").classList.remove("open"); vistaPendiente = null;
@@ -3927,7 +4044,7 @@ document.addEventListener("keydown", ev => {
   if (!ov || !ov.classList.contains("open")) return;
   if (ev.key === "Escape") { cerrarLoginAdmin(); return; }
   if (ev.key === "Tab") {   // el foco no sale de la ventana
-    const els = [...ov.querySelectorAll("input, button")].filter(e => !e.disabled);
+    const els = [...ov.querySelectorAll("input, button, a[href]")].filter(e => !e.disabled && e.offsetParent !== null);
     const a = els[0], z = els[els.length - 1];
     if (ev.shiftKey && document.activeElement === a) { ev.preventDefault(); z.focus(); }
     else if (!ev.shiftKey && document.activeElement === z) { ev.preventDefault(); a.focus(); }

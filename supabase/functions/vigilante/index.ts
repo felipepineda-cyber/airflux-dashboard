@@ -100,14 +100,14 @@ async function enviarCorreos(dest: string[], asunto: string, texto: string, remi
       await client.send({ from: remitente, to: dest, subject: asunto, content: texto });
       await client.close();
       return;
-    } catch (e) { console.error("SMTP falló, usando FormSubmit:", e); }
+    } catch (e) { console.error("SMTP falló, usando FormSubmit:", e instanceof Error ? e.message.slice(0, 200) : "desconocido"); }
   }
   await Promise.allSettled(dest.map(m =>
     fetch(`https://formsubmit.co/ajax/${encodeURIComponent(m)}`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Accept": "application/json" },
       body: JSON.stringify({ _subject: asunto, mensaje: texto }),
-    }).catch(console.error)));
+    }).catch(() => console.error("FormSubmit no respondió"))));   // sin la URL: lleva el correo
 }
 
 async function enviarAvisos(msg: string, dst: Destinos) {
@@ -115,7 +115,7 @@ async function enviarAvisos(msg: string, dst: Destinos) {
   for (const d of dst.whatsapps) {
     tareas.push(fetch(
       `https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(d.tel)}&text=${encodeURIComponent(msg)}&apikey=${encodeURIComponent(d.key)}`,
-    ).catch(console.error));
+    ).catch(() => console.error("CallMeBot no respondió")));   // sin la URL: lleva teléfono y clave
   }
   let n = tareas.length;
   if (dst.mailActivo && dst.correos.length) {
@@ -149,7 +149,12 @@ function detectarIdSensor(channel: Record<string, unknown>, feeds: Record<string
   return (v != null && v !== "") ? String(Number(v)) : null;
 }
 
-Deno.serve(async () => {
+Deno.serve(async (req) => {
+  // Si existe el secreto CRON_SECRET, solo la tarea programada (que lo envía) puede ejecutar el vigilante
+  const cronSecreto = Deno.env.get("CRON_SECRET");
+  if (cronSecreto && req.headers.get("x-cron-secret") !== cronSecreto) {
+    return new Response(JSON.stringify({ ok: false, error: "No autorizado." }), { status: 401, headers: { "Content-Type": "application/json" } });
+  }
   // Clave de servidor: fallback al secreto SERVICE_KEY (sb_secret_...) en
   // proyectos con el sistema de claves nuevo de Supabase.
   const claveServidor = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SERVICE_KEY") || "";

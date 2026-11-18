@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Restablecer contraseña · SenFePin</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="paginas.css">
+<!-- Sin analítica ni publicidad en esta página: el enlace trae un token de un solo uso -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+</head>
+<body>
+<header class="cab">
+  <img src="/icon-192.png" alt="" width="36" height="36">
+  <div><b>SenFePin</b><small>Acceso de administrador</small></div>
+  <a class="volver" href="index.html">← Volver al visor</a>
+</header>
+<main>
+  <h1>Restablecer contraseña</h1>
+
+  <div class="tarjeta" id="estadoCargando"><p>Verificando el enlace…</p></div>
+
+  <div class="tarjeta" id="estadoInvalido" hidden>
+    <p><b>Este enlace venció o ya se usó.</b> Por seguridad, cada enlace sirve una sola vez y por poco tiempo.</p>
+    <p>Pide uno nuevo desde el visor: Sistema → cualquier opción de administrador → «¿Olvidaste tu contraseña?».</p>
+    <a class="btn" href="index.html#acceso">Ir al acceso de administrador</a>
+  </div>
+
+  <form class="tarjeta" id="formNueva" hidden novalidate>
+    <p>Escribe tu nueva contraseña. Debe tener al menos 10 caracteres; conviene usar una frase larga que no uses en otros sitios.</p>
+    <label for="pass1">Nueva contraseña</label>
+    <input id="pass1" type="password" autocomplete="new-password" minlength="10" required>
+    <label for="pass2">Repite la nueva contraseña</label>
+    <input id="pass2" type="password" autocomplete="new-password" minlength="10" required>
+    <label class="interruptor" style="font-weight:500;margin-top:.6rem"><input type="checkbox" id="verPass"> Mostrar contraseñas</label>
+    <div class="msg" id="msgNueva" role="alert"></div>
+    <button class="btn" id="btnGuardar" type="submit">Guardar nueva contraseña</button>
+  </form>
+
+  <div class="tarjeta" id="estadoListo" hidden>
+    <p class="msg ok"><b>Listo: tu contraseña se cambió.</b> Cerramos todas las sesiones abiertas de esta cuenta. Ahora inicia sesión con la contraseña nueva.</p>
+    <a class="btn" href="index.html#acceso">Iniciar sesión</a>
+  </div>
+</main>
+<footer class="pie"><a href="index.html">Visor</a> · <a href="privacidad.html#administradores">Privacidad</a></footer>
+
+<script>
+(function () {
+  "use strict";
+  const SUPA_URL = "https://stuxspraehjbxyiujsnu.supabase.co";
+  const SUPA_KEY = "sb_publishable_Eemqq4D54Y_Bg3XAm25psg_DBJ2QG0I";
+  const $ = id => document.getElementById(id);
+  const mostrar = id => ["estadoCargando", "estadoInvalido", "formNueva", "estadoListo"].forEach(x => $(x).hidden = x !== id);
+
+  // Lee lo que trae el enlace antes de borrarlo de la barra de direcciones
+  const hash = new URLSearchParams(location.hash.slice(1));
+  const traeError = hash.has("error") || hash.has("error_code") || new URLSearchParams(location.search).has("error");
+  const esRecuperacion = hash.get("type") === "recovery";
+
+  let supa = null;
+  try {
+    // persistSession:false → la sesión de recuperación vive solo en esta pestaña
+    supa = window.supabase.createClient(SUPA_URL, SUPA_KEY, { auth: { persistSession: false, detectSessionInUrl: true, autoRefreshToken: false } });
+  } catch (e) { mostrar("estadoInvalido"); return; }
+
+  async function iniciar() {
+    if (traeError || !esRecuperacion) { limpiarUrl(); mostrar("estadoInvalido"); return; }
+    // supabase-js procesa el token del enlace al crearse el cliente; esperamos la sesión
+    let sesion = null;
+    for (let i = 0; i < 20 && !sesion; i++) {
+      const { data } = await supa.auth.getSession();
+      sesion = data && data.session;
+      if (!sesion) await new Promise(r => setTimeout(r, 150));
+    }
+    limpiarUrl();
+    mostrar(sesion ? "formNueva" : "estadoInvalido");
+    if (sesion) $("pass1").focus();
+  }
+  // El token no debe quedar en el historial, en marcadores ni en el Referer
+  function limpiarUrl() { history.replaceState(null, "", location.pathname); }
+
+  $("verPass").addEventListener("change", e => { $("pass1").type = $("pass2").type = e.target.checked ? "text" : "password"; });
+
+  $("formNueva").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    const p1 = $("pass1").value, p2 = $("pass2").value, msg = $("msgNueva"), btn = $("btnGuardar");
+    msg.className = "msg error";
+    if (p1.length < 10) { msg.textContent = "La contraseña debe tener al menos 10 caracteres."; return; }
+    if (p1 !== p2) { msg.textContent = "Las contraseñas no coinciden."; return; }
+    btn.disabled = true; btn.textContent = "Guardando…"; msg.textContent = "";
+    try {
+      const { error } = await supa.auth.updateUser({ password: p1 });
+      if (error) {
+        msg.textContent = /different|same/i.test(error.message) ? "La nueva contraseña debe ser distinta de la anterior."
+          : /weak|short|characters|pwned|leaked/i.test(error.message) ? "Esa contraseña es demasiado débil o aparece en filtraciones conocidas. Elige otra."
+          : /expired|invalid|session/i.test(error.message) ? "El enlace venció. Pide uno nuevo."
+          : "No se pudo cambiar la contraseña. Intenta de nuevo.";
+        return;
+      }
+      // Revoca TODAS las sesiones de la cuenta (incluida esta) en el servidor
+      try { await supa.auth.signOut({ scope: "global" }); } catch (e) { /* la contraseña ya cambió */ }
+      $("pass1").value = $("pass2").value = "";
+      mostrar("estadoListo");
+    } catch (e) {
+      msg.textContent = "No se pudo conectar. Revisa tu conexión e intenta de nuevo.";
+    } finally { btn.disabled = false; btn.textContent = "Guardar nueva contraseña"; }
+  });
+
+  iniciar();
+})();
+</script>
+</body>
+</html>

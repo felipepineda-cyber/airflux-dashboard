@@ -399,17 +399,31 @@ async function enviarConAdjuntos(remitente: string, pass: string, dest: string[]
 // CORS: necesario para que la página (otro dominio) pueda invocar esta función
 const CORS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
-const json = (o: unknown) => Response.json(o, { headers: CORS });
+const json = (o: unknown, status = 200) => Response.json(o, { status, headers: CORS });
+
+/* ¿La solicitud trae la sesión de un administrador? (token de Supabase Auth + tabla admins).
+   Se exige para ?forzar=1, que envía correos fuera del horario programado. */
+async function esAdminDeSolicitud(req: Request, supabase: ReturnType<typeof createClient>): Promise<boolean> {
+  const token = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "").trim();
+  if (token.split(".").length !== 3) return false;           // no es un JWT de usuario
+  const { data, error } = await supabase.auth.getUser(token);
+  const email = data?.user?.email;
+  if (error || !email) return false;
+  const seguro = email.replace(/[\\%_]/g, (c) => "\\" + c);   // ilike sin comodines
+  const { data: fila } = await supabase.from("admins").select("email").ilike("email", seguro).maybeSingle();
+  return !!fila;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   try {
     return await manejar(req);
   } catch (e) {
-    console.error("Error no controlado:", e);
-    return json({ ok: false, error: String(e) });
+    // el detalle queda solo en los registros de Supabase
+    console.error("Error no controlado:", e instanceof Error ? e.message : "desconocido");
+    return json({ ok: false, error: "Error interno al generar el resumen." }, 500);
   }
 });
 
@@ -438,6 +452,15 @@ async function manejar(req: Request): Promise<Response> {
 
   const url = new URL(req.url);
   const forzar = url.searchParams.get("forzar") === "1";
+  // Envío manual: solo administradores con sesión iniciada
+  if (forzar && !(await esAdminDeSolicitud(req, supabase))) {
+    return json({ ok: false, error: "Solo un administrador con sesión iniciada puede enviar el resumen ahora." }, 401);
+  }
+  // Envío programado: si existe CRON_SECRET, la tarea programada debe enviarlo
+  const cronSecreto = Deno.env.get("CRON_SECRET");
+  if (!forzar && cronSecreto && req.headers.get("x-cron-secret") !== cronSecreto) {
+    return json({ ok: false, error: "No autorizado." }, 401);
+  }
   const semanas = Math.min(2, Math.max(1, Number(url.searchParams.get("semanas") || "1")));
 
   const { data: cfg } = await supabase.from("config_resumen").select("*").eq("id", 1).maybeSingle();
@@ -488,7 +511,7 @@ async function manejar(req: Request): Promise<Response> {
       if (!forzar) await supabase.from("config_resumen").update({ last_sent: new Date().toISOString() }).eq("id", 1);
       return json({ ok: true, enviado: true, via: "resend-pdf", correos: correos.length, adjuntos: adjuntos.length });
     } catch (e) {
-      console.error("Resend falló:", e);
+      console.error("Resend falló:", e instanceof Error ? e.message.slice(0, 200) : "desconocido");
       ultimoError = "Resend: " + String(e);
     }
   }
@@ -499,7 +522,7 @@ async function manejar(req: Request): Promise<Response> {
       if (!forzar) await supabase.from("config_resumen").update({ last_sent: new Date().toISOString() }).eq("id", 1);
       return json({ ok: true, enviado: true, via: "smtp-pdf", correos: correos.length, adjuntos: adjuntos.length });
     } catch (e) {
-      console.error("SMTP con adjuntos falló:", e);
+      console.error("SMTP con adjuntos falló:", e instanceof Error ? e.message.slice(0, 200) : "desconocido");
       ultimoError += (ultimoError ? " | " : "") + "SMTP: " + String(e);
     }
   }
@@ -512,13 +535,13 @@ async function manejar(req: Request): Promise<Response> {
         _subject: asunto,
         mensaje: cuerpo + "\n\nNOTA: para recibir el PDF adjunto, configura el correo remitente en la página y el secreto GMAIL_APP_PASSWORD en Supabase.",
       }),
-    }).catch(console.error)));
+    }).catch(() => console.error("FormSubmit no respondió"))));   // sin la URL: lleva el correo
   if (!forzar) await supabase.from("config_resumen").update({ last_sent: new Date().toISOString() }).eq("id", 1);
   return json({
     ok: true, enviado: true, via: "formsubmit-texto", correos: correos.length,
     resend_configurado: !!resendKey,
-    remitente_configurado: remitente || "(vacío en config_destinos)",
+    remitente_configurado: !!remitente,
     gmail_pass_configurado: !!pass,
-    detalle: ultimoError || (resendKey ? "sin error registrado" : "RESEND_API_KEY no encontrada por la función"),
+    detalle: ultimoError ? "falló el envío con PDF; revisa los registros de la función" : (resendKey ? "sin error registrado" : "RESEND_API_KEY no encontrada por la función"),
   });
 }

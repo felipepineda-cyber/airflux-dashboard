@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Privacidad · SenFePin</title>
+<meta name="description" content="Política de privacidad de SenFePin: qué datos se tratan, para qué, con qué proveedores y cómo ejercer tus derechos.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="paginas.css">
+<script src="sitio.js" defer></script>
+</head>
+<body>
+<header class="cab">
+  <img src="/icon-192.png" alt="" width="36" height="36">
+  <div><b>SenFePin</b><small>Calidad del aire en Chile</small></div>
+  <a class="volver" href="index.html">← Volver al visor</a>
+</header>
+
+<main>
+  <p class="meta">Versión 1.0 (borrador) · 18 de noviembre de 2026</p>
+  <h1>Política de privacidad</h1>
+  <div class="borrador" id="avisoBorrador" role="note">
+    <b>Borrador en revisión.</b> Hay datos marcados en amarillo que el responsable todavía debe confirmar. Esta política no debe considerarse definitiva hasta completarlos.
+  </div>
+  <p>Esta política explica qué datos personales trata SenFePin, para qué, con qué proveedores, por cuánto tiempo y cómo puedes ejercer tus derechos. Está escrita conforme a la Ley N° 19.628 sobre protección de la vida privada y su reforma por la Ley N° 21.719, que entra en vigencia el 1 de diciembre de 2026.</p>
+
+  <ul class="indice">
+    <li><a href="#responsable">Responsable</a></li>
+    <li><a href="#visitantes">Visitantes</a></li>
+    <li><a href="#administradores">Administradores</a></li>
+    <li><a href="#destinatarios">Destinatarios de alertas</a></li>
+    <li><a href="#norma">Norma Background</a></li>
+    <li><a href="#proveedores">Proveedores</a></li>
+    <li><a href="#almacenamiento">Almacenamiento en tu navegador</a></li>
+    <li><a href="#medicion">Medición de visitas</a></li>
+    <li><a href="#derechos">Tus derechos</a></li>
+  </ul>
+
+  <h2 id="responsable">1. Quién es el responsable</h2>
+  <div class="tarjeta">
+    <p><b>Responsable del tratamiento:</b> <mark class="por-confirmar">Nombre o razón social y RUT del responsable de SenFePin</mark></p>
+    <p><b>Canal para consultas y derechos:</b> <mark class="por-confirmar">Correo de contacto para privacidad</mark></p>
+    <p>SenFePin es un visor público de calidad del aire que muestra mediciones de sensores de material particulado instalados en distintas localidades de Chile.</p>
+  </div>
+
+  <h2 id="visitantes">2. Si solo visitas el sitio</h2>
+  <p>No necesitas crear una cuenta ni entregar datos para usar el visor. SenFePin <b>no usa cookies</b>.</p>
+  <ul>
+    <li><b>Datos técnicos de conexión:</b> al cargar la página, tu navegador se conecta al servidor del sitio y a los proveedores de la sección <a href="#proveedores">Proveedores</a> (mapas, gráficos, tipografías y datos de los sensores). Esos servicios reciben tu dirección IP y la información estándar del navegador para entregarte el contenido. SenFePin no usa esa información para identificarte.</li>
+    <li><b>Almacenamiento en tu navegador:</b> el visor guarda copias de los datos de los sensores y algunas preferencias, como se detalla en <a href="#almacenamiento">esta sección</a>. Esa información no sale de tu dispositivo.</li>
+    <li><b>Medición de visitas:</b> solo si está activada y no la rechazaste. Se explica en <a href="#medicion">esta sección</a>.</li>
+  </ul>
+
+  <h2 id="administradores">3. Si eres administrador</h2>
+  <p>Las secciones «Configuración de alerta» y «Alertas WhatsApp» requieren iniciar sesión. Para eso se tratan:</p>
+  <ul>
+    <li><b>Correo y contraseña</b>, gestionados por el servicio de autenticación de Supabase. SenFePin no guarda tu contraseña: el proveedor la conserva protegida y la usa solo para verificar el acceso.</li>
+    <li><b>Sesión:</b> un token de acceso que se guarda en el almacenamiento local de tu navegador mientras la sesión está abierta. Se borra al cerrar sesión.</li>
+    <li><b>Registros de seguridad del proveedor</b>, como intentos de acceso y solicitudes de recuperación de contraseña. Sirven para prevenir abusos.</li>
+  </ul>
+  <p><b>Finalidad:</b> permitir que solo las personas autorizadas cambien la configuración de alertas y vean los datos de contacto de los destinatarios.</p>
+
+  <h2 id="destinatarios">4. Si recibes alertas o resúmenes</h2>
+  <p>Un administrador puede registrar a una persona para que reciba avisos cuando un sensor deja de enviar datos, y resúmenes semanales. Para eso se tratan:</p>
+  <ul>
+    <li><b>Número de WhatsApp y clave de CallMeBot.</b> El servicio CallMeBot exige que el titular del número active los avisos enviándole un mensaje.</li>
+    <li><b>Correo electrónico.</b></li>
+  </ul>
+  <p><b>Finalidad:</b> enviar exclusivamente esos avisos y resúmenes. Estos datos se guardan en la base de datos de SenFePin, que solo pueden leer los administradores, y en el navegador del administrador que los configura. Para darte de baja, escribe al canal de la <a href="#responsable">sección 1</a> o pídeselo al administrador que te registró.</p>
+  <p><b>Base de licitud:</b> <mark class="por-confirmar">consentimiento del destinatario (confirmar cómo se obtiene y se registra)</mark></p>
+
+  <h2 id="norma">5. Herramienta Norma Background</h2>
+  <p>La herramienta de bitácoras de muestreo (norma.html) la usa el equipo de terreno. En ella se registran el nombre del operador o la operadora y los datos técnicos de cada muestreo. Los registros se guardan en el navegador y en una base de datos de Supabase separada.</p>
+  <p>Si se usa <b>ViewIA</b> para leer la foto de una bitácora, la imagen se envía a OpenAI solo para leerla. Las fotos pueden contener nombres o firmas.</p>
+
+  <h2 id="proveedores">6. Proveedores que reciben datos</h2>
+  <div class="tabla">
+  <table>
+    <thead><tr><th>Proveedor</th><th>Para qué</th><th>Qué recibe</th><th>Ubicación</th></tr></thead>
+    <tbody>
+      <tr><td>Vercel</td><td>Alojamiento del sitio y, si se activa, medición de visitas</td><td>IP y datos del navegador al cargar el sitio</td><td>Estados Unidos (red global)</td></tr>
+      <tr><td>Supabase</td><td>Base de datos, inicio de sesión de administradores y funciones de alerta</td><td>Datos de administradores y destinatarios; IP al consultar datos</td><td><mark class="por-confirmar">región de los proyectos de Supabase</mark></td></tr>
+      <tr><td>ThingSpeak (MathWorks)</td><td>Origen de las mediciones de los sensores</td><td>IP y datos del navegador al consultar las mediciones</td><td>Estados Unidos</td></tr>
+      <tr><td>OpenStreetMap</td><td>Mapa base</td><td>IP y zona del mapa que miras</td><td>Servidores de la Fundación OpenStreetMap</td></tr>
+      <tr><td>Google Fonts, jsDelivr, unpkg, cdnjs, Plotly CDN</td><td>Tipografías y bibliotecas de mapas y gráficos</td><td>IP y datos del navegador</td><td>Redes globales</td></tr>
+      <tr><td>CallMeBot</td><td>Envío de avisos por WhatsApp</td><td>Número y clave del destinatario y texto del aviso</td><td><mark class="por-confirmar">país del operador</mark></td></tr>
+      <tr><td>FormSubmit, Gmail (Google) o Resend</td><td>Envío de avisos y resúmenes por correo, según la configuración</td><td>Correo del destinatario y contenido del aviso</td><td><mark class="por-confirmar">confirmar cuál se usa y su ubicación</mark></td></tr>
+      <tr><td>OpenAI</td><td>Lectura de fotos de bitácoras en ViewIA (solo Norma Background)</td><td>La imagen enviada</td><td>Estados Unidos</td></tr>
+      <tr><td>Microsoft Power BI</td><td>Informe embebido, solo si se configura</td><td>IP y datos del navegador al abrir esa vista</td><td>Según la cuenta de Power BI</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p><b>Transferencias internacionales:</b> varios de estos proveedores procesan datos fuera de Chile, principalmente en Estados Unidos. <mark class="por-confirmar">Indicar la garantía aplicable a cada transferencia (cláusulas contractuales del proveedor u otra causal de la ley)</mark></p>
+
+  <h2 id="almacenamiento">7. Almacenamiento en tu navegador</h2>
+  <p>SenFePin no usa cookies. Usa el almacenamiento local del navegador solo para que el visor funcione:</p>
+  <div class="tabla">
+  <table>
+    <thead><tr><th>Nombre</th><th>Para qué</th><th>Quién</th></tr></thead>
+    <tbody>
+      <tr><td><code>airflux_cache</code>, <code>airflux_estaciones</code></td><td>Copia de las mediciones y de la lista de estaciones, para cargar más rápido</td><td>Todos</td></tr>
+      <tr><td><code>senfepin_caidos</code>, <code>airflux_alertcfg</code></td><td>Recordar qué sensores se avisaron como caídos y el umbral de alerta</td><td>Todos</td></tr>
+      <tr><td><code>senfepin_intro_oculta</code>, <code>senfepin_intro_sonido</code></td><td>Recordar si cerraste la introducción y si silenciaste su sonido</td><td>Todos</td></tr>
+      <tr><td><code>senfepin_no_medir</code></td><td>Recordar que no quieres que se midan tus visitas</td><td>Quien lo elige</td></tr>
+      <tr><td><code>airflux_pbi</code></td><td>Dirección del informe de Power BI configurado</td><td>Quien lo configura</td></tr>
+      <tr><td><code>sb-…-auth-token</code></td><td>Sesión de administrador</td><td>Administradores</td></tr>
+      <tr><td><code>airflux_wa</code>, <code>airflux_resumen</code>, <code>airflux_wa_envmap</code></td><td>Copia local de los destinos de alertas y del resumen. Se borra al cerrar sesión</td><td>Administradores</td></tr>
+      <tr><td><code>senfepin_reset_ultimo</code></td><td>Evitar pedir correos de recuperación seguidos</td><td>Quien recupera su contraseña</td></tr>
+      <tr><td><code>nb_v3</code></td><td>Registros de Norma Background</td><td>Equipo de terreno</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>Puedes borrar estos datos desde la configuración de tu navegador, en la opción de datos de sitios. El visor seguirá funcionando.</p>
+
+  <h2 id="medicion">8. Medición de visitas</h2>
+  <p>Para saber cuántas visitas llegan, desde qué país y qué funciones se usan, SenFePin puede usar <b>Vercel Web Analytics</b>. Según Vercel, este servicio no usa cookies y agrupa las visitas sin identificar a las personas. Solo se envían:</p>
+  <ul>
+    <li>la página visitada, sin parámetros;</li>
+    <li>el país;</li>
+    <li>el tipo de navegador, sistema y dispositivo;</li>
+    <li>eventos con valores acotados: «ver estación» (número de estación), «descargar CSV» (tipo de archivo), «cambiar período» (24 h, 7 días, etc.) y «abrir vista».</li>
+  </ul>
+  <p>Nunca se envían nombres, correos, teléfonos ni ubicación precisa. Las secciones de administración y la recuperación de contraseña no se miden.</p>
+  <div class="tarjeta">
+    <label class="interruptor"><input type="checkbox" id="chkMedir"> Permitir que se midan mis visitas de forma agregada</label>
+    <p class="meta" id="estadoMedicion"></p>
+  </div>
+
+  <h2 id="conservacion">9. Cuánto tiempo se conservan</h2>
+  <ul>
+    <li><b>Destinatarios de alertas y resúmenes:</b> mientras estén registrados. <mark class="por-confirmar">plazo máximo y revisión periódica</mark></li>
+    <li><b>Cuentas de administrador:</b> mientras la persona tenga ese rol.</li>
+    <li><b>Contador de lecturas de ViewIA:</b> una huella anónima por persona y por día, que se borra automáticamente a los 60 días.</li>
+    <li><b>Registro de alertas enviadas:</b> se borra cuando el sensor vuelve a enviar datos.</li>
+    <li><b>Registros de los proveedores:</b> según las políticas de cada proveedor. <mark class="por-confirmar">plazos de Vercel y Supabase según el plan contratado</mark></li>
+  </ul>
+
+  <h2 id="seguridad">10. Seguridad</h2>
+  <p>El sitio se sirve por HTTPS. Los datos de contacto y la configuración solo los pueden leer o cambiar los administradores, y esa regla se aplica en la base de datos, no solo en la página. Las claves de los servicios externos se guardan como secretos del servidor y no en el código del sitio.</p>
+
+  <h2 id="derechos">11. Tus derechos</h2>
+  <p>Puedes pedir el <b>acceso</b> a tus datos, su <b>rectificación</b>, su <b>supresión</b>, la <b>oposición</b> a su tratamiento, su <b>portabilidad</b> y el <b>bloqueo</b> temporal del tratamiento, en los términos de la Ley N° 19.628 reformada por la Ley N° 21.719. Escribe al canal de la <a href="#responsable">sección 1</a> indicando qué derecho quieres ejercer. Responderemos dentro del plazo legal: <mark class="por-confirmar">plazo de respuesta según el texto oficial de la ley</mark></p>
+  <p>Si no quedas conforme con la respuesta, puedes acudir a la Agencia de Protección de Datos Personales, una vez que esté en funcionamiento.</p>
+
+  <h2 id="cambios">12. Cambios a esta política</h2>
+  <p>Si cambia la forma de tratar los datos, publicaremos una nueva versión en esta página con su fecha.</p>
+</main>
+<footer class="pie"><a href="index.html">Visor</a> · <a href="uso-datos.html">Uso de los datos</a> · <a href="privacidad.html">Privacidad</a></footer>
+
+<script>
+  // Aviso de borrador visible mientras queden datos por confirmar
+  if (document.querySelector("mark.por-confirmar")) document.getElementById("avisoBorrador").classList.add("visible");
+
+  // Preferencia de medición de visitas (se guarda solo en este navegador)
+  window.addEventListener("DOMContentLoaded", function () {
+    var chk = document.getElementById("chkMedir"), estado = document.getElementById("estadoMedicion");
+    function pintar() {
+      var m = window.senfepinMedicion;
+      if (!m) { chk.disabled = true; estado.textContent = "No se pudo leer la preferencia."; return; }
+      chk.checked = m.permitida();
+      chk.disabled = m.gpc();
+      estado.textContent = m.gpc()
+        ? "Tu navegador envía la señal Global Privacy Control: tus visitas no se miden."
+        : (m.permitida() ? "Tus visitas se cuentan de forma agregada, si la medición está activa en el sitio." : "Tus visitas no se miden en este navegador.");
+    }
+    chk.addEventListener("change", function () { window.senfepinMedicion.fijar(chk.checked); pintar(); });
+    pintar();
+  });
+</script>
+</body>
+</html>
