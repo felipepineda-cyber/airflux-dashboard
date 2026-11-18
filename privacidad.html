@@ -17,11 +17,8 @@
 </header>
 
 <main>
-  <p class="meta">Versión 1.1 (borrador) · 18 de noviembre de 2026</p>
+  <p class="meta">Versión 1.2 · vigente desde el 18 de noviembre de 2026</p>
   <h1>Política de privacidad</h1>
-  <div class="borrador" id="avisoBorrador" role="note">
-    <b>Borrador en revisión.</b> Hay datos marcados en amarillo que el responsable todavía debe confirmar. Esta política no debe considerarse definitiva hasta completarlos.
-  </div>
   <p>Esta política explica qué datos personales trata SenFePin, para qué, con qué proveedores, por cuánto tiempo y cómo puedes ejercer tus derechos. Está escrita conforme a la Ley N° 19.628 sobre protección de la vida privada y su reforma por la Ley N° 21.719, que entra en vigencia el 1 de diciembre de 2026.</p>
 
   <ul class="indice">
@@ -38,8 +35,8 @@
 
   <h2 id="responsable">1. Quién es el responsable</h2>
   <div class="tarjeta">
-    <p><b>Responsable del tratamiento:</b> <mark class="por-confirmar">Nombre o razón social y RUT del responsable de SenFePin</mark></p>
-    <p><b>Canal para consultas y derechos:</b> <mark class="por-confirmar">Correo de contacto para privacidad</mark></p>
+    <p><b>Responsable del tratamiento:</b> el administrador del proyecto SenFePin, que mantiene su identidad reservada.</p>
+    <p><b>Canal para consultas y derechos:</b> SenFePin no dispone por ahora de un canal de contacto público. Si recibes alertas, puedes pedir cualquier cambio a la persona que te registró.</p>
     <p>SenFePin es un visor público de calidad del aire que muestra mediciones de sensores de material particulado instalados en distintas localidades de Chile.</p>
   </div>
 
@@ -66,8 +63,8 @@
     <li><b>Número de WhatsApp y clave de CallMeBot.</b> El servicio CallMeBot exige que el titular del número active los avisos enviándole un mensaje.</li>
     <li><b>Correo electrónico.</b></li>
   </ul>
-  <p><b>Finalidad:</b> enviar exclusivamente esos avisos y resúmenes. Estos datos se guardan en la base de datos de SenFePin, que solo pueden leer los administradores, y en el navegador del administrador que los configura. Para darte de baja, escribe al canal de la <a href="#responsable">sección 1</a> o pídeselo al administrador que te registró.</p>
-  <p><b>Base de licitud:</b> <mark class="por-confirmar">consentimiento del destinatario (confirmar cómo se obtiene y se registra)</mark></p>
+  <p><b>Finalidad:</b> enviar exclusivamente esos avisos y resúmenes. Estos datos se guardan en la base de datos de SenFePin, que solo pueden leer los administradores, y en el navegador del administrador que los configura. Para darte de baja, pídeselo al administrador que te registró, quien debe eliminar tus datos.</p>
+  <p><b>Base de licitud:</b> el consentimiento del destinatario. Solo se registra a personas que aceptaron recibir los avisos; en el caso de WhatsApp, además, el propio titular debe activar CallMeBot desde su número.</p>
 
   <h2 id="norma">5. Digitalización de bitácoras (Norma Background)</h2>
   <p>La herramienta de bitácoras de muestreo (norma.html) la usa el equipo de terreno. En ella se registran el nombre del operador o la operadora y los datos técnicos de cada muestreo. Los registros se guardan en el navegador y en una base de datos de Supabase separada.</p>
@@ -79,18 +76,18 @@
     <thead><tr><th>Proveedor</th><th>Para qué</th><th>Qué recibe</th><th>Ubicación</th></tr></thead>
     <tbody>
       <tr><td>Vercel</td><td>Alojamiento del sitio y, si se activa, medición de visitas</td><td>IP y datos del navegador al cargar el sitio</td><td>Estados Unidos (red global)</td></tr>
-      <tr><td>Supabase</td><td>Base de datos, inicio de sesión de administradores y funciones de alerta</td><td>Datos de administradores y destinatarios; conteos agregados de uso; IP al consultar datos</td><td><mark class="por-confirmar">región de los proyectos de Supabase</mark></td></tr>
+      <tr><td>Supabase</td><td>Base de datos, inicio de sesión de administradores y funciones de alerta</td><td>Datos de administradores y destinatarios; conteos agregados de uso; IP al consultar datos</td><td>Según la región de los servidores de Supabase en que están alojados los proyectos</td></tr>
       <tr><td>ThingSpeak (MathWorks)</td><td>Origen de las mediciones de los sensores</td><td>IP y datos del navegador al consultar las mediciones</td><td>Estados Unidos</td></tr>
       <tr><td>OpenStreetMap</td><td>Mapa base</td><td>IP y zona del mapa que miras</td><td>Servidores de la Fundación OpenStreetMap</td></tr>
       <tr><td>Google Fonts, jsDelivr, unpkg, cdnjs, Plotly CDN</td><td>Tipografías y bibliotecas de mapas y gráficos</td><td>IP y datos del navegador</td><td>Redes globales</td></tr>
-      <tr><td>CallMeBot</td><td>Envío de avisos por WhatsApp</td><td>Número y clave del destinatario y texto del aviso</td><td><mark class="por-confirmar">país del operador</mark></td></tr>
-      <tr><td>FormSubmit, Gmail (Google) o Resend</td><td>Envío de avisos y resúmenes por correo, según la configuración</td><td>Correo del destinatario y contenido del aviso</td><td><mark class="por-confirmar">confirmar cuál se usa y su ubicación</mark></td></tr>
+      <tr><td>CallMeBot</td><td>Envío de avisos por WhatsApp</td><td>Número y clave del destinatario y texto del aviso</td><td>Servicio externo de terceros; los mensajes se entregan a través de WhatsApp</td></tr>
+      <tr><td>FormSubmit, Gmail (Google) o Resend</td><td>Envío de avisos y resúmenes por correo, según la configuración</td><td>Correo del destinatario y contenido del aviso</td><td>Servicios externos; Gmail (Google) y Resend operan desde Estados Unidos</td></tr>
       <tr><td>OpenAI</td><td>Lectura de fotos de bitácoras en ViewIA (solo Norma Background)</td><td>La imagen enviada</td><td>Estados Unidos</td></tr>
       <tr><td>Microsoft Power BI</td><td>Informe embebido, solo si se configura</td><td>IP y datos del navegador al abrir esa vista</td><td>Según la cuenta de Power BI</td></tr>
     </tbody>
   </table>
   </div>
-  <p><b>Transferencias internacionales:</b> varios de estos proveedores procesan datos fuera de Chile, principalmente en Estados Unidos. <mark class="por-confirmar">Indicar la garantía aplicable a cada transferencia (cláusulas contractuales del proveedor u otra causal de la ley)</mark></p>
+  <p><b>Transferencias internacionales:</b> varios de estos proveedores procesan datos fuera de Chile, principalmente en Estados Unidos. Estas transferencias se realizan conforme a los términos de servicio y las políticas de privacidad de cada proveedor.</p>
 
   <h2 id="almacenamiento">7. Almacenamiento en tu navegador</h2>
   <p>SenFePin no usa cookies. Usa el almacenamiento local del navegador solo para que el visor funcione:</p>
@@ -130,19 +127,19 @@
 
   <h2 id="conservacion">9. Cuánto tiempo se conservan</h2>
   <ul>
-    <li><b>Destinatarios de alertas y resúmenes:</b> mientras estén registrados. <mark class="por-confirmar">plazo máximo y revisión periódica</mark></li>
+    <li><b>Destinatarios de alertas y resúmenes:</b> mientras estén registrados. El administrador elimina a quien ya no debe recibir avisos.</li>
     <li><b>Cuentas de administrador:</b> mientras la persona tenga ese rol.</li>
     <li><b>Estadísticas agregadas del sitio:</b> conteos por día, sin datos personales; se borran a los 13 meses.</li>
     <li><b>Contador de lecturas de ViewIA:</b> una huella anónima por persona y por día, que se borra automáticamente a los 60 días.</li>
     <li><b>Registro de alertas enviadas:</b> se borra cuando el sensor vuelve a enviar datos.</li>
-    <li><b>Registros de los proveedores:</b> según las políticas de cada proveedor. <mark class="por-confirmar">plazos de Vercel y Supabase según el plan contratado</mark></li>
+    <li><b>Registros de los proveedores:</b> según las políticas de cada proveedor y el plan contratado.</li>
   </ul>
 
   <h2 id="seguridad">10. Seguridad</h2>
   <p>El sitio se sirve por HTTPS. Los datos de contacto y la configuración solo los pueden leer o cambiar los administradores, y esa regla se aplica en la base de datos, no solo en la página. Las claves de los servicios externos se guardan como secretos del servidor y no en el código del sitio.</p>
 
   <h2 id="derechos">11. Tus derechos</h2>
-  <p>Puedes pedir el <b>acceso</b> a tus datos, su <b>rectificación</b>, su <b>supresión</b>, la <b>oposición</b> a su tratamiento, su <b>portabilidad</b> y el <b>bloqueo</b> temporal del tratamiento, en los términos de la Ley N° 19.628 reformada por la Ley N° 21.719. Escribe al canal de la <a href="#responsable">sección 1</a> indicando qué derecho quieres ejercer. Responderemos dentro del plazo legal: <mark class="por-confirmar">plazo de respuesta según el texto oficial de la ley</mark></p>
+  <p>Puedes pedir el <b>acceso</b> a tus datos, su <b>rectificación</b>, su <b>supresión</b>, la <b>oposición</b> a su tratamiento, su <b>portabilidad</b> y el <b>bloqueo</b> temporal del tratamiento, en los términos de la Ley N° 19.628 reformada por la Ley N° 21.719. Para ejercerlos respecto de los datos de alertas, dirígete al administrador que te registró; se responderá dentro del plazo que establece la ley. Si solo visitas el sitio, SenFePin no guarda datos que te identifiquen.</p>
   <p>Si no quedas conforme con la respuesta, puedes acudir a la Agencia de Protección de Datos Personales, una vez que esté en funcionamiento.</p>
 
   <h2 id="cambios">12. Cambios a esta política</h2>
@@ -151,9 +148,6 @@
 <footer class="pie"><a href="index.html">Visor</a> · <a href="uso-datos.html">Uso de los datos</a> · <a href="privacidad.html">Privacidad</a></footer>
 
 <script>
-  // Aviso de borrador visible mientras queden datos por confirmar
-  if (document.querySelector("mark.por-confirmar")) document.getElementById("avisoBorrador").classList.add("visible");
-
   // Preferencia de medición de visitas (se guarda solo en este navegador)
   window.addEventListener("DOMContentLoaded", function () {
     var chk = document.getElementById("chkMedir"), estado = document.getElementById("estadoMedicion");

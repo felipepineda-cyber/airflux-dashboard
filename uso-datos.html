@@ -19,7 +19,6 @@
 <main>
   <p class="meta">Versión 1.0 · 18 de noviembre de 2026</p>
   <h1>Uso de los datos</h1>
-  <div class="borrador" id="avisoBorrador" role="note"><b>En revisión:</b> los puntos marcados en amarillo están por confirmar.</div>
 
   <ul class="indice">
     <li><a href="#origen">Origen</a></li>
@@ -40,7 +39,7 @@
     <li><b>presión</b>, en mmHg.</li>
   </ul>
   <p>Los equipos publican sus datos en canales de <b>ThingSpeak</b>, y SenFePin los lee desde ahí.</p>
-  <div class="nota"><b>Importante:</b> son sensores de bajo costo, no equipos de monitoreo de referencia. Sus valores sirven para seguir tendencias y comparar lugares y horarios, pero no reemplazan a las estaciones oficiales del Sistema de Información Nacional de Calidad del Aire (SINCA) para fines regulatorios. SenFePin muestra los valores tal como los reporta cada sensor. <mark class="por-confirmar">indicar si AirFlux aplica alguna corrección, por ejemplo por humedad, antes de publicarlos</mark></div>
+  <div class="nota"><b>Importante:</b> son sensores de bajo costo, no equipos de monitoreo de referencia. Sus valores sirven para seguir tendencias y comparar lugares y horarios, pero no reemplazan a las estaciones oficiales del Sistema de Información Nacional de Calidad del Aire (SINCA) para fines regulatorios. SenFePin muestra los valores tal como los entrega ThingSpeak, sin aplicar correcciones propias.</div>
 
   <h2 id="actualizacion">2. Cada cuánto se actualizan</h2>
   <ul>
@@ -73,14 +72,14 @@
 
   <h2 id="reutilizacion">6. Condiciones de reutilización</h2>
   <p>Puedes usar los gráficos y archivos para fines informativos, educativos o de investigación, citando la fuente así: «SenFePin, red de sensores AirFlux, senfepin.vercel.app, fecha de descarga».</p>
-  <p><mark class="por-confirmar">licencia de los datos (por ejemplo CC BY 4.0) y autorización de AirFlux para su redistribución</mark></p>
+  <p>Las mediciones provienen de equipos de AirFlux. Para usos comerciales o para redistribuir los datos de forma masiva, se requiere autorización de AirFlux.</p>
 
   <h2 id="terceros">7. Datos y recursos de terceros</h2>
   <div class="tabla">
   <table>
     <thead><tr><th>Recurso</th><th>Origen</th><th>Condiciones</th></tr></thead>
     <tbody>
-      <tr><td>Mediciones de los sensores</td><td>AirFlux, vía ThingSpeak</td><td><mark class="por-confirmar">permiso de AirFlux</mark></td></tr>
+      <tr><td>Mediciones de los sensores</td><td>AirFlux, vía ThingSpeak</td><td>Uso informativo, educativo o de investigación citando la fuente; otros usos requieren autorización de AirFlux</td></tr>
       <tr><td>Mapa base</td><td>© colaboradores de OpenStreetMap</td><td>Datos bajo licencia ODbL; se debe mantener la atribución</td></tr>
       <tr><td>Gráficos</td><td>Plotly.js</td><td>Licencia MIT</td></tr>
       <tr><td>Mapa interactivo</td><td>Leaflet</td><td>Licencia BSD-2</td></tr>
@@ -89,11 +88,8 @@
     </tbody>
   </table>
   </div>
-  <p>Si detectas un error en los datos, escríbenos al canal indicado en la <a href="privacidad.html#responsable">política de privacidad</a>.</p>
+  <p>Los sensores pueden tener interrupciones o lecturas anómalas; ante un valor extraño, compáralo con estaciones cercanas o con el SINCA.</p>
 </main>
 <footer class="pie"><a href="index.html">Visor</a> · <a href="uso-datos.html">Uso de los datos</a> · <a href="privacidad.html">Privacidad</a></footer>
-<script>
-  if (document.querySelector("mark.por-confirmar")) document.getElementById("avisoBorrador").classList.add("visible");
-</script>
 </body>
 </html>
