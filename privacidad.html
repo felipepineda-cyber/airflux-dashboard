@@ -17,7 +17,7 @@
 </header>
 
 <main>
-  <p class="meta">Versión 1.0 (borrador) · 18 de noviembre de 2026</p>
+  <p class="meta">Versión 1.1 (borrador) · 18 de noviembre de 2026</p>
   <h1>Política de privacidad</h1>
   <div class="borrador" id="avisoBorrador" role="note">
     <b>Borrador en revisión.</b> Hay datos marcados en amarillo que el responsable todavía debe confirmar. Esta política no debe considerarse definitiva hasta completarlos.
@@ -29,7 +29,7 @@
     <li><a href="#visitantes">Visitantes</a></li>
     <li><a href="#administradores">Administradores</a></li>
     <li><a href="#destinatarios">Destinatarios de alertas</a></li>
-    <li><a href="#norma">Norma Background</a></li>
+    <li><a href="#norma">Digitalización de bitácoras</a></li>
     <li><a href="#proveedores">Proveedores</a></li>
     <li><a href="#almacenamiento">Almacenamiento en tu navegador</a></li>
     <li><a href="#medicion">Medición de visitas</a></li>
@@ -52,7 +52,7 @@
   </ul>
 
   <h2 id="administradores">3. Si eres administrador</h2>
-  <p>Las secciones «Configuración de alerta» y «Alertas WhatsApp» requieren iniciar sesión. Para eso se tratan:</p>
+  <p>La sección «Acceso Administradores» requiere iniciar sesión. Para eso se tratan:</p>
   <ul>
     <li><b>Correo y contraseña</b>, gestionados por el servicio de autenticación de Supabase. SenFePin no guarda tu contraseña: el proveedor la conserva protegida y la usa solo para verificar el acceso.</li>
     <li><b>Sesión:</b> un token de acceso que se guarda en el almacenamiento local de tu navegador mientras la sesión está abierta. Se borra al cerrar sesión.</li>
@@ -69,7 +69,7 @@
   <p><b>Finalidad:</b> enviar exclusivamente esos avisos y resúmenes. Estos datos se guardan en la base de datos de SenFePin, que solo pueden leer los administradores, y en el navegador del administrador que los configura. Para darte de baja, escribe al canal de la <a href="#responsable">sección 1</a> o pídeselo al administrador que te registró.</p>
   <p><b>Base de licitud:</b> <mark class="por-confirmar">consentimiento del destinatario (confirmar cómo se obtiene y se registra)</mark></p>
 
-  <h2 id="norma">5. Herramienta Norma Background</h2>
+  <h2 id="norma">5. Digitalización de bitácoras (Norma Background)</h2>
   <p>La herramienta de bitácoras de muestreo (norma.html) la usa el equipo de terreno. En ella se registran el nombre del operador o la operadora y los datos técnicos de cada muestreo. Los registros se guardan en el navegador y en una base de datos de Supabase separada.</p>
   <p>Si se usa <b>ViewIA</b> para leer la foto de una bitácora, la imagen se envía a OpenAI solo para leerla. Las fotos pueden contener nombres o firmas.</p>
 
@@ -79,7 +79,7 @@
     <thead><tr><th>Proveedor</th><th>Para qué</th><th>Qué recibe</th><th>Ubicación</th></tr></thead>
     <tbody>
       <tr><td>Vercel</td><td>Alojamiento del sitio y, si se activa, medición de visitas</td><td>IP y datos del navegador al cargar el sitio</td><td>Estados Unidos (red global)</td></tr>
-      <tr><td>Supabase</td><td>Base de datos, inicio de sesión de administradores y funciones de alerta</td><td>Datos de administradores y destinatarios; IP al consultar datos</td><td><mark class="por-confirmar">región de los proyectos de Supabase</mark></td></tr>
+      <tr><td>Supabase</td><td>Base de datos, inicio de sesión de administradores y funciones de alerta</td><td>Datos de administradores y destinatarios; conteos agregados de uso; IP al consultar datos</td><td><mark class="por-confirmar">región de los proyectos de Supabase</mark></td></tr>
       <tr><td>ThingSpeak (MathWorks)</td><td>Origen de las mediciones de los sensores</td><td>IP y datos del navegador al consultar las mediciones</td><td>Estados Unidos</td></tr>
       <tr><td>OpenStreetMap</td><td>Mapa base</td><td>IP y zona del mapa que miras</td><td>Servidores de la Fundación OpenStreetMap</td></tr>
       <tr><td>Google Fonts, jsDelivr, unpkg, cdnjs, Plotly CDN</td><td>Tipografías y bibliotecas de mapas y gráficos</td><td>IP y datos del navegador</td><td>Redes globales</td></tr>
@@ -105,6 +105,7 @@
       <tr><td><code>airflux_pbi</code></td><td>Dirección del informe de Power BI configurado</td><td>Quien lo configura</td></tr>
       <tr><td><code>sb-…-auth-token</code></td><td>Sesión de administrador</td><td>Administradores</td></tr>
       <tr><td><code>airflux_wa</code>, <code>airflux_resumen</code>, <code>airflux_wa_envmap</code></td><td>Copia local de los destinos de alertas y del resumen. Se borra al cerrar sesión</td><td>Administradores</td></tr>
+      <tr><td><code>senfepin_visita_…</code> (sessionStorage)</td><td>Contar una sola visita por pestaña; se borra al cerrarla</td><td>Todos, salvo quien desactivó la medición</td></tr>
       <tr><td><code>senfepin_reset_ultimo</code></td><td>Evitar pedir correos de recuperación seguidos</td><td>Quien recupera su contraseña</td></tr>
       <tr><td><code>nb_v3</code></td><td>Registros de Norma Background</td><td>Equipo de terreno</td></tr>
     </tbody>
@@ -113,7 +114,8 @@
   <p>Puedes borrar estos datos desde la configuración de tu navegador, en la opción de datos de sitios. El visor seguirá funcionando.</p>
 
   <h2 id="medicion">8. Medición de visitas</h2>
-  <p>Para saber cuántas visitas llegan, desde qué país y qué funciones se usan, SenFePin puede usar <b>Vercel Web Analytics</b>. Según Vercel, este servicio no usa cookies y agrupa las visitas sin identificar a las personas. Solo se envían:</p>
+  <p>SenFePin cuenta de forma <b>agregada</b> cuántas visitas recibe y qué funciones se usan. Guarda en su base de datos de Supabase solo un número por día y por tipo de evento (por ejemplo, «12 descargas de CSV el 18-11-2026»). No guarda tu IP, tu navegador ni ningún identificador, y no usa cookies. Para no contar dos veces la misma visita, el navegador recuerda durante la pestaña abierta que ya se contó (<code>senfepin_visita_…</code> en <i>sessionStorage</i>).</p>
+  <p>Además, para saber desde qué país llegan las visitas, SenFePin puede usar <b>Vercel Web Analytics</b>. Según Vercel, este servicio no usa cookies y agrupa las visitas sin identificar a las personas. Solo se envían:</p>
   <ul>
     <li>la página visitada, sin parámetros;</li>
     <li>el país;</li>
@@ -122,7 +124,7 @@
   </ul>
   <p>Nunca se envían nombres, correos, teléfonos ni ubicación precisa. Las secciones de administración y la recuperación de contraseña no se miden.</p>
   <div class="tarjeta">
-    <label class="interruptor"><input type="checkbox" id="chkMedir"> Permitir que se midan mis visitas de forma agregada</label>
+    <label class="interruptor"><input type="checkbox" id="chkMedir"> Permitir que se cuenten mis visitas y el uso de funciones de forma agregada</label>
     <p class="meta" id="estadoMedicion"></p>
   </div>
 
@@ -130,6 +132,7 @@
   <ul>
     <li><b>Destinatarios de alertas y resúmenes:</b> mientras estén registrados. <mark class="por-confirmar">plazo máximo y revisión periódica</mark></li>
     <li><b>Cuentas de administrador:</b> mientras la persona tenga ese rol.</li>
+    <li><b>Estadísticas agregadas del sitio:</b> conteos por día, sin datos personales; se borran a los 13 meses.</li>
     <li><b>Contador de lecturas de ViewIA:</b> una huella anónima por persona y por día, que se borra automáticamente a los 60 días.</li>
     <li><b>Registro de alertas enviadas:</b> se borra cuando el sensor vuelve a enviar datos.</li>
     <li><b>Registros de los proveedores:</b> según las políticas de cada proveedor. <mark class="por-confirmar">plazos de Vercel y Supabase según el plan contratado</mark></li>

@@ -15,7 +15,15 @@ window.SENFEPIN_CONFIG = {
   //    No carga nada del patrocinador: la imagen se sirve desde este mismo sitio.
   patrocinio: { activo: false, nombre: "", texto: "", imagen: "", enlace: "" },
 
-  // 3) Google AdSense: dejar en false hasta tener (a) sitio aprobado, (b) plan de hosting
+  // 3) Estadísticas propias: conteos agregados en Supabase (sin IP ni identificadores),
+  //    que se ven en Acceso Administradores → Estadísticas. Funcionan en cualquier plan.
+  estadisticas: {
+    activa: true,
+    url: "https://stuxspraehjbxyiujsnu.supabase.co/rest/v1/rpc/registrar_evento_sitio",
+    clave: "sb_publishable_Eemqq4D54Y_Bg3XAm25psg_DBJ2QG0I",   // clave pública (publishable)
+  },
+
+  // 4) Google AdSense: dejar en false hasta tener (a) sitio aprobado, (b) plan de hosting
   //    que permita uso comercial y (c) política de privacidad publicada y completa.
   adsense: { activo: false, cliente: "" },
 };
@@ -59,17 +67,43 @@ window.SENFEPIN_CONFIG = {
     abrir_vista: { vista: /^(resumen|estadisticas|variacion|descargas|powerbi)$/ },
     clic_patrocinio: {},
   };
+  // Conteo propio: un POST pequeño con evento y valor acotado; sin cookies ni identificadores
+  function contar(evento, valor) {
+    const e = CFG.estadisticas;
+    if (!e || !e.activa || !e.url || typeof fetch !== "function") return;
+    try {
+      fetch(e.url, {
+        method: "POST", keepalive: true, credentials: "omit", referrerPolicy: "no-referrer",
+        headers: { "Content-Type": "application/json", apikey: e.clave, Authorization: "Bearer " + e.clave },
+        body: JSON.stringify({ p_evento: evento, p_valor: valor || "" }),
+      }).catch(function () { /* las estadísticas nunca bloquean el visor */ });
+    } catch (err) { /* sin red */ }
+  }
   window.senfepinMedir = function (nombre, datos) {
     const reglas = EVENTOS[nombre];
-    if (!reglas || !CFG.analitica.activa || !medicionPermitida()) return;
+    if (!reglas || !medicionPermitida()) return;
     const limpio = {};
     for (const [clave, patron] of Object.entries(reglas)) {
       const v = String((datos || {})[clave] ?? "");
       if (!patron.test(v)) return;                     // valor fuera de la lista: no se envía
       limpio[clave] = v;
     }
-    window.va("event", { name: nombre, data: limpio });
+    contar(nombre, Object.values(limpio)[0] || "");
+    if (CFG.analitica.activa) window.va("event", { name: nombre, data: limpio });
   };
+
+  // Una visita por pestaña y página (sessionStorage), solo en páginas públicas
+  (function contarVisita() {
+    if (!medicionPermitida() || PAGINAS_EXCLUIDAS.test(location.pathname)) return;
+    const m = /\/(privacidad|uso-datos|norma)(\.html)?$/.exec(location.pathname);
+    const pagina = m ? m[1] : "index";
+    try {
+      const marca = "senfepin_visita_" + pagina;
+      if (sessionStorage.getItem(marca)) return;
+      sessionStorage.setItem(marca, "1");
+    } catch (e) { return; }                            // sin almacenamiento: no se cuenta
+    contar("visita", pagina);
+  })();
 
   // ── Carga del script de analítica (solo si está activa y permitida) ──
   if (CFG.analitica.activa && medicionPermitida() && !PAGINAS_EXCLUIDAS.test(location.pathname)) {

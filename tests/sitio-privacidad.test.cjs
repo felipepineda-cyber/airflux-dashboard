@@ -7,12 +7,14 @@ const codigo = fs.readFileSync(__dirname + '/../sitio.js', 'utf8');
 
 // Carga sitio.js en un navegador simulado; `ajustes` modifica la configuración antes de ejecutar
 function cargar({ ruta = '/index.html', guardado = {}, gpc = false, analiticaActiva = false } = {}) {
-  const almacen = { ...guardado }, scripts = [];
+  const almacen = { ...guardado }, scripts = [], envios = [], sesion = {};
   const ventana = {};
   const entorno = {
     window: ventana, location: { pathname: ruta },
     navigator: { globalPrivacyControl: gpc },
     localStorage: { getItem: k => (k in almacen ? almacen[k] : null), setItem: (k, v) => { almacen[k] = String(v); }, removeItem: k => { delete almacen[k]; } },
+    sessionStorage: { getItem: k => sesion[k] ?? null, setItem: (k, v) => { sesion[k] = String(v); } },
+    fetch: (url, op) => { envios.push(JSON.parse(op.body)); return { catch() {} }; },
     document: { createElement: () => ({}), head: { appendChild: s => scripts.push(s) } },
     URL, Object, String, RegExp,
   };
@@ -21,7 +23,7 @@ function cargar({ ruta = '/index.html', guardado = {}, gpc = false, analiticaAct
   const fuente = analiticaActiva ? codigo.replace('analitica: { activa: false', 'analitica: { activa: true') : codigo;
   vm.createContext(entorno);
   vm.runInContext(fuente, entorno);
-  return { v: ventana, almacen, scripts, cola: () => ventana.vaq || [] };
+  return { v: ventana, almacen, scripts, envios, cola: () => ventana.vaq || [] };
 }
 const filtro = s => s.cola().find(a => a[0] === 'beforeSend')[1];
 const eventos = s => s.cola().filter(a => a[0] === 'event').map(a => a[1]);
@@ -83,4 +85,20 @@ test('AdSense y patrocinio quedan desactivados por defecto', () => {
   assert.match(codigo, /patrocinio: \{ activo: false/);
   const s = cargar({ analiticaActiva: true });
   assert.ok(!s.scripts.some(x => /googlesyndication/.test(x.src || '')));
+});
+
+test('Estadísticas propias: una visita por pestaña y solo eventos acotados, sin datos personales', () => {
+  const s = cargar({ ruta: '/uso-datos.html' });
+  assert.equal(JSON.stringify(s.envios[0]), JSON.stringify({ p_evento: 'visita', p_valor: 'uso-datos' }));
+  s.v.senfepinMedir('descargar_csv', { tipo: 'todos' });
+  s.v.senfepinMedir('ver_estacion', { estacion: 'juan@correo.cl' });
+  assert.equal(s.envios.length, 2);
+  assert.equal(JSON.stringify(s.envios[1]), JSON.stringify({ p_evento: 'descargar_csv', p_valor: 'todos' }));
+  assert.ok(!JSON.stringify(s.envios).includes('@'));
+});
+
+test('Estadísticas propias: nada se cuenta si el visitante lo rechazó o en restablecer', () => {
+  assert.equal(cargar({ guardado: { senfepin_no_medir: '1' } }).envios.length, 0);
+  assert.equal(cargar({ gpc: true }).envios.length, 0);
+  assert.equal(cargar({ ruta: '/restablecer.html' }).envios.length, 0);
 });

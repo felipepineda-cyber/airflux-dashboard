@@ -76,7 +76,7 @@ Igual hay transparencia y control:
 ## 5. Lo que tienes que configurar antes de publicar
 
 **Supabase SenFePin**
-1. Ejecutar `supabase/seguridad_estaciones.sql` en el SQL Editor.
+1. Ejecutar `supabase/seguridad_estaciones.sql` y `supabase/estadisticas_sitio.sql` en el SQL Editor. El segundo crea los conteos agregados que se ven en Acceso Administradores → Estadísticas.
 2. Authentication → URL Configuration:
    - *Site URL*: `https://senfepin.vercel.app`
    - *Redirect URLs*: `https://senfepin.vercel.app/restablecer.html`

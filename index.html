@@ -836,6 +836,38 @@
   .ac-prev-err { background: var(--err-bg); border-color: #fecaca; border-left-color: var(--err); color: #7f1d1d; }
   .ac-prev-warn { background: #fffbeb; border-color: #fde68a; border-left-color: var(--warn); color: #78350f; }
   .ac-acciones { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: 1rem; }
+  /* Acceso Administradores: encabezado, estadísticas y desplegables */
+  .adm-cab { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; padding: 1.1rem 1.2rem;
+    border-radius: 18px; color: #fff; background: linear-gradient(120deg, #053a36 0%, #0f766e 55%, #14b8a6 100%); box-shadow: 0 14px 30px -16px rgba(15,118,110,.6); }
+  .adm-cab h2 { display: flex; align-items: center; gap: .5rem; font-size: 1.15rem; margin: 0; }
+  .adm-cab p { margin: .25rem 0 0; font-size: .84rem; color: #ccfbf1; }
+  .adm-cab-acc { display: flex; align-items: center; gap: .7rem; flex-wrap: wrap; }
+  .adm-quien { font-size: .78rem; color: #ccfbf1; }
+  .adm-cab .btn.ghost { background: rgba(255,255,255,.14); color: #fff; border-color: rgba(255,255,255,.3); }
+  #vista-alertconf .ac-sec { scroll-margin-top: 200px; }   /* que la barra de pasos no tape el título */
+  @media (max-width: 600px) { #vista-alertconf .ac-resumen { grid-template-columns: 1fr 1fr; } #vista-alertconf .ac-sec { scroll-margin-top: 140px; } }
+  .est-periodo { display: flex; align-items: center; gap: .4rem; font-size: .8rem; font-weight: 600; color: var(--text-2); align-self: center; }
+  .est-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: .7rem; margin-bottom: 1rem; }
+  .est-kpi { display: flex; gap: .7rem; align-items: center; padding: .9rem 1rem; border-radius: 16px; background: var(--surface); border: 1px solid var(--border); }
+  .est-kpi > i { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font-size: 1.2rem; color: #fff; background: var(--grad-brand); flex: none; }
+  .est-kpi small { display: block; font-size: .72rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--text-3); }
+  .est-kpi b { display: block; font-size: 1.45rem; line-height: 1.2; color: var(--text); }
+  .est-kpi em { font-style: normal; font-size: .74rem; color: var(--text-2); }
+  .est-graf { width: 100%; min-height: 260px; }
+  .est-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: .9rem; }
+  .est-grid .panel { margin: 0; }
+  .est-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: .45rem; }
+  .est-lista li { position: relative; display: flex; justify-content: space-between; gap: .6rem; padding: .4rem .6rem; font-size: .84rem; border-radius: 8px; overflow: hidden; }
+  .est-lista li i { position: absolute; left: 0; top: 0; bottom: 0; background: #ccfbf1; z-index: 0; border-radius: 8px; }
+  .est-lista li span, .est-lista li b { position: relative; z-index: 1; }
+  .est-vacio { font-size: .84rem; color: var(--text-3); margin: 0; }
+  .est-pie { margin-top: .8rem; }
+  .ac-detalle > summary { cursor: pointer; list-style: none; }
+  .ac-detalle > summary::-webkit-details-marker { display: none; }
+  .ac-detalle > summary h2::after { content: "▾"; margin-left: .5rem; font-size: .8rem; color: var(--text-3); }
+  .ac-detalle[open] > summary h2::after { content: "▴"; }
+  #ac-destinos .ac-sec-head #acDestinoEstado { align-self: center; }
+  .nav-panel a.nav-item { text-decoration: none; display: flex; align-items: center; gap: .6rem; }
   .ac-destinos-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
   @media (max-width: 900px) { .ac-pasos { top: 108px; border-radius: 16px; } }
   @media (max-width: 600px) { .ac-pasos a { padding: .35rem .6rem .35rem .35rem; } }
@@ -863,6 +895,7 @@
         <button type="button" class="nav-top nav-grupo-btn" data-grupo="analisis" aria-expanded="false" aria-controls="grupo-analisis" aria-haspopup="true" title="Análisis" onclick="alternarGrupo('analisis')"><i class="ti ti-chart-bar" aria-hidden="true"></i><span>Análisis</span><i class="ti ti-chevron-down chev-dd" aria-hidden="true"></i></button>
         <button type="button" class="nav-top nav-grupo-btn" data-grupo="herramientas" aria-expanded="false" aria-controls="grupo-herramientas" aria-haspopup="true" title="Herramientas" onclick="alternarGrupo('herramientas')"><i class="ti ti-tools" aria-hidden="true"></i><span>Herramientas</span><i class="ti ti-chevron-down chev-dd" aria-hidden="true"></i></button>
         <button type="button" class="nav-top nav-grupo-btn" data-grupo="sistema" aria-expanded="false" aria-controls="grupo-sistema" aria-haspopup="true" title="Sistema" onclick="alternarGrupo('sistema')"><i class="ti ti-settings" aria-hidden="true"></i><span>Sistema</span><i class="ti ti-chevron-down chev-dd" aria-hidden="true"></i></button>
+        <button type="button" class="nav-top nav-grupo-btn" data-grupo="ayuda" aria-expanded="false" aria-controls="grupo-ayuda" aria-haspopup="true" title="Ayuda" onclick="alternarGrupo('ayuda')"><i class="ti ti-help-circle" aria-hidden="true"></i><span>Ayuda</span><i class="ti ti-chevron-down chev-dd" aria-hidden="true"></i></button>
       </nav>
     </div>
     <div class="nav-panel" id="navPanel" aria-hidden="true">
@@ -879,9 +912,6 @@
       <button type="button" class="nav-item" data-view="variacion" onclick="irA('variacion')">
         <i class="ti ti-clock" aria-hidden="true"></i><span class="nav-txt">Variación temporal<small>Promedios horarios con IC 95 %</small></span>
       </button>
-      <button type="button" class="nav-item" data-view="powerbi" onclick="irA('powerbi')">
-        <i class="ti ti-chart-area" aria-hidden="true"></i><span class="nav-txt">Análisis Power BI<small>Informe embebido</small></span>
-      </button>
       </div></div>
       <!-- Herramientas: sacar datos y registrar terreno -->
       <div class="nav-grupo" id="grupo-herramientas" data-grupo="herramientas" role="group"><div class="nav-grupo-in">
@@ -889,22 +919,14 @@
         <i class="ti ti-download" aria-hidden="true"></i><span class="nav-txt">Centro de descargas<small>Datos, estadísticas y gráficos</small></span>
       </button>
       <button type="button" class="nav-item" onclick="window.open('norma.html', '_blank')">
-        <i class="ti ti-clipboard-data" aria-hidden="true"></i><span class="nav-txt">Norma Background<small>Bitácoras de muestreo · nueva pestaña</small></span><i class="ti ti-external-link" aria-hidden="true" style="margin-left:auto;font-size:.75rem;opacity:.6"></i>
+        <i class="ti ti-clipboard-data" aria-hidden="true"></i><span class="nav-txt">Digitalización de bitácoras<small>Registro y lectura de bitácoras · nueva pestaña</small></span><i class="ti ti-external-link" aria-hidden="true" style="margin-left:auto;font-size:.75rem;opacity:.6"></i>
       </button>
       </div></div>
       <!-- Sistema: administración arriba (con candado), ayuda abajo -->
       <div class="nav-grupo" id="grupo-sistema" data-grupo="sistema" role="group"><div class="nav-grupo-in">
-      <div class="nav-seccion"><i class="ti ti-lock" aria-hidden="true"></i> Alertas · administradores</div>
+      <div class="nav-seccion"><i class="ti ti-lock" aria-hidden="true"></i> Administración</div>
       <button type="button" class="nav-item" data-view="alertconf" onclick="irA('alertconf')">
-        <i class="ti ti-bell-cog" aria-hidden="true"></i><span class="nav-txt">Configuración de alerta<small>Avisos, caídas y resumen</small></span><i class="ti ti-lock nav-lock" aria-hidden="true"></i>
-      </button>
-      <button type="button" class="nav-item" data-view="whatsapp" onclick="irA('whatsapp')">
-        <i class="ti ti-brand-whatsapp" aria-hidden="true"></i><span class="nav-txt">Alertas WhatsApp<small>Destinos por WhatsApp y correo</small></span><i class="ti ti-lock nav-lock" aria-hidden="true"></i>
-      </button>
-      <div class="nav-div" role="separator"></div>
-      <div class="nav-seccion"><i class="ti ti-help-circle" aria-hidden="true"></i> Ayuda</div>
-      <button type="button" class="nav-item" onclick="abrirIntro()">
-        <i class="ti ti-sparkles" aria-hidden="true"></i><span class="nav-txt">Ver introducción<small>Recorrido por SenFePin</small></span>
+        <i class="ti ti-shield-lock" aria-hidden="true"></i><span class="nav-txt">Acceso Administradores<small>Estadísticas, destinatarios y alertas</small></span><i class="ti ti-lock nav-lock" aria-hidden="true"></i>
       </button>
       <button type="button" class="nav-item" id="btnSalirAdmin" onclick="salirAdmin()">
         <i class="ti ti-logout" aria-hidden="true"></i> Cerrar sesión de administrador
@@ -914,6 +936,18 @@
       Umbral de alerta: <b style="color:#dbe7ef" id="footUmbral">2 h sin datos</b><br>
       Fuente: ThingSpeak · airflux
     </div>
+      </div></div>
+      <!-- Ayuda: recorrido y páginas informativas -->
+      <div class="nav-grupo" id="grupo-ayuda" data-grupo="ayuda" role="group"><div class="nav-grupo-in">
+      <button type="button" class="nav-item" onclick="abrirIntro()">
+        <i class="ti ti-sparkles" aria-hidden="true"></i><span class="nav-txt">Ver introducción<small>Recorrido por SenFePin</small></span>
+      </button>
+      <a class="nav-item" href="uso-datos.html">
+        <i class="ti ti-database" aria-hidden="true"></i><span class="nav-txt">Uso de los datos<small>Origen, gráficos, CSV y norma</small></span>
+      </a>
+      <a class="nav-item" href="privacidad.html">
+        <i class="ti ti-shield-check" aria-hidden="true"></i><span class="nav-txt">Privacidad<small>Qué datos se tratan y tus derechos</small></span>
+      </a>
       </div></div>
     </div>
   </aside>
@@ -1335,132 +1369,50 @@
 
       <!-- ============ VISTA: CONFIGURACIÓN DE ALERTA ============ -->
       <div class="view" id="vista-alertconf">
+        <!-- Encabezado: quién está conectado y salida rápida -->
+        <div class="adm-cab">
+          <div><h2><i class="ti ti-shield-lock" aria-hidden="true"></i> Acceso Administradores</h2>
+            <p>Revisa el uso del sitio, define quién recibe los avisos y ajusta cuándo se envían.</p></div>
+          <div class="adm-cab-acc"><span class="adm-quien" id="admQuien"></span>
+            <button type="button" class="btn ghost" onclick="salirAdmin()"><i class="ti ti-logout" aria-hidden="true"></i> Cerrar sesión</button></div>
+        </div>
         <div class="ac-resumen" id="acChips" aria-live="polite"></div>
-        <nav class="ac-pasos" aria-label="Secciones de la configuración">
-          <a href="#ac-inmediato" onclick="acIr(event,'ac-inmediato')"><b>1</b> Aviso inmediato</a>
-          <a href="#ac-caida" onclick="acIr(event,'ac-caida')"><b>2</b> Caída confirmada</a>
-          <a href="#ac-semanal" onclick="acIr(event,'ac-semanal')"><b>3</b> Resumen semanal</a>
-          <a href="#ac-destinos" onclick="acIr(event,'ac-destinos')"><b>4</b> Destinos</a>
+        <nav class="ac-pasos" aria-label="Secciones de administración">
+          <a href="#ac-estadisticas" onclick="acIr(event,'ac-estadisticas')"><b>1</b> Estadísticas</a>
+          <a href="#ac-destinos" onclick="acIr(event,'ac-destinos')"><b>2</b> Destinatarios</a>
+          <a href="#ac-inmediato" onclick="acIr(event,'ac-inmediato')"><b>3</b> Aviso inmediato</a>
+          <a href="#ac-caida" onclick="acIr(event,'ac-caida')"><b>4</b> Caída confirmada</a>
+          <a href="#ac-semanal" onclick="acIr(event,'ac-semanal')"><b>5</b> Resumen semanal</a>
         </nav>
 
-        <section class="ac-sec" id="ac-inmediato">
-          <header class="ac-sec-head"><span class="ac-num">1</span><div><h2>Aviso inmediato de sensor sin datos</h2>
-            <p>Un mensaje en cuanto un sensor deja de enviar datos, sin esperar a que la caída se confirme. Llega una sola vez por episodio y se rearma cuando el sensor vuelve.</p></div>
-            <span class="hint" id="acNube">Se guardan automáticamente (local + nube)</span></header>
-          <div class="panel"><div class="panel-body">
-            <div class="switch-row">
-              <label class="switch"><input type="checkbox" id="acInmActivo" onchange="guardarConfigAlerta()"><span class="slider"></span></label>
-              <div><b style="font-size:.9rem">Avisar de inmediato cuando un sensor deja de mandar datos</b>
-                <div style="font-size:.76rem;color:var(--text-3)">Lo envía el vigilante 24/7 de Supabase por WhatsApp y correo, aunque esta página esté cerrada.</div></div>
-            </div>
-            <div class="form-grid">
-              <div class="campo"><label for="acInmMin">Considerar que dejó de enviar tras</label>
-                <select id="acInmMin" onchange="guardarConfigAlerta()">
-                  <option value="60">60 minutos</option><option value="75">75 minutos</option><option value="90">90 minutos (recomendado)</option>
-                  <option value="120">2 horas</option><option value="180">3 horas</option></select>
-                <div class="ayuda">Los sensores publican promedios cada 1 h: con 90 min se detecta una falla real sin falsas alarmas por pequeños atrasos. La revisión corre cada 30 min.</div></div>
-            </div>
-            <div class="campo" style="margin-top:.9rem"><label for="acInmPlantilla">Mensaje (editable)</label>
-              <textarea id="acInmPlantilla" rows="3" style="width:100%;padding:.6rem .75rem;border:1px solid var(--border);border-radius:9px;font:inherit;font-size:.87rem;resize:vertical" oninput="pintarPreviewAlerta()" onchange="guardarConfigAlerta()"></textarea>
-              <div class="ayuda">Comodines: <b>{sitio}</b> punto · <b>{id}</b> ID · <b>{fecha}</b> último dato · <b>{tiempo}</b> tiempo transcurrido.</div></div>
-            <div class="sub-titulo">👁️ Previsualización (ejemplo: Yungay sin datos hace 1 h 30 min)</div>
-            <div class="ac-prev ac-prev-warn" id="acInmPreview"></div>
-            <div class="ac-acciones">
-              <button type="button" class="btn success" onclick="probarPlantilla('inm')">📤 Enviar esta previsualización a mis destinos</button>
-              <button type="button" class="btn ghost" onclick="restaurarPlantilla('inm')">↺ Restaurar mensaje</button></div>
-            <div class="estado-envio" id="acInmResultado"></div>
-          </div></div>
-        </section>
-
-        <section class="ac-sec" id="ac-caida">
-          <header class="ac-sec-head"><span class="ac-num">2</span><div><h2>Caída confirmada</h2>
-            <p>Si el sensor sigue sin datos pasado este tiempo se marca como caído (rojo en el panel) y se avisa de nuevo, con recordatorios mientras siga así.</p></div></header>
-          <div class="panel"><div class="panel-body">
-            <div class="form-grid">
-              <div class="campo"><label for="acUmbral">Horas sin datos para considerar un sensor caído</label>
-                <input type="number" id="acUmbral" min="0.5" max="72" step="0.5" onchange="guardarConfigAlerta()">
-                <div class="ayuda">Con 2 a 3 h se confirman fallas reales. Si es menor que el aviso inmediato, este se adelanta a ese tiempo.</div></div>
-              <div class="campo"><label for="acReenvio">Repetir el aviso cada (horas) si sigue caído</label>
-                <input type="number" id="acReenvio" min="1" max="168" step="1" onchange="guardarConfigAlerta()">
-                <div class="ayuda">Evita el mismo aviso una y otra vez. Al volver el sensor, el contador se reinicia.</div></div>
-            </div>
-            <div class="campo" style="margin-top:.9rem"><label for="acPlantilla">Mensaje (editable)</label>
-              <textarea id="acPlantilla" rows="3" style="width:100%;padding:.6rem .75rem;border:1px solid var(--border);border-radius:9px;font:inherit;font-size:.87rem;resize:vertical" oninput="pintarPreviewAlerta()" onchange="guardarConfigAlerta()"></textarea>
-              <div class="ayuda">Comodines: <b>{sitio}</b> punto · <b>{id}</b> ID · <b>{fecha}</b> último dato · <b>{tiempo}</b> tiempo transcurrido.</div></div>
-            <div class="sub-titulo">👁️ Previsualización (ejemplo: Yungay caído hace 3 horas)</div>
-            <div class="ac-prev ac-prev-err" id="acPreview"></div>
-            <div class="ac-acciones">
-              <button type="button" class="btn success" onclick="probarPlantilla('caida')">📤 Enviar esta previsualización a mis destinos</button>
-              <button type="button" class="btn ghost" onclick="restaurarPlantilla('caida')">↺ Restaurar mensaje</button></div>
-            <div class="estado-envio" id="acResultado"></div>
-            <div class="ayuda" style="margin-top:.8rem">☁️ Se guardan en Supabase (<b>config_alertas</b>): la página y el vigilante 24/7 usan la misma configuración.</div>
-          </div></div>
-        </section>
-
-        <section class="ac-sec" id="ac-semanal">
-          <header class="ac-sec-head"><span class="ac-num">3</span><div><h2>Resumen semanal</h2>
-            <p>Un informe por correo con el estado y la disponibilidad de la red durante los últimos 7 días.</p></div></header>
-        <div class="panel">
-          <div class="panel-head">
-            <h2><i class="ti ti-mail-fast" aria-hidden="true"></i> Resumen semanal automático</h2>
-            <span class="hint" id="rsNube">Config compartida con el vigilante 24/7</span>
+        <!-- 1 · Estadísticas del sitio (conteos agregados, sin datos personales) -->
+        <section class="ac-sec" id="ac-estadisticas">
+          <header class="ac-sec-head"><span class="ac-num">1</span><div><h2>Estadísticas del sitio</h2>
+            <p>Visitas y uso de funciones, contados de forma agregada: sin IP, sin cookies y sin identificar a nadie.</p></div>
+            <label class="est-periodo">Período
+              <select id="estPeriodo" onchange="cargarEstadisticasSitio()">
+                <option value="7">7 días</option><option value="30" selected>30 días</option><option value="90">90 días</option><option value="365">12 meses</option>
+              </select></label></header>
+          <div class="est-kpis" id="estKpis"></div>
+          <div class="panel"><div class="panel-head"><h2><i class="ti ti-chart-line" aria-hidden="true"></i> Visitas y descargas por día</h2><span class="hint" id="estNota"></span></div>
+            <div class="panel-body"><div id="estGraf" class="est-graf"></div></div></div>
+          <div class="est-grid">
+            <div class="panel"><div class="panel-head"><h2><i class="ti ti-map-pin" aria-hidden="true"></i> Estaciones más vistas</h2></div><div class="panel-body" id="estEstaciones"></div></div>
+            <div class="panel"><div class="panel-head"><h2><i class="ti ti-download" aria-hidden="true"></i> Descargas CSV por tipo</h2></div><div class="panel-body" id="estDescargas"></div></div>
+            <div class="panel"><div class="panel-head"><h2><i class="ti ti-layout-dashboard" aria-hidden="true"></i> Secciones abiertas</h2></div><div class="panel-body" id="estVistas"></div></div>
+            <div class="panel"><div class="panel-head"><h2><i class="ti ti-calendar" aria-hidden="true"></i> Períodos elegidos</h2></div><div class="panel-body" id="estPeriodos"></div></div>
           </div>
-          <div class="panel-body">
-            <p class="aviso-priv"><i class="ti ti-shield-check" aria-hidden="true"></i><span>Antes de agregar a una persona, asegúrate de que aceptó recibir estos avisos. Su número, clave de CallMeBot y correo se guardan en la base de datos de SenFePin (solo administradores) y se envían a los servicios de mensajería. <a href="privacidad.html#destinatarios" target="_blank" rel="noopener">Cómo tratamos estos datos</a>.</span></p>
-            <div class="switch-row">
-              <label class="switch">
-                <input type="checkbox" id="rsActivo" onchange="guardarResumen()">
-                <span class="slider"></span>
-              </label>
-              <div>
-                <b style="font-size:.9rem">Enviar cada semana un análisis descriptivo de los últimos 7 días</b>
-                <div style="font-size:.76rem;color:var(--text-3)">Lo envía el vigilante de Supabase aunque la página esté cerrada. Incluye promedio, mín, máx, desviación estándar y disponibilidad por punto.</div>
-              </div>
-            </div>
-            <div class="form-grid" style="margin-top:.6rem">
-              <div class="campo">
-                <label>Día de envío</label>
-                <select id="rsDia" onchange="guardarResumen()">
-                  <option value="1" selected>Lunes</option><option value="2">Martes</option>
-                  <option value="3">Miércoles</option><option value="4">Jueves</option>
-                  <option value="5">Viernes</option><option value="6">Sábado</option>
-                  <option value="0">Domingo</option>
-                </select>
-              </div>
-              <div class="campo">
-                <label>Hora de envío (hora de Chile)</label>
-                <select id="rsHora" onchange="guardarResumen()"></select>
-              </div>
-            </div>
-            <div class="sub-titulo">📧 Correos de destino (puedes agregar varios)</div>
-            <div id="rsMails"></div>
-            <button type="button" class="btn ghost" onclick="agregarRsMail()">➕ Añadir correo</button>
-            <div style="margin-top:1.1rem;display:flex;gap:.6rem;flex-wrap:wrap">
-              <button type="button" class="btn success" onclick="probarResumen()">📤 Enviar resumen de prueba ahora</button>
-              <button type="button" class="btn" onclick="enviarUltimosDosResumenes()">📤📤 Enviar últimos 2 resúmenes (una semana c/u)</button>
-              <button type="button" class="btn" onclick="generarInformePDF()">📄 Descargar informe PDF (últimos 7 días)</button>
-            </div>
-            <div class="ayuda" style="margin-top:.5rem">El informe incluye: reporte de funcionamiento (estado y disponibilidad por estación), estadística descriptiva, resumen diario y los gráficos de variación temporal (perfil horario, por día de semana y mensual) de MP2,5 y MP10. <b>El envío automático semanal adjunta el PDF por correo</b> si configuraste el remitente Gmail + secreto GMAIL_APP_PASSWORD (si no, envía la versión texto). El botón "Descargar" genera el mismo informe aquí en el navegador.</div>
-            <div class="estado-envio" id="rsResultado"></div>
-          </div>
-        </div>
+          <p class="ayuda est-pie">No se cuentan las visitas de quien desactivó la medición ni las de navegadores con Global Privacy Control. Para ver países y navegadores, usa Vercel → Analytics cuando esté activado.</p>
         </section>
 
+        <!-- 2 · Destinatarios: quién recibe los avisos -->
         <section class="ac-sec" id="ac-destinos">
-          <header class="ac-sec-head"><span class="ac-num">4</span><div><h2>Destinos</h2>
-            <p>Todos los avisos de arriba llegan a los mismos destinos: WhatsApp (CallMeBot) y correos.</p></div></header>
-          <div class="panel"><div class="panel-body ac-destinos-row">
-            <div id="acDestinoEstado"></div>
-            <button type="button" class="btn" onclick="irA('whatsapp')">Configurar destinos <i class="ti ti-arrow-right" aria-hidden="true"></i></button>
-          </div></div>
-        </section>
-      </div>
-
-      <!-- ============ VISTA: WHATSAPP ============ -->
-      <div class="view" id="vista-whatsapp">
+          <header class="ac-sec-head"><span class="ac-num">2</span><div><h2>Destinatarios</h2>
+            <p>Todos los avisos y resúmenes llegan a estos destinos: WhatsApp (CallMeBot) y correo.</p></div>
+            <div id="acDestinoEstado"></div></header>
         <div class="panel">
           <div class="panel-head">
-            <h2><i class="ti ti-brand-whatsapp" aria-hidden="true"></i> Avisos de no funcionamiento — WhatsApp y correo</h2>
+            <h2><i class="ti ti-address-book" aria-hidden="true"></i> WhatsApp y correo</h2>
             <span id="waEstadoPill"></span>
             <span class="hint" id="waNube"></span>
           </div>
@@ -1529,15 +1481,120 @@
           </div>
         </div>
 
-        <div class="panel">
-          <div class="panel-head"><h2>🛠️ Cómo activar CallMeBot (una sola vez por cada número)</h2></div>
+        <details class="panel ac-detalle">
+          <summary class="panel-head"><h2>🛠️ Cómo activar CallMeBot (una sola vez por cada número)</h2></summary>
           <div class="panel-body">
             <div class="paso"><span class="num">1</span><span>Desde CADA número que quieras recibir avisos: agrega <b>+34 623 78 95 90</b> a los contactos y envíale por WhatsApp: <b>"I allow callmebot to send me messages"</b>.</span></div>
             <div class="paso"><span class="num">2</span><span>El bot responde a cada número con su <b>API key</b> personal. Agrégala arriba junto a su número con "➕ Añadir número".</span></div>
             <div class="paso"><span class="num">3</span><span>Para los correos: actívalos con su interruptor, agrégalos y envía una prueba; el primer mensaje de FormSubmit llega como <b>solicitud de confirmación</b> — presiona "Activate" en ese correo y los siguientes llegarán normal.</span></div>
             <div class="paso"><span class="num">ℹ️</span><span>CallMeBot es un servicio gratuito de terceros, útil para partir. Para producción (varios destinatarios, sin depender de la página abierta) conviene la <b>fase 2</b>: un backend que vigile los sensores 24/7 y envíe por la API oficial de WhatsApp (Meta) o Twilio — también correo. La opción "Backend propio" de arriba ya deja lista esa conexión.</span></div>
           </div>
+        </details>
+        </section>
+
+        <section class="ac-sec" id="ac-inmediato">
+          <header class="ac-sec-head"><span class="ac-num">3</span><div><h2>Aviso inmediato de sensor sin datos</h2>
+            <p>Un mensaje en cuanto un sensor deja de enviar datos, sin esperar a que la caída se confirme. Llega una sola vez por episodio y se rearma cuando el sensor vuelve.</p></div>
+            <span class="hint" id="acNube">Se guardan automáticamente (local + nube)</span></header>
+          <div class="panel"><div class="panel-body">
+            <div class="switch-row">
+              <label class="switch"><input type="checkbox" id="acInmActivo" onchange="guardarConfigAlerta()"><span class="slider"></span></label>
+              <div><b style="font-size:.9rem">Avisar de inmediato cuando un sensor deja de mandar datos</b>
+                <div style="font-size:.76rem;color:var(--text-3)">Lo envía el vigilante 24/7 de Supabase por WhatsApp y correo, aunque esta página esté cerrada.</div></div>
+            </div>
+            <div class="form-grid">
+              <div class="campo"><label for="acInmMin">Considerar que dejó de enviar tras</label>
+                <select id="acInmMin" onchange="guardarConfigAlerta()">
+                  <option value="60">60 minutos</option><option value="75">75 minutos</option><option value="90">90 minutos (recomendado)</option>
+                  <option value="120">2 horas</option><option value="180">3 horas</option></select>
+                <div class="ayuda">Los sensores publican promedios cada 1 h: con 90 min se detecta una falla real sin falsas alarmas por pequeños atrasos. La revisión corre cada 30 min.</div></div>
+            </div>
+            <div class="campo" style="margin-top:.9rem"><label for="acInmPlantilla">Mensaje (editable)</label>
+              <textarea id="acInmPlantilla" rows="3" style="width:100%;padding:.6rem .75rem;border:1px solid var(--border);border-radius:9px;font:inherit;font-size:.87rem;resize:vertical" oninput="pintarPreviewAlerta()" onchange="guardarConfigAlerta()"></textarea>
+              <div class="ayuda">Comodines: <b>{sitio}</b> punto · <b>{id}</b> ID · <b>{fecha}</b> último dato · <b>{tiempo}</b> tiempo transcurrido.</div></div>
+            <div class="sub-titulo">👁️ Previsualización (ejemplo: Yungay sin datos hace 1 h 30 min)</div>
+            <div class="ac-prev ac-prev-warn" id="acInmPreview"></div>
+            <div class="ac-acciones">
+              <button type="button" class="btn success" onclick="probarPlantilla('inm')">📤 Enviar esta previsualización a mis destinos</button>
+              <button type="button" class="btn ghost" onclick="restaurarPlantilla('inm')">↺ Restaurar mensaje</button></div>
+            <div class="estado-envio" id="acInmResultado"></div>
+          </div></div>
+        </section>
+
+        <section class="ac-sec" id="ac-caida">
+          <header class="ac-sec-head"><span class="ac-num">4</span><div><h2>Caída confirmada</h2>
+            <p>Si el sensor sigue sin datos pasado este tiempo se marca como caído (rojo en el panel) y se avisa de nuevo, con recordatorios mientras siga así.</p></div></header>
+          <div class="panel"><div class="panel-body">
+            <div class="form-grid">
+              <div class="campo"><label for="acUmbral">Horas sin datos para considerar un sensor caído</label>
+                <input type="number" id="acUmbral" min="0.5" max="72" step="0.5" onchange="guardarConfigAlerta()">
+                <div class="ayuda">Con 2 a 3 h se confirman fallas reales. Si es menor que el aviso inmediato, este se adelanta a ese tiempo.</div></div>
+              <div class="campo"><label for="acReenvio">Repetir el aviso cada (horas) si sigue caído</label>
+                <input type="number" id="acReenvio" min="1" max="168" step="1" onchange="guardarConfigAlerta()">
+                <div class="ayuda">Evita el mismo aviso una y otra vez. Al volver el sensor, el contador se reinicia.</div></div>
+            </div>
+            <div class="campo" style="margin-top:.9rem"><label for="acPlantilla">Mensaje (editable)</label>
+              <textarea id="acPlantilla" rows="3" style="width:100%;padding:.6rem .75rem;border:1px solid var(--border);border-radius:9px;font:inherit;font-size:.87rem;resize:vertical" oninput="pintarPreviewAlerta()" onchange="guardarConfigAlerta()"></textarea>
+              <div class="ayuda">Comodines: <b>{sitio}</b> punto · <b>{id}</b> ID · <b>{fecha}</b> último dato · <b>{tiempo}</b> tiempo transcurrido.</div></div>
+            <div class="sub-titulo">👁️ Previsualización (ejemplo: Yungay caído hace 3 horas)</div>
+            <div class="ac-prev ac-prev-err" id="acPreview"></div>
+            <div class="ac-acciones">
+              <button type="button" class="btn success" onclick="probarPlantilla('caida')">📤 Enviar esta previsualización a mis destinos</button>
+              <button type="button" class="btn ghost" onclick="restaurarPlantilla('caida')">↺ Restaurar mensaje</button></div>
+            <div class="estado-envio" id="acResultado"></div>
+            <div class="ayuda" style="margin-top:.8rem">☁️ Se guardan en Supabase (<b>config_alertas</b>): la página y el vigilante 24/7 usan la misma configuración.</div>
+          </div></div>
+        </section>
+
+        <section class="ac-sec" id="ac-semanal">
+          <header class="ac-sec-head"><span class="ac-num">5</span><div><h2>Resumen semanal</h2>
+            <p>Un informe por correo con el estado y la disponibilidad de la red durante los últimos 7 días.</p></div></header>
+        <div class="panel">
+          <div class="panel-head">
+            <h2><i class="ti ti-mail-fast" aria-hidden="true"></i> Resumen semanal automático</h2>
+            <span class="hint" id="rsNube">Config compartida con el vigilante 24/7</span>
+          </div>
+          <div class="panel-body">
+            <p class="aviso-priv"><i class="ti ti-shield-check" aria-hidden="true"></i><span>Antes de agregar a una persona, asegúrate de que aceptó recibir estos avisos. Su número, clave de CallMeBot y correo se guardan en la base de datos de SenFePin (solo administradores) y se envían a los servicios de mensajería. <a href="privacidad.html#destinatarios" target="_blank" rel="noopener">Cómo tratamos estos datos</a>.</span></p>
+            <div class="switch-row">
+              <label class="switch">
+                <input type="checkbox" id="rsActivo" onchange="guardarResumen()">
+                <span class="slider"></span>
+              </label>
+              <div>
+                <b style="font-size:.9rem">Enviar cada semana un análisis descriptivo de los últimos 7 días</b>
+                <div style="font-size:.76rem;color:var(--text-3)">Lo envía el vigilante de Supabase aunque la página esté cerrada. Incluye promedio, mín, máx, desviación estándar y disponibilidad por punto.</div>
+              </div>
+            </div>
+            <div class="form-grid" style="margin-top:.6rem">
+              <div class="campo">
+                <label>Día de envío</label>
+                <select id="rsDia" onchange="guardarResumen()">
+                  <option value="1" selected>Lunes</option><option value="2">Martes</option>
+                  <option value="3">Miércoles</option><option value="4">Jueves</option>
+                  <option value="5">Viernes</option><option value="6">Sábado</option>
+                  <option value="0">Domingo</option>
+                </select>
+              </div>
+              <div class="campo">
+                <label>Hora de envío (hora de Chile)</label>
+                <select id="rsHora" onchange="guardarResumen()"></select>
+              </div>
+            </div>
+            <div class="sub-titulo">📧 Correos de destino (puedes agregar varios)</div>
+            <div id="rsMails"></div>
+            <button type="button" class="btn ghost" onclick="agregarRsMail()">➕ Añadir correo</button>
+            <div style="margin-top:1.1rem;display:flex;gap:.6rem;flex-wrap:wrap">
+              <button type="button" class="btn success" onclick="probarResumen()">📤 Enviar resumen de prueba ahora</button>
+              <button type="button" class="btn" onclick="enviarUltimosDosResumenes()">📤📤 Enviar últimos 2 resúmenes (una semana c/u)</button>
+              <button type="button" class="btn" onclick="generarInformePDF()">📄 Descargar informe PDF (últimos 7 días)</button>
+            </div>
+            <div class="ayuda" style="margin-top:.5rem">El informe incluye: reporte de funcionamiento (estado y disponibilidad por estación), estadística descriptiva, resumen diario y los gráficos de variación temporal (perfil horario, por día de semana y mensual) de MP2,5 y MP10. <b>El envío automático semanal adjunta el PDF por correo</b> si configuraste el remitente Gmail + secreto GMAIL_APP_PASSWORD (si no, envía la versión texto). El botón "Descargar" genera el mismo informe aquí en el navegador.</div>
+            <div class="estado-envio" id="rsResultado"></div>
+          </div>
         </div>
+        </section>
+
       </div>
 
     </div>
@@ -1662,9 +1719,16 @@ const LAYOUT_BASE = {
 };
 
 /* ================== NAVEGACIÓN ================== */
-const TITULOS = { resumen: "Resumen", estadisticas: "Estadísticas generales", variacion: "Variación temporal", descargas: "Centro de descargas", powerbi: "Análisis Power BI", whatsapp: "Alertas WhatsApp", alertconf: "Configuración de alerta" };
+const TITULOS = { resumen: "Resumen", estadisticas: "Estadísticas generales", variacion: "Variación temporal", descargas: "Centro de descargas", powerbi: "Análisis Power BI", whatsapp: "Acceso Administradores", alertconf: "Acceso Administradores" };
 
 function irA(vista, n) {
+  // WhatsApp y correo ahora viven dentro de "Acceso Administradores" (sección Destinatarios)
+  if (vista === "whatsapp") {
+    if (!adminSesion) { abrirLoginAdmin("whatsapp"); return; }
+    irA("alertconf");
+    setTimeout(() => { const d = $("ac-destinos"); if (d) d.scrollIntoView({ behavior: sinMovimiento() ? "auto" : "smooth", block: "start" }); }, 120);
+    return;
+  }
   if (VISTAS_ADMIN.includes(vista) && !adminSesion) { abrirLoginAdmin(vista); return; }
   // medición agregada: solo vistas públicas, nunca las de administración
   if (window.senfepinMedir) {
@@ -1873,11 +1937,12 @@ function pintarVista() {
     pintarAgregados();
     dibujarComparacion("chartComparacion2");
     dibujarDisponibilidad();
-  } else if (vistaActual === "whatsapp") {
-    pintarEstadoWA();
   } else if (vistaActual === "alertconf") {
     cargarFormAlerta();
     cargarFormResumen();
+    pintarEstadoWA();
+    pintarQuienAdmin();
+    cargarEstadisticasSitio();
   } else if (vistaActual === "descargas") {
     dcInit();
   } else if (vistaActual === "variacion") {
@@ -2782,13 +2847,79 @@ function pintarChipsAlertas() {
   const c = configAlerta(), r = configResumen(), wa = waConfigurado();
   const dias = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
   const chip = (ok, ico, t, d) => `<div class="ac-chip ${ok ? "on" : "off"}"><i class="ti ${ico}" aria-hidden="true"></i><span><b>${t}</b><small>${d}</small></span></div>`;
+  // mismo orden que las secciones de la página
   el.innerHTML =
+    chip(wa, "ti-address-book", "Destinatarios", wa ? "configurados" : "sin configurar") +
     chip(c.inmediato, "ti-bolt", "Aviso inmediato", c.inmediato ? `tras ${c.inmediatoMin} min sin datos` : "desactivado") +
     chip(true, "ti-alert-triangle", "Caída confirmada", `tras ${c.umbral} h · repite cada ${c.reenvio} h`) +
-    chip(!!r.activo, "ti-mail-fast", "Resumen semanal", r.activo ? `${dias[r.dia]} ${String(r.hora).padStart(2, "0")}:00` : "desactivado") +
-    chip(wa, "ti-send", "Destinos", wa ? "configurados" : "sin configurar");
+    chip(!!r.activo, "ti-mail-fast", "Resumen semanal", r.activo ? `${dias[r.dia]} ${String(r.hora).padStart(2, "0")}:00` : "desactivado");
   const d = $("acDestinoEstado");
   if (d) d.innerHTML = wa ? '<span class="pill on">● Destinos configurados</span>' : '<span class="pill warn">● Faltan destinos: configúralos para que lleguen los avisos</span>';
+}
+/* ================== ESTADÍSTICAS DEL SITIO (solo administradores) ==================
+   Lee los conteos agregados de la tabla estadisticas_sitio (supabase/estadisticas_sitio.sql).
+   La regla de la base de datos solo deja leerlos con sesión de administrador. */
+const EST_NOMBRES = {
+  descargar_csv: { punto: "Una estación", todos: "Todas las estaciones", comparacion: "Comparación entre sitios", disponibilidad: "Disponibilidad", centro_datos: "Centro de descargas · datos", centro_estadisticas: "Centro de descargas · estadísticas" },
+  abrir_vista: { resumen: "Resumen", estadisticas: "Estadísticas generales", variacion: "Variación temporal", descargas: "Centro de descargas", powerbi: "Power BI" },
+  cambiar_periodo: { "24": "24 h", "48": "48 h", "168": "7 días", "720": "30 días", "2160": "90 días", hist: "Todo el histórico" },
+};
+function pintarQuienAdmin() {
+  const el = $("admQuien");
+  if (el) el.textContent = adminSesion?.user?.email ? "Sesión: " + adminSesion.user.email : "";
+}
+function estLista(el, filas, total) {
+  if (!el) return;
+  if (!filas.length) { el.innerHTML = '<p class="est-vacio">Sin datos en el período.</p>'; return; }
+  el.innerHTML = '<ul class="est-lista">' + filas.slice(0, 8).map(([nombre, n]) =>
+    `<li><span>${esc(nombre)}</span><b>${n.toLocaleString("es-CL")}</b><i style="width:${Math.max(4, Math.round(n / (total || 1) * 100))}%"></i></li>`).join("") + "</ul>";
+}
+async function cargarEstadisticasSitio() {
+  const kpis = $("estKpis"); if (!kpis) return;
+  if (!supaCfg || !adminSesion) { kpis.innerHTML = '<p class="est-vacio">Inicia sesión para ver las estadísticas.</p>'; return; }
+  const dias = Number($("estPeriodo").value) || 30;
+  const hoy = new Date(); const desde = new Date(hoy.getTime() - (dias - 1) * 86400000);
+  const iso = d => d.toLocaleDateString("en-CA", { timeZone: "America/Santiago" });   // AAAA-MM-DD en hora de Chile
+  kpis.innerHTML = '<p class="est-vacio">Cargando…</p>';
+  const { data, error } = await supaCfg.from("estadisticas_sitio").select("dia, evento, valor, conteo").gte("dia", iso(desde)).order("dia");
+  if (error) {
+    kpis.innerHTML = '<p class="est-vacio">Aún no hay estadísticas: ejecuta <code>supabase/estadisticas_sitio.sql</code> en Supabase.</p>';
+    ["estEstaciones", "estDescargas", "estVistas", "estPeriodos"].forEach(id => $(id).innerHTML = ""); $("estGraf").innerHTML = "";
+    return;
+  }
+  // Totales por evento y por valor
+  const suma = (ev, filtro) => (data || []).filter(r => r.evento === ev && (!filtro || filtro(r))).reduce((a, r) => a + r.conteo, 0);
+  const porValor = ev => {
+    const m = new Map();
+    for (const r of data || []) if (r.evento === ev) m.set(r.valor, (m.get(r.valor) || 0) + r.conteo);
+    return [...m.entries()].sort((a, b) => b[1] - a[1]);
+  };
+  const visitas = suma("visita"), descargas = suma("descargar_csv"), estaciones = suma("ver_estacion"), periodos = suma("cambiar_periodo");
+  const kpi = (ico, t, v, d) => `<div class="est-kpi"><i class="ti ${ico}" aria-hidden="true"></i><span><small>${t}</small><b>${v.toLocaleString("es-CL")}</b><em>${d}</em></span></div>`;
+  kpis.innerHTML =
+    kpi("ti-eye", "Visitas", visitas, `${(visitas / dias).toFixed(1).replace(".", ",")} por día`) +
+    kpi("ti-download", "Descargas CSV", descargas, "archivos descargados") +
+    kpi("ti-map-pin", "Estaciones vistas", estaciones, "aperturas de detalle") +
+    kpi("ti-calendar", "Cambios de período", periodos, "en el Resumen");
+  // Serie diaria (días sin datos = 0)
+  const x = [], yV = [], yD = [];
+  for (let d = new Date(desde); iso(d) <= iso(hoy); d = new Date(d.getTime() + 86400000)) {
+    const k = iso(d); x.push(k);
+    yV.push(suma("visita", r => r.dia === k)); yD.push(suma("descargar_csv", r => r.dia === k));
+  }
+  if (window.Plotly) {
+    Plotly.react("estGraf", [
+      { x, y: yV, type: "bar", name: "Visitas", marker: { color: "#14b8a6" } },
+      { x, y: yD, type: "scatter", mode: "lines+markers", name: "Descargas CSV", line: { color: "#f97316", width: 2 } },
+    ], { ...LAYOUT_BASE, margin: { t: 10, b: 40, l: 40, r: 10 }, height: 260, legend: { orientation: "h", y: 1.12 }, yaxis: { rangemode: "tozero", tickformat: "d" }, xaxis: { type: "date" } },
+    { displayModeBar: false, responsive: true });
+  }
+  $("estNota").textContent = `${x[0]} → ${x[x.length - 1]}`;
+  const nombreEst = n => (SITIOS.find(s => String(s.n) === String(n)) || {}).nombre || "Estación " + n;
+  estLista($("estEstaciones"), porValor("ver_estacion").map(([v, n]) => [nombreEst(v), n]), estaciones);
+  estLista($("estDescargas"), porValor("descargar_csv").map(([v, n]) => [EST_NOMBRES.descargar_csv[v] || v, n]), descargas);
+  estLista($("estVistas"), porValor("abrir_vista").map(([v, n]) => [EST_NOMBRES.abrir_vista[v] || v, n]), suma("abrir_vista"));
+  estLista($("estPeriodos"), porValor("cambiar_periodo").map(([v, n]) => [EST_NOMBRES.cambiar_periodo[v] || v, n]), periodos);
 }
 function acIr(ev, id) {
   ev.preventDefault();
@@ -2814,7 +2945,7 @@ async function probarPlantilla(tipo) {
   guardarConfigAlerta();
   if (!waConfigurado()) {
     res.style.color = "var(--err)";
-    res.textContent = "✖ Primero activa y configura destinos en la página Alertas WhatsApp.";
+    res.textContent = "✖ Primero activa y configura los destinatarios en Acceso Administradores → 2 Destinatarios.";
     return;
   }
   res.style.color = "var(--text-2)"; res.textContent = "Enviando…";
@@ -2887,7 +3018,7 @@ function mostrarAviso(texto) {
 /* ── Menú lateral: contraer con el logo y grupos desplegables (se recuerdan) ── */
 function leerPref(clave, porDefecto) { try { const v = localStorage.getItem(clave); return v === null ? porDefecto : JSON.parse(v); } catch (e) { return porDefecto; } }
 function guardarPref(clave, valor) { try { localStorage.setItem(clave, JSON.stringify(valor)); } catch (e) { /* sin almacenamiento */ } }
-const ORDEN_GRUPOS = ["monitoreo", "analisis", "herramientas", "sistema"];
+const ORDEN_GRUPOS = ["monitoreo", "analisis", "herramientas", "sistema", "ayuda"];
 let grupoAbierto = null, observadorPanel = null;
 const esMouse = e => !e || e.pointerType === "mouse";
 function moverPastilla(el) {
@@ -3753,7 +3884,7 @@ async function sincronizarDestinos() {
       }).filter(Boolean);
       c.correos = (data.correos || "").split(",").map(x => x.trim()).filter(Boolean);
       localStorage.setItem("airflux_wa", JSON.stringify(c));
-      if (vistaActual === "whatsapp") cargarFormWA();
+      if (vistaActual === "alertconf") cargarFormWA();
       else pintarEstadoWA();
     }
   } catch (e) { console.warn("config_destinos:", e); }
@@ -4293,7 +4424,7 @@ init();
 <script>
 /* ================== INTRODUCCIÓN CON BRISA ==================
    Se abre al entrar a la página (salvo que se marque "No volver a mostrar").
-   Se puede abrir de nuevo desde Sistema → Ver introducción. */
+   Se puede abrir de nuevo desde Ayuda → Ver introducción. */
 // Datos del sensor: cambiar aquí si se usa otro modelo
 const INTRO_SENSOR = { modelo: "Sensirion SPS30 · sensor láser de partículas" };   // vacío = deja el texto del HTML
 const INTRO_CLAVE = "senfepin_intro_oculta";
