@@ -1,14 +1,15 @@
 /* SenFePin · estilos de páginas informativas (Privacidad, Uso de los datos, Restablecer contraseña) */
-:root { --fondo: #f2f7f6; --tarjeta: #ffffff; --texto: #0c1c1b; --texto-2: #415a57; --borde: #dce8e6;
-  --primario: #0f766e; --primario-osc: #115e59; --suave: #f0fdfa; --aviso: #fff7ed; --aviso-borde: #fdba74; --error: #b91c1c; --ok: #15803d; }
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sofia&display=swap");   /* Sofia: logo y títulos */
+:root { --fondo: #f8f2e7; --tarjeta: #ffffff; --texto: #0c2b36; --texto-2: #3f6573; --borde: #d9e9e9;
+  --primario: #0a7f97; --primario-osc: #114c5f; --suave: #eef7f7; --aviso: #fff7ed; --aviso-borde: #fdba74; --error: #b91c1c; --ok: #15803d; }
 * { box-sizing: border-box; }
 body { margin: 0; font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--texto); line-height: 1.6;
-  background: radial-gradient(900px 420px at 90% -10%, rgba(45,212,191,.12), transparent 60%), var(--fondo); }
+  background: radial-gradient(900px 420px at 90% -10%, rgba(7,153,182,.12), transparent 60%), var(--fondo); }
 .cab { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: .8rem; padding: .7rem max(16px, env(safe-area-inset-left, 0px));
-  background: linear-gradient(180deg, rgba(3,38,36,.96), rgba(5,58,54,.92)); color: #fff; border-bottom: 4px solid transparent;
+  background: linear-gradient(180deg, rgba(10,47,59,.96), rgba(14,62,78,.92)); color: #fff; border-bottom: 4px solid transparent;
   border-image: linear-gradient(90deg, #22c55e, #eab308, #f97316, #ef4444, #7c3aed) 1; }
 .cab img { width: 36px; height: 36px; border-radius: 50%; }
-.cab b { font-size: 1rem; } .cab small { display: block; color: #5eead4; font-size: .72rem; }
+.cab b { font-size: 1rem; } .cab small { display: block; color: #9cd2d3; font-size: .72rem; }
 .cab a.volver { margin-left: auto; color: #fff; text-decoration: none; font-size: .85rem; font-weight: 600; padding: .45rem .9rem; border-radius: 999px;
   background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.22); }
 .cab a.volver:hover { background: rgba(255,255,255,.2); }
@@ -21,7 +22,7 @@ a { color: var(--primario); }
 .meta { font-size: .85rem; color: var(--texto-2); }
 .tarjeta { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 16px; padding: 18px 20px; margin: 14px 0; }
 .indice { display: flex; flex-wrap: wrap; gap: .4rem; margin: 1rem 0; padding: 0; list-style: none; }
-.indice a { display: inline-block; padding: .3rem .7rem; border-radius: 999px; background: var(--suave); border: 1px solid #ccfbf1; text-decoration: none; font-size: .82rem; font-weight: 600; }
+.indice a { display: inline-block; padding: .3rem .7rem; border-radius: 999px; background: var(--suave); border: 1px solid #d6eeee; text-decoration: none; font-size: .82rem; font-weight: 600; }
 .tabla { width: 100%; overflow-x: auto; }
 table { border-collapse: collapse; width: 100%; font-size: .88rem; }
 th, td { text-align: left; padding: .5rem .6rem; border-bottom: 1px solid var(--borde); vertical-align: top; }
@@ -29,14 +30,14 @@ th { background: var(--suave); color: var(--primario-osc); font-weight: 700; }
 mark.por-confirmar { background: #fef3c7; color: #92400e; padding: 0 .3rem; border-radius: 4px; font-weight: 600; }
 .borrador { display: none; background: var(--aviso); border: 1px solid var(--aviso-borde); border-radius: 12px; padding: .8rem 1rem; color: #9a3412; font-size: .9rem; }
 .borrador.visible { display: block; }
-.nota { background: var(--suave); border-left: 4px solid #14b8a6; border-radius: 0 12px 12px 0; padding: .7rem 1rem; }
+.nota { background: var(--suave); border-left: 4px solid #0799b6; border-radius: 0 12px 12px 0; padding: .7rem 1rem; }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; border: 0; border-radius: 10px; padding: .7rem 1.1rem;
   font: inherit; font-weight: 600; background: var(--primario); color: #fff; cursor: pointer; }
 .btn:hover { background: var(--primario-osc); } .btn:disabled { opacity: .6; cursor: wait; }
 .btn.secundario { background: #fff; color: var(--texto-2); border: 1px solid var(--borde); }
 label { display: block; font-weight: 600; font-size: .9rem; margin: .8rem 0 .3rem; }
 input[type=password], input[type=email], input[type=text] { width: 100%; padding: .7rem .8rem; border: 1px solid var(--borde); border-radius: 10px; font: inherit; }
-input:focus, .btn:focus-visible, a:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(20,184,166,.35); }
+input:focus, .btn:focus-visible, a:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(7,153,182,.35); }
 .msg { min-height: 1.4em; margin-top: .6rem; font-size: .9rem; } .msg.error { color: var(--error); } .msg.ok { color: var(--ok); }
 .interruptor { display: flex; align-items: center; gap: .6rem; font-weight: 600; }
 .interruptor input { width: 20px; height: 20px; accent-color: var(--primario); }
@@ -44,7 +45,12 @@ footer.pie { text-align: center; font-size: .82rem; color: var(--texto-2); paddi
 footer.pie a { margin: 0 .4rem; }
 select, textarea { width: 100%; padding: .7rem .8rem; border: 1px solid var(--borde); border-radius: 10px; font: inherit; background: #fff; color: var(--texto); }
 textarea { resize: vertical; min-height: 140px; }
-select:focus, textarea:focus { outline: none; box-shadow: 0 0 0 3px rgba(20,184,166,.35); }
+select:focus, textarea:focus { outline: none; box-shadow: 0 0 0 3px rgba(7,153,182,.35); }
 .trampa { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
 form .interruptor { margin: 1rem 0 .2rem; align-items: flex-start; }
 form .interruptor input { margin-top: .2rem; flex: none; }
+
+/* Paleta "ocean" + tipografía Sofia en logo y títulos */
+.cab b, h1 { font-family: 'Sofia', 'Segoe Script', cursive; font-weight: 400; }
+.cab b { font-size: 1.3rem; }
+h1 { font-size: clamp(1.9rem, 5vw, 2.5rem); }
